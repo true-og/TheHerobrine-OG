@@ -28,6 +28,7 @@ repositories {
     maven { url = uri("https://repo.dmulloy2.net/repository/public/") }
     maven { url = uri("https://repo.hotten.cloud/snapshots") }
     maven { url = uri("https://repo.hotten.cloud/releases") }
+	maven { url = uri("https://repo.purpurmc.org/snapshots") }
 }
 
 dependencies {
