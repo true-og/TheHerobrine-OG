@@ -3,7 +3,7 @@ build/
 .idea/
 .gradle/
 .classpath
-.project.
+.project
 .settings/
 *.iml
 *.class
