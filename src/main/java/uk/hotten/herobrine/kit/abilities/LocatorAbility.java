@@ -3,7 +3,8 @@ package uk.hotten.herobrine.kit.abilities;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import uk.hotten.gxui.GUIItem;
+
+import net.trueog.gxui.GUIItem;
 import uk.hotten.herobrine.game.GameManager;
 import uk.hotten.herobrine.kit.KitAbility;
 import uk.hotten.herobrine.utils.Message;

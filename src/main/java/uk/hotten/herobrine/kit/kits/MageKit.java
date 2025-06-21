@@ -9,7 +9,8 @@ import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionType;
-import uk.hotten.gxui.GUIItem;
+
+import net.trueog.gxui.GUIItem;
 import uk.hotten.herobrine.game.GameManager;
 import uk.hotten.herobrine.kit.Kit;
 import uk.hotten.herobrine.kit.abilities.LocatorAbility;

@@ -4,6 +4,7 @@ plugins {
     id("com.diffplug.spotless") version "7.0.4" // Import auto-formatter.
     id("com.gradleup.shadow") version "8.3.6" // Import shadow API.
     eclipse // Import eclipse plugin for IDE integration.
+    id("io.freefair.lombok") version "8.13.1" // Automatic lombok support.
 }
 
 group = "uk.hotten.herobrine"
@@ -44,9 +45,6 @@ dependencies {
     api("xyz.xenondevs:particle:1.8.3")
     api("me.tigerhix.lib:scoreboard:1.0.1-SNAPSHOT")
     compileOnly("com.comphenix.protocol:ProtocolLib:5.1.0")
-    compileOnly("org.projectlombok:lombok:1.18.34")
-    annotationProcessor("org.projectlombok:lombok:1.18.34")
-    implementation("uk.hotten:gxui:1.2.1")
     compileOnly("org.purpurmc.purpur:purpur-api:1.19.4-R0.1-SNAPSHOT")
     compileOnly("io.github.miniplaceholders:miniplaceholders-api:2.2.3")
     compileOnlyApi(project(":libs:Utilities-OG")) // Import TrueOG Network Utilities-OG API.
