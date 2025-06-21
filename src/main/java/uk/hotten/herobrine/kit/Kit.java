@@ -3,14 +3,12 @@ package uk.hotten.herobrine.kit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
+import lombok.Getter;
+import net.trueog.gxui.GUIItem;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
-
-import lombok.Getter;
-import net.trueog.gxui.GUIItem;
 import uk.hotten.herobrine.game.GameManager;
 import uk.hotten.herobrine.utils.PlayerUtil;
 

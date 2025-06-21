@@ -1,13 +1,12 @@
 package uk.hotten.herobrine.kit.kits;
 
+import net.trueog.gxui.GUIItem;
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
-
-import net.trueog.gxui.GUIItem;
 import uk.hotten.herobrine.game.GameManager;
 import uk.hotten.herobrine.kit.Kit;
 import uk.hotten.herobrine.kit.abilities.LocatorAbility;

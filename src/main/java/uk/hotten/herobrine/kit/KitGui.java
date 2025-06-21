@@ -1,12 +1,11 @@
 package uk.hotten.herobrine.kit;
 
-import org.bukkit.ChatColor;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
-
 import net.trueog.gxui.GUIBase;
 import net.trueog.gxui.GUIButton;
 import net.trueog.gxui.GUIItem;
+import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
 import uk.hotten.herobrine.game.GameManager;
 import uk.hotten.herobrine.utils.Message;
 
