@@ -1,7 +1,6 @@
 package uk.hotten.herobrine.kit.kits;
 
 import net.trueog.gxui.GUIItem;
-import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -22,22 +21,18 @@ public class WizardKit extends Kit {
         super(
                 gm,
                 "wizard",
-                ChatColor.DARK_PURPLE + "Wizard",
+                "&5Wizard",
                 "theherobrine.kit.classic.wizzard",
                 requirePermission,
                 Message.createArray(
-                        ChatColor.DARK_GRAY + "- " + ChatColor.GREEN + "Blade of Heroism" + ChatColor.DARK_GRAY
-                                + ChatColor.ITALIC + " (weapon)",
+                        "&8- &aBlade of Heroism &8&o(weapon)",
                         "",
-                        ChatColor.DARK_GRAY + "- " + ChatColor.GREEN + "Elixir: Speed" + ChatColor.DARK_GRAY
-                                + ChatColor.ITALIC + " (x1)",
-                        ChatColor.DARK_GRAY + "- " + ChatColor.GREEN + "Elixir: Strength" + ChatColor.DARK_GRAY
-                                + ChatColor.ITALIC + " (x1)",
+                        "&8- &aElixir: Speed &8&o(x1)",
+                        "&8- &aElixir: Strength &8&o(x1)",
                         "",
-                        ChatColor.DARK_GRAY + "- " + ChatColor.GREEN + "Dreamweaver Bandage" + ChatColor.DARK_GRAY
-                                + ChatColor.ITALIC + " (x2)",
-                        "   " + ChatColor.GRAY + ChatColor.ITALIC + "Bandage yourself to full health"),
-                new GUIItem(Material.SPLASH_POTION).displayName(ChatColor.DARK_PURPLE + "Wizard"));
+                        "&8- &aDreamweaver Bandage &8&o(x2)",
+                        "   &7&oBandage yourself to full health"),
+                new GUIItem(Material.SPLASH_POTION).displayName("&5Wizard"));
     }
 
     @Override
@@ -50,19 +45,19 @@ public class WizardKit extends Kit {
     public void setupPlayer(Player player) {
         // Items
         GUIItem blade = new GUIItem(Material.STONE_SWORD)
-                .displayName(ChatColor.GREEN + "Blade of Heroism")
+                .displayName("&aBlade of Heroism")
                 .unbreakable(true);
 
         ItemStack swift = new ItemStack(Material.SPLASH_POTION);
         PotionMeta pmSwift = (PotionMeta) swift.getItemMeta();
         pmSwift.setBasePotionData(new PotionData(PotionType.SPEED, false, false));
-        pmSwift.setDisplayName(ChatColor.GREEN + "Elixir: Speed");
+        pmSwift.displayName(Message.legacySerializerAnyCase("&aElixir: Speed"));
         swift.setItemMeta(pmSwift);
 
         ItemStack strength = new ItemStack(Material.SPLASH_POTION);
         PotionMeta pmStrength = (PotionMeta) strength.getItemMeta();
         pmStrength.setBasePotionData(new PotionData(PotionType.STRENGTH, false, false));
-        pmStrength.setDisplayName(ChatColor.GREEN + "Elixir: Strength");
+        pmStrength.displayName(Message.legacySerializerAnyCase("&aElixir: Strength"));
         strength.setItemMeta(pmStrength);
 
         player.getInventory().setItem(0, blade.build());

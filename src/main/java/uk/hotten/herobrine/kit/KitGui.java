@@ -3,7 +3,6 @@ package uk.hotten.herobrine.kit;
 import net.trueog.gxui.GUIBase;
 import net.trueog.gxui.GUIButton;
 import net.trueog.gxui.GUIItem;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import uk.hotten.herobrine.game.GameManager;
@@ -12,15 +11,16 @@ import uk.hotten.herobrine.utils.Message;
 public class KitGui extends GUIBase {
 
     private Player assignedPlayer;
+    private GameManager gm;
 
-    public KitGui(JavaPlugin plugin, Player player) {
-        super(plugin, player, ChatColor.DARK_GRAY + "Pick your class", 9, false);
+    public KitGui(JavaPlugin plugin, Player player, GameManager gm) {
+        super(plugin, player, "&8Pick your class", 9, false);
         assignedPlayer = player;
+        this.gm = gm;
     }
 
     @Override
     public void setupItems() {
-        GameManager gm = GameManager.get();
         int curr = 0;
         for (Kit kit : gm.getKits()) {
             GUIItem item = kit.getDisplayItem().duplicateByConstructor();
@@ -30,11 +30,10 @@ public class KitGui extends GUIBase {
                 public boolean leftClick() {
                     if (kit.getPermission() == null
                             || (!kit.isRequirePermission() || assignedPlayer.hasPermission(kit.getPermission()))) {
-                        GameManager.get().setKit(assignedPlayer, kit, true);
+                        gm.setKit(assignedPlayer, kit, true);
                         assignedPlayer.closeInventory();
                     } else {
-                        assignedPlayer.sendMessage(
-                                Message.format(ChatColor.RED + "You haven't unlocked this kit yet!"));
+                        Message.send(assignedPlayer, Message.format("&cYou haven't unlocked this kit yet!"));
                         return false;
                     }
                     return true;

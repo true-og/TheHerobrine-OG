@@ -1,7 +1,6 @@
 package uk.hotten.herobrine.kit.kits;
 
 import net.trueog.gxui.GUIItem;
-import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -20,20 +19,17 @@ public class ScoutKit extends Kit {
         super(
                 gm,
                 "scout",
-                ChatColor.YELLOW + "Scout",
+                "&eScout",
                 "theherobrine.kit.classic.scout",
                 requirePermission,
                 Message.createArray(
-                        ChatColor.DARK_GRAY + "- " + ChatColor.GREEN + "Blade of Heroism" + ChatColor.DARK_GRAY
-                                + ChatColor.ITALIC + " (weapon)",
+                        "&8- &aBlade of Heroism &8&o(weapon)",
                         "",
-                        ChatColor.DARK_GRAY + "- " + ChatColor.GRAY + "Handcrafted Bow" + ChatColor.DARK_GRAY
-                                + ChatColor.ITALIC + " (bow)",
-                        ChatColor.DARK_GRAY + "- " + ChatColor.GRAY + "Owl Arrows" + ChatColor.DARK_GRAY
-                                + ChatColor.ITALIC + " (x32)",
+                        "&8- &7Handcrafted Bow &8&o(bow)",
+                        "&8- &7Owl Arrows &8&o(x32)",
                         "",
-                        ChatColor.DARK_GRAY + "- " + ChatColor.AQUA + "Speed I"),
-                new GUIItem(Material.FEATHER).displayName(ChatColor.YELLOW + "Scout"));
+                        "&8- &bSpeed I"),
+                new GUIItem(Material.FEATHER).displayName("&eScout"));
     }
 
     @Override
@@ -48,14 +44,10 @@ public class ScoutKit extends Kit {
 
         // Items
         GUIItem blade = new GUIItem(Material.STONE_SWORD)
-                .displayName(ChatColor.GREEN + "Blade of Heroism")
+                .displayName("&aBlade of Heroism")
                 .unbreakable(true);
-        GUIItem bow = new GUIItem(Material.BOW)
-                .displayName(ChatColor.GRAY + "Handcrafted Bow")
-                .unbreakable(true);
-        GUIItem arrow = new GUIItem(Material.ARROW)
-                .displayName(ChatColor.GRAY + "Owl Arrows")
-                .amount(32);
+        GUIItem bow = new GUIItem(Material.BOW).displayName("&7Handcrafted Bow").unbreakable(true);
+        GUIItem arrow = new GUIItem(Material.ARROW).displayName("&7Owl Arrows").amount(32);
 
         player.getInventory().setItem(0, blade.build());
         player.getInventory().setItem(1, bow.build());

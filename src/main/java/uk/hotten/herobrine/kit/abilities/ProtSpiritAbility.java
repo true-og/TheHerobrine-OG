@@ -1,7 +1,6 @@
 package uk.hotten.herobrine.kit.abilities;
 
 import net.trueog.gxui.GUIItem;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -29,18 +28,17 @@ public class ProtSpiritAbility extends KitAbility {
     public void apply(Player player) {
         this.player = player;
         GUIItem item = new GUIItem(Material.ENDER_PEARL)
-                .displayName(ChatColor.AQUA + "Protection " + ChatColor.BOLD + "Spirit!")
+                .displayName("&bProtection &lSpirit!")
                 .amount(amount);
-        item.lore(Message.addLinebreaks(
-                "" + ChatColor.GRAY + ChatColor.ITALIC
-                        + "Protect yourself with a spirit of rapid healing for 12 seconds",
-                "" + ChatColor.GRAY + ChatColor.ITALIC));
+        item.lore(Message.addLinebreaks("&7&oProtect yourself with a spirit of rapid healing for 12 seconds", "&7&o"));
 
         player.getInventory().setItem(slot, item.build());
     }
 
     @EventHandler
     public void use(PlayerInteractEvent event) {
+        if (!event.getPlayer().getWorld().getName().startsWith(gm.getGameLobby().getLobbyId())) return;
+
         if (gm.getGameState() != GameState.LIVE) return;
 
         Player player = event.getPlayer();
@@ -54,7 +52,7 @@ public class ProtSpiritAbility extends KitAbility {
                 if (isOnCooldown(player)) return;
 
                 PlayerUtil.removeAmountOfItem(player, player.getInventory().getItemInMainHand(), 1);
-                new ProtSpiritHandler(player).runTaskTimerAsynchronously(gm.getPlugin(), 0, 10);
+                new ProtSpiritHandler(player, gm).runTaskTimerAsynchronously(gm.getPlugin(), 0, 10);
                 startCooldown(player);
             }
         }

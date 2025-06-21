@@ -10,6 +10,7 @@ import lombok.Getter;
 import org.bukkit.plugin.java.JavaPlugin;
 import uk.hotten.herobrine.data.SqlManager;
 import uk.hotten.herobrine.game.GameManager;
+import uk.hotten.herobrine.lobby.GameLobby;
 import uk.hotten.herobrine.stat.trackers.CaptureTracker;
 import uk.hotten.herobrine.stat.trackers.DeathTracker;
 import uk.hotten.herobrine.stat.trackers.KillsTracker;
@@ -20,9 +21,13 @@ public class StatManager {
 
     private boolean nullBool;
 
+    @Getter
     private JavaPlugin plugin;
+
+    @Getter
+    private GameLobby gameLobby;
+
     private GameManager gm;
-    private static StatManager instance;
 
     @Getter
     private StatTracker pointsTracker;
@@ -45,14 +50,17 @@ public class StatManager {
     private String highestPlayerUUID;
     private int showDeathBringerAt;
 
-    public StatManager(JavaPlugin plugin, GameManager gm) {
-        Console.info("Loading Stat Manager...");
+    public StatManager(JavaPlugin plugin, GameLobby gameLobby) {
+        Console.info(gameLobby, "Loading Stat Manager...");
         this.plugin = plugin;
-        this.gm = gm;
-        instance = this;
+        this.gameLobby = gameLobby;
+        this.gm = gameLobby.getGameManager();
 
         gm.setStatTrackers(new StatTracker[] {
-            new PointsTracker(this), new CaptureTracker(this), new KillsTracker(this), new DeathTracker(this)
+            new PointsTracker(this),
+            new CaptureTracker(this, gameLobby),
+            new KillsTracker(this, gameLobby),
+            new DeathTracker(this, gameLobby)
         });
 
         for (StatTracker tracker : gm.getStatTrackers()) {
@@ -70,14 +78,10 @@ public class StatManager {
 
         showDeathBringerAt = plugin.getConfig().getInt("showDeathBringerAt");
         highestPlayerUUID = getHighestPlayer();
-        if (highestPlayerUUID == null) Console.error("Failed to get UUID of highest player.");
-        else Console.info("UUID of highest player is " + highestPlayerUUID);
+        if (highestPlayerUUID == null) Console.error(gameLobby, "Failed to get UUID of highest player.");
+        else Console.debug(gameLobby, "UUID of highest player is " + highestPlayerUUID);
 
-        Console.info("Stat Manager is ready!");
-    }
-
-    public static StatManager get() {
-        return instance;
+        Console.info(gameLobby, "Stat Manager is ready!");
     }
 
     public void startTracking() {
@@ -93,7 +97,7 @@ public class StatManager {
     }
 
     public void push() {
-        Console.info("Pushing stats...");
+        Console.info(gameLobby, "Pushing stats...");
 
         for (StatTracker tracker : gm.getStatTrackers()) {
             for (Map.Entry<UUID, Integer> entry : tracker.stat.entrySet()) {
@@ -102,7 +106,7 @@ public class StatManager {
 
                 int curr = getCurrentStat(uuid, tracker);
                 if (curr == -1) {
-                    Console.error("Error pushing stat, previous was -1 for " + uuid + "!");
+                    Console.error(gameLobby, "Error pushing stat, previous was -1 for " + uuid + "!");
                     continue;
                 }
 
@@ -112,7 +116,7 @@ public class StatManager {
             tracker.reset();
         }
 
-        Console.info("Stats pushed!");
+        Console.info(gameLobby, "Stats pushed!");
     }
 
     private String getHighestPlayer() {

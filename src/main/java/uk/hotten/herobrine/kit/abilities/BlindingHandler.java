@@ -12,10 +12,12 @@ import uk.hotten.herobrine.utils.PlayerUtil;
 
 public class BlindingHandler extends BukkitRunnable {
 
-    Item nugget;
+    private Item nugget;
+    private GameManager gm;
 
-    public BlindingHandler(Item nugget) {
+    public BlindingHandler(Item nugget, GameManager gm) {
         this.nugget = nugget;
+        this.gm = gm;
     }
 
     @Override
@@ -25,11 +27,11 @@ public class BlindingHandler extends BukkitRunnable {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        Bukkit.getServer().getScheduler().runTask(GameManager.get().getPlugin(), () -> {
+        Bukkit.getServer().getScheduler().runTask(gm.getPlugin(), () -> {
             Location loc = nugget.getLocation();
             nugget.remove();
             loc.getWorld().createExplosion(loc, 0f, false, false);
-            for (Player p : GameManager.get().getSurvivors()) {
+            for (Player p : gm.getSurvivors()) {
                 if (PlayerUtil.getDistance(p, loc) <= 6) {
                     PlayerUtil.addEffect(p, PotionEffectType.BLINDNESS, 100, 1, false, false);
                 }

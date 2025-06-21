@@ -1,7 +1,6 @@
 package uk.hotten.herobrine.kit.abilities;
 
 import net.trueog.gxui.GUIItem;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -27,11 +26,8 @@ public class LoveAbility extends KitAbility {
     @Override
     public void apply(Player player) {
         this.player = player;
-        GUIItem item =
-                new GUIItem(Material.FEATHER).displayName(ChatColor.RED + "Overwhelming " + ChatColor.BOLD + "Love");
-        item.lore(Message.addLinebreaks(
-                "" + ChatColor.GRAY + ChatColor.ITALIC + "Heal all your survivors 3 hearts",
-                "" + ChatColor.GRAY + ChatColor.ITALIC));
+        GUIItem item = new GUIItem(Material.FEATHER).displayName("&cOverwhelming &lLove");
+        item.lore(Message.addLinebreaks("&7&oHeal all your survivors 3 hearts", "&7&o"));
 
         if (slot == -1) player.getInventory().addItem(item.build());
         else player.getInventory().setItem(slot, item.build());
@@ -39,6 +35,8 @@ public class LoveAbility extends KitAbility {
 
     @EventHandler
     public void use(PlayerInteractEvent event) {
+        if (!event.getPlayer().getWorld().getName().startsWith(gm.getGameLobby().getLobbyId())) return;
+
         if (gm.getGameState() != GameState.LIVE) return;
 
         Player player = event.getPlayer();

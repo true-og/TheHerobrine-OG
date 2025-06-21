@@ -1,7 +1,6 @@
 package uk.hotten.herobrine.kit.abilities;
 
 import net.trueog.gxui.GUIItem;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -29,17 +28,17 @@ public class WisdomAbility extends KitAbility {
     public void apply(Player player) {
         this.player = player;
         GUIItem wiz = new GUIItem(Material.BLAZE_POWDER)
-                .displayName(ChatColor.GREEN + "Notch's Wisdom")
+                .displayName("&aNotch's Wisdom")
                 .amount(amount);
-        wiz.lore(Message.addLinebreaks(
-                "" + ChatColor.GRAY + ChatColor.ITALIC + "Creates an aura of health to heal survivors for 10 seconds",
-                "" + ChatColor.GRAY + ChatColor.ITALIC));
+        wiz.lore(Message.addLinebreaks("&7&oCreates an aura of health to heal survivors for 10 seconds", "&7&o"));
 
         player.getInventory().setItem(slot, wiz.build());
     }
 
     @EventHandler
     public void use(PlayerInteractEvent event) {
+        if (!event.getPlayer().getWorld().getName().startsWith(gm.getGameLobby().getLobbyId())) return;
+
         if (gm.getGameState() != GameState.LIVE) return;
 
         Player player = event.getPlayer();
@@ -52,7 +51,7 @@ public class WisdomAbility extends KitAbility {
                 if (isOnCooldown(player)) return;
 
                 PlayerUtil.removeAmountOfItem(player, player.getInventory().getItemInMainHand(), 1);
-                new WisdomHandler(player.getLocation()).runTaskTimerAsynchronously(gm.getPlugin(), 0, 20);
+                new WisdomHandler(player.getLocation(), gm).runTaskTimerAsynchronously(gm.getPlugin(), 0, 20);
                 startCooldown(player);
             }
         }

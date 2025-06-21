@@ -1,14 +1,24 @@
 package uk.hotten.herobrine.game.runnables;
 
+import lombok.Getter;
 import org.bukkit.Effect;
 import org.bukkit.Location;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import uk.hotten.herobrine.game.GameManager;
 import uk.hotten.herobrine.utils.GameState;
 
 public class HerobrineSmokeRunnable extends BukkitRunnable {
 
-    GameManager gm = GameManager.get();
+    private GameManager gm;
+
+    @Getter
+    private Player player;
+
+    public HerobrineSmokeRunnable(GameManager gm) {
+        this.gm = gm;
+        this.player = gm.getHerobrine();
+    }
 
     @Override
     public void run() {

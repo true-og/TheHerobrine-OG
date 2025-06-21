@@ -1,59 +1,59 @@
 package uk.hotten.herobrine;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.PacketAdapter;
-import com.comphenix.protocol.events.PacketEvent;
 import me.tigerhix.lib.scoreboard.ScoreboardLib;
-import org.bukkit.Sound;
 import org.bukkit.plugin.java.JavaPlugin;
-import uk.hotten.herobrine.commands.*;
+import uk.hotten.herobrine.commands.CreateLobbyCommand;
+import uk.hotten.herobrine.commands.CreateLobbyCompleter;
+import uk.hotten.herobrine.commands.DeleteLobbyCommand;
+import uk.hotten.herobrine.commands.DeleteLobbyCompleter;
+import uk.hotten.herobrine.commands.DropShardCommand;
+import uk.hotten.herobrine.commands.ForceStartCommand;
+import uk.hotten.herobrine.commands.JoinLobbyCommand;
+import uk.hotten.herobrine.commands.JoinLobbyCompleter;
+import uk.hotten.herobrine.commands.PauseTimerCommand;
+import uk.hotten.herobrine.commands.ReloadConfigsCommand;
+import uk.hotten.herobrine.commands.SetHerobrineCommand;
+import uk.hotten.herobrine.commands.SpectateCommand;
+import uk.hotten.herobrine.commands.VoteCommand;
+import uk.hotten.herobrine.commands.VoteCompleter;
 import uk.hotten.herobrine.data.RedisManager;
 import uk.hotten.herobrine.data.SqlManager;
-import uk.hotten.herobrine.game.GameManager;
-import uk.hotten.herobrine.stat.StatManager;
+import uk.hotten.herobrine.lobby.LobbyManager;
 import uk.hotten.herobrine.utils.Console;
-import uk.hotten.herobrine.world.WorldManager;
+import uk.hotten.herobrine.utils.Message;
 
 public class HerobrinePluginOG extends JavaPlugin {
 
     @Override
     public void onEnable() {
+
         Console.info("Setting up The Herobrine!");
 
         this.saveDefaultConfig();
 
         Console.showDebug = getConfig().getBoolean("showDebugMessages");
+        if (getConfig().getString("gamePrefix").toUpperCase().equals("DEFAULT"))
+            Message.prefix = "&8▍ &3TheHerobrine &8▏";
+        else Message.prefix = getConfig().getString("gamePrefix");
 
-        ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
+        new SqlManager(this);
+        new RedisManager(this);
+        new LobbyManager(this);
 
-        SqlManager sqlManager = new SqlManager(this);
-        RedisManager redisManager = new RedisManager(this);
-
-        WorldManager worldManager = new WorldManager(this);
-        GameManager gameManager = new GameManager(this, worldManager, redisManager, protocolManager);
-        StatManager statManager = new StatManager(this, gameManager);
-
-        getCommand("setherobrine").setExecutor(new SetHerobrineCommand());
-        getCommand("forcestart").setExecutor(new ForceStartCommand());
-        getCommand("dropshard").setExecutor(new DropShardCommand());
-        getCommand("pausetimer").setExecutor(new PauseTimerCommand());
-        getCommand("vote").setExecutor(new VoteCommand());
-
-        // Stops the eye of ender break SFX from the Notch's Wisdom and Totem of Healing abilities
-        protocolManager.addPacketListener(new PacketAdapter(this, PacketType.Play.Server.NAMED_SOUND_EFFECT) {
-            @Override
-            public void onPacketSending(PacketEvent event) {
-                if (!gameManager.getSurvivors().contains(event.getPlayer())
-                        && gameManager.getHerobrine() != event.getPlayer()) return;
-
-                Sound effectId = event.getPacket().getSoundEffects().readSafely(0);
-                if (effectId == Sound.ENTITY_ENDER_EYE_DEATH) {
-                    event.setCancelled(true);
-                }
-            }
-        });
+        getCommand("hbsetherobrine").setExecutor(new SetHerobrineCommand());
+        getCommand("hbforcestart").setExecutor(new ForceStartCommand());
+        getCommand("hbdropshard").setExecutor(new DropShardCommand());
+        getCommand("hbpausetimer").setExecutor(new PauseTimerCommand());
+        getCommand("hbvote").setExecutor(new VoteCommand());
+        getCommand("hbvote").setTabCompleter(new VoteCompleter());
+        getCommand("hbjoin").setExecutor(new JoinLobbyCommand());
+        getCommand("hbjoin").setTabCompleter(new JoinLobbyCompleter());
+        getCommand("hbcreatelobby").setExecutor(new CreateLobbyCommand());
+        getCommand("hbcreatelobby").setTabCompleter(new CreateLobbyCompleter());
+        getCommand("hbdeletelobby").setExecutor(new DeleteLobbyCommand());
+        getCommand("hbdeletelobby").setTabCompleter(new DeleteLobbyCompleter());
+        getCommand("hbspectate").setExecutor(new SpectateCommand());
+        getCommand("hbreloadconfigs").setExecutor(new ReloadConfigsCommand());
 
         ScoreboardLib.setPluginInstance(this);
 
@@ -62,6 +62,7 @@ public class HerobrinePluginOG extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        WorldManager.getInstance().clean();
+
+        LobbyManager.getInstance().shutdown();
     }
 }

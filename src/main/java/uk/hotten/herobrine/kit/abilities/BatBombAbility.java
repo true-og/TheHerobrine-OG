@@ -1,7 +1,6 @@
 package uk.hotten.herobrine.kit.abilities;
 
 import net.trueog.gxui.GUIItem;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Item;
@@ -31,13 +30,8 @@ public class BatBombAbility extends KitAbility {
     @Override
     public void apply(Player player) {
         this.player = player;
-        GUIItem bomb = new GUIItem(Material.COAL)
-                .displayName(ChatColor.DARK_GREEN + "Bat Bomb")
-                .amount(amount);
-        bomb.lore(Message.addLinebreaks(
-                "" + ChatColor.GRAY + ChatColor.ITALIC
-                        + "Launches a pack of exploding bats, don't let them kill you...",
-                "" + ChatColor.GRAY + ChatColor.ITALIC));
+        GUIItem bomb = new GUIItem(Material.COAL).displayName("&2Bat Bomb").amount(amount);
+        bomb.lore(Message.addLinebreaks("&7&oLaunches a pack of exploding bats, don't let them kill you...", "&7&o"));
 
         if (slot == -1) player.getInventory().addItem(bomb.build());
         else player.getInventory().setItem(slot, bomb.build());
@@ -45,6 +39,8 @@ public class BatBombAbility extends KitAbility {
 
     @EventHandler
     public void use(PlayerInteractEvent event) {
+        if (!event.getPlayer().getWorld().getName().startsWith(gm.getGameLobby().getLobbyId())) return;
+
         if (gm.getGameState() != GameState.LIVE) return;
 
         Player player = event.getPlayer();
@@ -59,7 +55,7 @@ public class BatBombAbility extends KitAbility {
 
                 Item coal = player.getWorld().dropItem(l, new ItemStack(Material.COAL));
                 coal.setVelocity(l.getDirection().normalize().multiply(2f));
-                new BatBombHandler(coal).runTaskAsynchronously(gm.getPlugin());
+                new BatBombHandler(coal, gm).runTaskAsynchronously(gm.getPlugin());
                 PlayerUtil.removeAmountOfItem(player, player.getInventory().getItemInMainHand(), 1);
                 startCooldown(player);
             }

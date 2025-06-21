@@ -9,8 +9,6 @@ import uk.hotten.herobrine.utils.Console;
 
 public class RedisManager {
 
-    private JavaPlugin plugin;
-
     @Getter
     private static RedisManager instance;
 
@@ -21,7 +19,6 @@ public class RedisManager {
 
     public RedisManager(JavaPlugin plugin) {
         Console.info("Loading Redis Manager...");
-        this.plugin = plugin;
         instance = this;
 
         String host = plugin.getConfig().getString("redisHost");
@@ -41,7 +38,7 @@ public class RedisManager {
             try (Jedis jedis = readPool.getResource()) {
                 if (pwRequired) jedis.auth(password);
 
-                boolean e = jedis.exists("testing");
+                jedis.exists("testing");
 
                 Console.debug("Test successful!");
                 return true;

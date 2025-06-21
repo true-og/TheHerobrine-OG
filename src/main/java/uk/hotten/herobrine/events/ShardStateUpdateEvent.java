@@ -15,9 +15,13 @@ public class ShardStateUpdateEvent extends Event {
     @Getter
     private ShardState newState;
 
-    public ShardStateUpdateEvent(ShardState prevState, ShardState newState) {
+    @Getter
+    private String lobbyId;
+
+    public ShardStateUpdateEvent(ShardState prevState, ShardState newState, String lobbyId) {
         this.prevState = prevState;
         this.newState = newState;
+        this.lobbyId = lobbyId;
     }
 
     @Override

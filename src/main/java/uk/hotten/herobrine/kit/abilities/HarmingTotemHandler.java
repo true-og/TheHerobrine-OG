@@ -12,33 +12,36 @@ import uk.hotten.herobrine.utils.PlayerUtil;
 
 public class HarmingTotemHandler extends BukkitRunnable {
 
-    Block block;
-    Player placer;
-    Player herobrine = GameManager.get().getHerobrine();
-    int time = 0;
+    private Block block;
+    private Player placer;
+    private Player herobrine;
+    private int time = 0;
+    private GameManager gm;
 
-    public HarmingTotemHandler(Block block, Player placer) {
+    public HarmingTotemHandler(Block block, Player placer, GameManager gm) {
         this.block = block;
         this.placer = placer;
+        this.gm = gm;
+        this.herobrine = gm.getHerobrine();
     }
 
     @Override
     public void run() {
         if (time > 30) {
-            Bukkit.getServer().getScheduler().runTask(GameManager.get().getPlugin(), () -> block.setType(Material.AIR));
+            Bukkit.getServer().getScheduler().runTask(gm.getPlugin(), () -> block.setType(Material.AIR));
             cancel();
             return;
         }
 
         PlayerUtil.playSoundAt(block.getLocation(), Sound.ENTITY_BAT_HURT, 1f, 1f);
-        for (Player p : Bukkit.getServer().getOnlinePlayers()) {
+        for (Player p : gm.getGameLobby().getPlayers()) {
             p.spawnParticle(Particle.VILLAGER_ANGRY, block.getLocation().add(0, 1, 0), 1);
         }
 
         if (PlayerUtil.getDistance(herobrine, block.getLocation()) <= 6) {
-            Bukkit.getServer().getScheduler().runTask(GameManager.get().getPlugin(), () -> {
+            Bukkit.getServer().getScheduler().runTask(gm.getPlugin(), () -> {
                 PlayerUtil.decreaseHealth(herobrine, 2, placer);
-                PlayerUtil.animateHbHit(herobrine.getLocation());
+                PlayerUtil.animateHbHit(gm.getGameLobby(), herobrine.getLocation());
             });
         }
 

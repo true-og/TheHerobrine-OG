@@ -1,7 +1,6 @@
 package uk.hotten.herobrine.kit.kits;
 
 import net.trueog.gxui.GUIItem;
-import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -21,27 +20,23 @@ public class SorcererKit extends Kit {
         super(
                 gm,
                 "sorcerer",
-                ChatColor.RED + "Sorcerer",
+                "&cSorcerer",
                 "theherobrine.kit.unlockable.sorcerer",
                 requirePermission,
                 Message.createArray(
-                        ChatColor.DARK_GRAY + "- " + ChatColor.GREEN + "Axe of Death" + ChatColor.DARK_GRAY
-                                + ChatColor.ITALIC + " (weapon)",
+                        "&8- &aAxe of Death &8&o(weapon)",
                         "",
-                        ChatColor.DARK_GRAY + "- " + ChatColor.AQUA + "Summon Woofless" + ChatColor.DARK_GRAY
-                                + ChatColor.ITALIC + " (x1)",
-                        "   " + ChatColor.GRAY + ChatColor.ITALIC + "It's dangerous to go alone, take a friend!",
+                        "&8- &bSummon Woofless &8&o(x1)",
+                        "   &7&oIt's dangerous to go alone, take a friend!",
                         "",
-                        ChatColor.DARK_GRAY + "- " + ChatColor.YELLOW + ChatColor.BOLD + "Totem: " + ChatColor.GREEN
-                                + "Healing" + ChatColor.DARK_GRAY + ChatColor.ITALIC + " (x1)",
-                        "   " + ChatColor.GRAY + ChatColor.ITALIC + "Creates an aura of health to heal",
-                        "   " + ChatColor.GRAY + ChatColor.ITALIC + "survivors for 60 seconds",
+                        "&8- &e&lTotem: &aHealing &8&o(x1)",
+                        "   &7&oCreates an aura of health to heal",
+                        "   &7&osurvivors for 60 seconds",
                         "",
-                        ChatColor.DARK_GRAY + "- " + ChatColor.YELLOW + ChatColor.BOLD + "Totem: " + ChatColor.RED
-                                + "Pain" + ChatColor.DARK_GRAY + ChatColor.ITALIC + " (x1)",
-                        "   " + ChatColor.GRAY + ChatColor.ITALIC + "Creates an aura of pain to damage",
-                        "   " + ChatColor.GRAY + ChatColor.ITALIC + "The Herobrine for 60 seconds"),
-                new GUIItem(Material.GOLDEN_BOOTS).displayName(ChatColor.RED + "Sorcerer"));
+                        "&8- &e&lTotem: &cPain &8&o(x1)",
+                        "   &7&oCreates an aura of pain to damage",
+                        "   &7&oThe Herobrine for 60 seconds"),
+                new GUIItem(Material.GOLDEN_BOOTS).displayName("&cSorcerer"));
     }
 
     @Override
@@ -54,9 +49,8 @@ public class SorcererKit extends Kit {
 
     @Override
     public void setupPlayer(Player player) {
-        GUIItem axe = new GUIItem(Material.IRON_AXE)
-                .displayName(ChatColor.GREEN + "Axe of Death")
-                .unbreakable(true);
+        GUIItem axe =
+                new GUIItem(Material.IRON_AXE).displayName("&aAxe of Death").unbreakable(true);
 
         player.getInventory().setItem(0, axe.build());
 

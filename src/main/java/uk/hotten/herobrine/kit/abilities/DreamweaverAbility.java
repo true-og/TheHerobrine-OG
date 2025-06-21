@@ -1,7 +1,6 @@
 package uk.hotten.herobrine.kit.abilities;
 
 import net.trueog.gxui.GUIItem;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -30,11 +29,9 @@ public class DreamweaverAbility extends KitAbility {
     public void apply(Player player) {
         this.player = player;
         GUIItem item = new GUIItem(Material.MAGMA_CREAM)
-                .displayName(ChatColor.GREEN + "Dreamweaver Bandage")
+                .displayName("&aDreamweaver Bandage")
                 .amount(amount);
-        item.lore(Message.addLinebreaks(
-                "" + ChatColor.GRAY + ChatColor.ITALIC + "Bandage yourself to full health",
-                "" + ChatColor.GRAY + ChatColor.ITALIC));
+        item.lore(Message.addLinebreaks("&7&oBandage yourself to full health", "&7&o"));
 
         if (slot == -1) player.getInventory().addItem(item.build());
         else player.getInventory().setItem(slot, item.build());
@@ -42,6 +39,8 @@ public class DreamweaverAbility extends KitAbility {
 
     @EventHandler
     public void use(PlayerInteractEvent event) {
+        if (!event.getPlayer().getWorld().getName().startsWith(gm.getGameLobby().getLobbyId())) return;
+
         if (gm.getGameState() != GameState.LIVE) return;
 
         Player player = event.getPlayer();

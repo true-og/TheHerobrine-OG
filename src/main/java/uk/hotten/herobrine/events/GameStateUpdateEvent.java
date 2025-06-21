@@ -15,9 +15,13 @@ public class GameStateUpdateEvent extends Event {
     @Getter
     private GameState newState;
 
-    public GameStateUpdateEvent(GameState prevState, GameState newState) {
+    @Getter
+    private String lobbyId;
+
+    public GameStateUpdateEvent(GameState prevState, GameState newState, String lobbyId) {
         this.prevState = prevState;
         this.newState = newState;
+        this.lobbyId = lobbyId;
     }
 
     @Override

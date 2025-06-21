@@ -33,6 +33,7 @@ repositories {
     maven { url = uri("https://repo.hotten.cloud/snapshots") }
     maven { url = uri("https://repo.hotten.cloud/releases") }
     maven { url = uri("https://repo.purpurmc.org/snapshots") }
+    maven("https://repo.onarandombox.com/content/groups/public/")
 }
 
 dependencies {
@@ -47,6 +48,8 @@ dependencies {
     compileOnly("com.comphenix.protocol:ProtocolLib:5.1.0")
     compileOnly("org.purpurmc.purpur:purpur-api:1.19.4-R0.1-SNAPSHOT")
     compileOnly("io.github.miniplaceholders:miniplaceholders-api:2.2.3")
+    compileOnly("com.onarandombox.multiversecore:multiverse-core:4.3.12")
+    compileOnly("com.comphenix.protocol:ProtocolLib:5.1.0")
     compileOnlyApi(project(":libs:Utilities-OG")) // Import TrueOG Network Utilities-OG API.
     compileOnlyApi(project(":libs:GxUI-OG")) // Import TrueOG Network GxUI-OG API.
 }

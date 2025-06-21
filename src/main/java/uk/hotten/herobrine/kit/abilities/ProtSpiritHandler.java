@@ -1,7 +1,8 @@
 package uk.hotten.herobrine.kit.abilities;
 
 import java.util.Random;
-import org.bukkit.*;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import uk.hotten.herobrine.game.GameManager;
@@ -9,17 +10,19 @@ import uk.hotten.herobrine.utils.PlayerUtil;
 
 public class ProtSpiritHandler extends BukkitRunnable {
 
-    Player player;
-    int time = 0;
-    Random random = new Random();
+    private Player player;
+    private int time = 0;
+    private Random random = new Random();
+    private GameManager gm;
 
-    public ProtSpiritHandler(Player player) {
+    public ProtSpiritHandler(Player player, GameManager gm) {
         this.player = player;
+        this.gm = gm;
     }
 
     @Override
     public void run() {
-        if (!GameManager.get().getSurvivors().contains(player)) {
+        if (!gm.getSurvivors().contains(player)) {
             cancel();
             return;
         }
@@ -37,7 +40,7 @@ public class ProtSpiritHandler extends BukkitRunnable {
 
         PlayerUtil.playSoundAt(player.getLocation(), Sound.ENTITY_BAT_TAKEOFF, 1f, 0.5f);
 
-        for (Player p : Bukkit.getServer().getOnlinePlayers()) {
+        for (Player p : gm.getGameLobby().getPlayers()) {
             p.spawnParticle(Particle.FIREWORKS_SPARK, player.getLocation(), 20);
         }
 

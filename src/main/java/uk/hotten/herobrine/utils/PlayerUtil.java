@@ -1,9 +1,14 @@
 package uk.hotten.herobrine.utils;
 
+import java.time.Duration;
 import java.util.Random;
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
-import org.bukkit.*;
+import net.kyori.adventure.title.Title;
+import org.bukkit.Color;
+import org.bukkit.FireworkEffect;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
@@ -11,26 +16,31 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import uk.hotten.herobrine.lobby.GameLobby;
 
 public class PlayerUtil {
 
     public static void sendActionbar(Player player, String message) {
-        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
+        player.sendActionBar(Message.legacySerializerAnyCase(message));
     }
 
-    public static void broadcastActionbar(String message) {
-        for (Player p : Bukkit.getServer().getOnlinePlayers()) {
+    public static void broadcastActionbar(GameLobby gameLobby, String message) {
+        for (Player p : gameLobby.getPlayers()) {
             sendActionbar(p, message);
         }
     }
 
     public static void sendTitle(Player player, String top, String bottom, int fadeIn, int stay, int fadeOut) {
-        player.sendTitle(top, bottom, fadeIn, stay, fadeOut);
+        Title.Times times =
+                Title.Times.times(Duration.ofMillis(fadeIn), Duration.ofMillis(stay), Duration.ofMillis(fadeOut));
+        Title title = Title.title(Message.legacySerializerAnyCase(top), Message.legacySerializerAnyCase(bottom), times);
+        player.showTitle(title);
     }
 
-    public static void broadcastTitle(String top, String bottom, int fadeIn, int stay, int fadeOut) {
-        for (Player p : Bukkit.getServer().getOnlinePlayers()) {
-            p.sendTitle((top.equals("") ? ChatColor.RESET + "" : top), bottom, fadeIn, stay, fadeOut);
+    public static void broadcastTitle(
+            GameLobby gameLobby, String top, String bottom, int fadeIn, int stay, int fadeOut) {
+        for (Player p : gameLobby.getPlayers()) {
+            sendTitle(p, top, bottom, fadeIn, stay, fadeOut);
         }
     }
 
@@ -38,8 +48,8 @@ public class PlayerUtil {
         player.playSound(player.getLocation(), sound, volume, pitch);
     }
 
-    public static void broadcastSound(Sound sound, float volume, float pitch) {
-        for (Player p : Bukkit.getServer().getOnlinePlayers()) {
+    public static void broadcastSound(GameLobby gameLobby, Sound sound, float volume, float pitch) {
+        for (Player p : gameLobby.getPlayers()) {
             playSound(p, sound, volume, pitch);
         }
     }
@@ -68,11 +78,14 @@ public class PlayerUtil {
         player.addPotionEffect(effect);
     }
 
-    public static Player randomPlayer() {
+    public static Player randomPlayer(GameLobby gameLobby) {
 
         Random random = new Random();
-        Player player = (Player) Bukkit.getOnlinePlayers()
-                .toArray()[random.nextInt(Bukkit.getOnlinePlayers().size())];
+        Player player = (Player) gameLobby
+                .getGameManager()
+                .getSurvivors()
+                .toArray()[
+                random.nextInt(gameLobby.getGameManager().getSurvivors().size())];
 
         return player;
     }
@@ -101,11 +114,11 @@ public class PlayerUtil {
         }
     }
 
-    public static void animateHbHit(Location loc) {
+    public static void animateHbHit(GameLobby gameLobby, Location loc) {
         PlayerUtil.playSoundAt(loc, Sound.ENTITY_BLAZE_HURT, 1f, 1f);
         PlayerUtil.playSoundAt(loc, Sound.ENTITY_IRON_GOLEM_ATTACK, 1f, 1f);
 
-        for (Player p : Bukkit.getServer().getOnlinePlayers()) {
+        for (Player p : gameLobby.getPlayers()) {
             p.spawnParticle(Particle.BLOCK_DUST, loc.add(0, 0.75, 0), 25, Material.ORANGE_WOOL.createBlockData());
         }
     }

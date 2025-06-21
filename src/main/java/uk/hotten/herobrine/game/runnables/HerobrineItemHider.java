@@ -7,7 +7,6 @@ import com.comphenix.protocol.wrappers.EnumWrappers;
 import com.comphenix.protocol.wrappers.Pair;
 import java.util.ArrayList;
 import java.util.List;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -18,9 +17,15 @@ import uk.hotten.herobrine.utils.GameState;
 
 public class HerobrineItemHider extends BukkitRunnable {
 
-    GameManager gm = GameManager.get();
-    Player player = gm.getHerobrine();
-    ProtocolManager protocolManager = GameManager.get().getProtocolManager();
+    private GameManager gm;
+    private Player player;
+    private ProtocolManager protocolManager;
+
+    public HerobrineItemHider(GameManager gm) {
+        this.gm = gm;
+        this.player = gm.getHerobrine();
+        this.protocolManager = gm.getProtocolManager();
+    }
 
     @Override
     public void run() {
@@ -41,12 +46,12 @@ public class HerobrineItemHider extends BukkitRunnable {
         hideItem.getIntegers().write(0, player.getEntityId());
         hideItem.getSlotStackPairLists().write(0, hideList);
 
-        for (Player p : Bukkit.getServer().getOnlinePlayers()) {
+        for (Player p : gm.getGameLobby().getPlayers()) {
             if (p == player) continue;
             try {
                 protocolManager.sendServerPacket(p, hideItem);
             } catch (Exception e) {
-                Console.error("Failed to hide Herobrine's items from " + p.getName());
+                Console.error(gm.getGameLobby(), "Failed to hide Herobrine's items from " + p.getName());
                 e.printStackTrace();
             }
         }

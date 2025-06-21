@@ -11,9 +11,9 @@ import me.tigerhix.lib.scoreboard.common.EntryBuilder;
 import me.tigerhix.lib.scoreboard.type.Entry;
 import me.tigerhix.lib.scoreboard.type.Scoreboard;
 import me.tigerhix.lib.scoreboard.type.ScoreboardHandler;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.trueog.gxui.GUIItem;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -56,7 +56,7 @@ import uk.hotten.herobrine.kit.kits.PriestKit;
 import uk.hotten.herobrine.kit.kits.ScoutKit;
 import uk.hotten.herobrine.kit.kits.SorcererKit;
 import uk.hotten.herobrine.kit.kits.WizardKit;
-import uk.hotten.herobrine.stat.StatManager;
+import uk.hotten.herobrine.lobby.GameLobby;
 import uk.hotten.herobrine.stat.StatTracker;
 import uk.hotten.herobrine.utils.Console;
 import uk.hotten.herobrine.utils.GameState;
@@ -71,12 +71,17 @@ public class GameManager {
     @Getter
     private JavaPlugin plugin;
 
-    private static GameManager instance;
     private WorldManager worldManager;
     private RedisManager redis;
 
     @Getter
     private ProtocolManager protocolManager;
+
+    @Getter
+    private GameLobby gameLobby;
+
+    @Getter
+    private GMListener gmListener;
 
     @Getter
     private GameState gameState;
@@ -120,6 +125,9 @@ public class GameManager {
     private Player passUser;
 
     @Getter
+    private ShardHandler shardHandler;
+
+    @Getter
     @Setter
     private boolean shardPreviousDestroyed;
 
@@ -135,6 +143,7 @@ public class GameManager {
     public boolean stFull = false;
     public boolean timerPaused = false;
     private BukkitTask waitingRunnable;
+    private NarrationRunnable narrationRunnable;
 
     @Getter
     private Kit[] kits;
@@ -156,27 +165,27 @@ public class GameManager {
     private HashMap<Player, String> teamPrefixes = new HashMap<>();
 
     @Getter
-    private HashMap<Player, ChatColor> teamColours = new HashMap<>();
+    private HashMap<Player, NamedTextColor> teamColours = new HashMap<>();
 
     private ScoreboardHandler gameScoreboardHandler;
 
-    public GameManager(
-            JavaPlugin plugin, WorldManager worldManager, RedisManager redis, ProtocolManager protocolManager) {
-        Console.info("Loading Game Manager...");
+    public GameManager(JavaPlugin plugin, GameLobby gameLobby, RedisManager redis, ProtocolManager protocolManager) {
+        Console.info(gameLobby, "Loading Game Manager...");
         this.plugin = plugin;
-        instance = this;
-        this.worldManager = worldManager;
+        this.gameLobby = gameLobby;
+        this.worldManager = gameLobby.getWorldManager();
         this.redis = redis;
         this.protocolManager = protocolManager;
-        plugin.getServer().getPluginManager().registerEvents(new GMListener(this), plugin);
+        gmListener = new GMListener(this, gameLobby);
+        plugin.getServer().getPluginManager().registerEvents(gmListener, plugin);
 
         gameState = GameState.BOOTING;
         shardState = ShardState.WAITING;
 
-        requiredToStart = plugin.getConfig().getInt("minPlayers");
-        maxPlayers = plugin.getConfig().getInt("maxPlayers");
-        startTimer = plugin.getConfig().getInt("startTime");
-        allowOverfill = plugin.getConfig().getBoolean("allowOverfill");
+        requiredToStart = gameLobby.getLobbyConfig().getMinPlayers();
+        maxPlayers = gameLobby.getLobbyConfig().getMaxPlayers();
+        startTimer = gameLobby.getLobbyConfig().getStartTime();
+        allowOverfill = gameLobby.getLobbyConfig().isAllowOverfill();
         networkName = plugin.getConfig().getString("networkName");
         networkWeb = plugin.getConfig().getString("networkWeb");
         boolean lockClassicKits = plugin.getConfig().getBoolean("lockClassicKits");
@@ -209,31 +218,27 @@ public class GameManager {
         gameScoreboardHandler = new ScoreboardHandler() {
             @Override
             public String getTitle(Player player) {
-                return "" + ChatColor.RED + "The" + ChatColor.BOLD + "Herobrine!";
+                return "&cThe&lHerobrine!";
             }
 
             @Override
             public List<Entry> getEntries(Player player) {
                 return new EntryBuilder()
                         .blank()
-                        .next(ChatColor.GREEN + "✦ Shard Count")
-                        .next("" + shardCount + "/3")
+                        .next("&a✦ Shard Count")
+                        .next(shardCount + "/3")
                         .blank()
-                        .next(ChatColor.GREEN + "❂ Survivors")
+                        .next("&a❂ Survivors")
                         .next("" + survivors.size())
                         .blank()
-                        .next("" + ChatColor.DARK_GRAY + "--------------")
-                        .next("" + ChatColor.AQUA + networkWeb)
+                        .next("&8--------------")
+                        .next("&b" + networkWeb)
                         .build();
             }
         };
 
         startWaiting();
-        Console.info("Game Manager is ready!");
-    }
-
-    public static GameManager get() {
-        return instance;
+        Console.info(gameLobby, "Game Manager is ready!");
     }
 
     public void setGameState(GameState newState) {
@@ -244,10 +249,21 @@ public class GameManager {
                 if (old == null) old = GameState.UNKNOWN;
 
                 gameState = newState;
-                Console.debug("Game state updated to " + newState.toString() + "(from " + old.toString() + ")!");
-                plugin.getServer().getPluginManager().callEvent(new GameStateUpdateEvent(old, newState));
+                Console.debug(
+                        gameLobby, "Game state updated to " + newState.toString() + "(from " + old.toString() + ")!");
+                plugin.getServer()
+                        .getPluginManager()
+                        .callEvent(new GameStateUpdateEvent(old, newState, gameLobby.getLobbyId()));
             }
         }.runTask(plugin);
+    }
+
+    // Should only be used in GameLobby's shutdown to force the state to dead.
+    public void setGameStateSilently(GameState newState) {
+        GameState old = gameState;
+        gameState = newState;
+        Console.debug(
+                gameLobby, "Game state silently updated to " + newState.toString() + "(from " + old.toString() + ")!");
     }
 
     public void setShardState(ShardState newState) {
@@ -259,9 +275,12 @@ public class GameManager {
                 if (old == null) old = ShardState.UNKNOWN;
 
                 shardState = newState;
-                Console.debug("Shard state updated to " + newState.toString() + "(from " + old.toString() + ")!");
-                plugin.getServer().getPluginManager().callEvent(new ShardStateUpdateEvent(old, newState));
-                if (gameState == GameState.LIVE) NarrationRunnable.timer = 0;
+                Console.debug(
+                        gameLobby, "Shard state updated to " + newState.toString() + "(from " + old.toString() + ")!");
+                plugin.getServer()
+                        .getPluginManager()
+                        .callEvent(new ShardStateUpdateEvent(old, newState, gameLobby.getLobbyId()));
+                if (gameState == GameState.LIVE) narrationRunnable.timer = 0;
             }
         }.runTask(plugin);
     }
@@ -271,27 +290,44 @@ public class GameManager {
         if (waitingRunnable != null) waitingRunnable.cancel();
 
         // In case the timer decreased from players leaving and a world was loaded
-        Bukkit.getServer().getScheduler().runTask(plugin, () -> WorldManager.getInstance()
-                .clean(false));
-        startTimer = plugin.getConfig().getInt("startTime");
+        Bukkit.getServer()
+                .getScheduler()
+                .runTask(plugin, () -> gameLobby.getWorldManager().clean(false));
+        startTimer = getGameLobby().getLobbyConfig().getStartTime();
 
-        waitingRunnable = new WaitingRunnable().runTaskTimerAsynchronously(plugin, 0, 10);
+        waitingRunnable = new WaitingRunnable(this).runTaskTimerAsynchronously(plugin, 0, 10);
+    }
+
+    public boolean canJoin(Player player) {
+        if (gameState == GameState.LIVE) return true;
+
+        if (getSurvivors().size() >= getMaxPlayers()) {
+            if (isAllowOverfill()) {
+                if (!player.hasPermission("theherobrine.overfill")) {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public void startCheck() {
         if (getSurvivors().size() >= getRequiredToStart() && !timerPaused) {
             if (getGameState() != GameState.STARTING) {
                 setGameState(GameState.STARTING);
-                new StartingRunnable().runTaskTimerAsynchronously(getPlugin(), 0, 20);
+                new StartingRunnable(this, gameLobby.getWorldManager()).runTaskTimerAsynchronously(getPlugin(), 0, 20);
             } else {
                 if (getSurvivors().size() >= getMaxPlayers() - 3 && !stAlmost && startTimer > 30) {
-                    Message.broadcast(Message.format(
-                            "" + ChatColor.GREEN + "We almost have a full server! Shortening timer to 30 seconds!"));
+                    Message.broadcast(
+                            gameLobby,
+                            Message.format("&aWe almost have a full server! Shortening timer to 30 seconds!"));
                     stAlmost = true;
                     startTimer = 30;
                 } else if (getSurvivors().size() >= getMaxPlayers() && !stFull && startTimer > 10) {
-                    Message.broadcast(
-                            Message.format("" + ChatColor.GREEN + "We have a full server! Starting in 10 seconds!"));
+                    Message.broadcast(gameLobby, Message.format("&aWe have a full server! Starting in 10 seconds!"));
                     stFull = true;
                     startTimer = 10;
                 }
@@ -301,33 +337,32 @@ public class GameManager {
 
     public void start() {
         setGameState(GameState.LIVE);
-        new NarrationRunnable().runTaskTimerAsynchronously(plugin, 0, 10); // has to run before the shardstate updates
+        narrationRunnable = new NarrationRunnable(this);
+        narrationRunnable.runTaskTimerAsynchronously(plugin, 0, 10); // has to run before the shardstate updates
         setShardState(ShardState.WAITING);
-        StatManager.get().startTracking();
+        gameLobby.getStatManager().startTracking();
         if (passUser != null) {
             herobrine = passUser;
             passUser = null;
         } else {
-            herobrine = PlayerUtil.randomPlayer();
+            herobrine = PlayerUtil.randomPlayer(gameLobby);
         }
         survivors.remove(herobrine);
         setupHerobrine();
         setupSurvivors();
-        new HerobrineSetup().runTaskAsynchronously(plugin);
-        setTags(
-                herobrine,
-                "" + ChatColor.RED + ChatColor.BOLD + "HEROBRINE ",
-                ChatColor.RED,
-                ScoreboardUpdateAction.UPDATE);
+        spectators.forEach(this::makeSpectator);
+        new HerobrineSetup(herobrine).runTaskAsynchronously(plugin);
+        setTags(herobrine, "&c&lHEROBRINE ", NamedTextColor.RED, ScoreboardUpdateAction.UPDATE);
         for (Player p : survivors) {
-            setTags(p, null, ChatColor.DARK_GREEN, ScoreboardUpdateAction.UPDATE);
+            setTags(p, null, NamedTextColor.DARK_GREEN, ScoreboardUpdateAction.UPDATE);
             new SurvivorSetup(p).runTaskAsynchronously(plugin);
         }
-        new ShardHandler().runTaskTimer(plugin, 0, 20);
-        new HerobrineItemHider().runTaskTimer(plugin, 0, 1);
-        new HerobrineSmokeRunnable().runTaskTimer(plugin, 0, 10);
+        shardHandler = new ShardHandler(gameLobby);
+        shardHandler.runTaskTimer(plugin, 0, 20);
+        new HerobrineItemHider(this).runTaskTimer(plugin, 0, 1);
+        new HerobrineSmokeRunnable(this).runTaskTimer(plugin, 0, 10);
 
-        for (Player p : Bukkit.getServer().getOnlinePlayers()) {
+        for (Player p : gameLobby.getPlayers()) {
             scoreboards.get(p).setHandler(gameScoreboardHandler);
             p.setHealth(20);
             p.setFoodLevel(20);
@@ -353,7 +388,7 @@ public class GameManager {
         switch (shardCount) {
             case 0: {
                 GUIItem item = new GUIItem(Material.STONE_AXE)
-                        .displayName(ChatColor.GRAY + "The Thorbringer")
+                        .displayName("&7The Thorbringer")
                         .unbreakable(true);
                 herobrine.getInventory().setItem(0, item.build());
 
@@ -378,7 +413,7 @@ public class GameManager {
             case 1: {
                 herobrine.getInventory().remove(Material.STONE_AXE);
                 GUIItem item = new GUIItem(Material.IRON_AXE)
-                        .displayName(ChatColor.GRAY + "Axe of " + ChatColor.BOLD + "Deceit!")
+                        .displayName("&7Axe of &lDeceit!")
                         .unbreakable(true);
                 herobrine.getInventory().addItem(item.build());
 
@@ -393,7 +428,7 @@ public class GameManager {
             case 2: {
                 herobrine.getInventory().remove(Material.IRON_AXE);
                 GUIItem item = new GUIItem(Material.IRON_SWORD)
-                        .displayName(ChatColor.GRAY + "Sword of " + ChatColor.BOLD + "HELLBRINGING!")
+                        .displayName("&7Sword of &lHELLBRINGING!")
                         .unbreakable(true);
                 herobrine.getInventory().addItem(item.build());
 
@@ -417,7 +452,7 @@ public class GameManager {
                 giveVials(-1, 2);
 
                 GUIItem item = new GUIItem(Material.IRON_SWORD)
-                        .displayName(ChatColor.AQUA + "Sword of " + ChatColor.BOLD + "Chances!")
+                        .displayName("&bSword of &lChances!")
                         .unbreakable(true);
                 herobrine.getInventory().addItem(item.build());
 
@@ -432,7 +467,7 @@ public class GameManager {
         potion.setAmount(amount);
         PotionMeta pm = (PotionMeta) potion.getItemMeta();
 
-        pm.setDisplayName(ChatColor.GREEN + "Poisonous Vial");
+        pm.displayName(Message.legacySerializerAnyCase("&aPoisonous Vial"));
 
         pm.setBasePotionData(new PotionData(PotionType.POISON, false, true));
         potion.setItemMeta(pm);
@@ -442,58 +477,56 @@ public class GameManager {
     }
 
     public void setupSurvivors() {
-        setupKits();
-        applyKits();
         for (Player p : survivors) {
             p.teleport(worldManager.survivorSpawn);
             p.setHealth(20);
             p.setFoodLevel(20);
             PlayerUtil.addEffect(p, PotionEffectType.BLINDNESS, 60, 1, false, false);
         }
+
+        setupKits();
+        applyKits();
     }
 
     public void makeSpectator(Player player) {
+        player.teleport(worldManager.survivorSpawn);
+        Message.send(player, Message.format("&7You are out of the game! Left-click to open the spectator menu."));
+
         PlayerUtil.clearInventory(player);
         PlayerUtil.clearEffects(player);
 
-        spectators.add(player);
+        if (!spectators.contains(player)) spectators.add(player);
 
-        for (Player p : spectators) {
-            p.showPlayer(plugin, player);
-            player.showPlayer(plugin, p);
-        }
+        PlayerUtil.addEffect(player, PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 1, false, false);
 
-        for (Player p : survivors) p.hidePlayer(plugin, player);
-        herobrine.hidePlayer(plugin, player);
-
-        player.setGameMode(GameMode.SURVIVAL);
-        player.setAllowFlight(true);
-        player.setFlying(true);
+        player.setGameMode(GameMode.SPECTATOR);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> player.setGameMode(GameMode.SPECTATOR), 20);
         player.setHealth(20);
         player.setFoodLevel(20);
-        player.teleport(worldManager.survivorSpawn);
         player.getInventory()
                 .setItem(
                         0,
                         new GUIItem(Material.COMPASS)
-                                .displayName(ChatColor.YELLOW + "Spectator Menu")
+                                .displayName("&7Spectator Menu")
                                 .build());
 
-        setTags(player, null, ChatColor.GRAY, ScoreboardUpdateAction.UPDATE);
+        setTags(player, null, NamedTextColor.GRAY, ScoreboardUpdateAction.UPDATE);
         updateTags(ScoreboardUpdateAction.UPDATE);
+        scoreboards.get(player).setHandler(gameScoreboardHandler);
     }
 
     public void end(WinType type) {
         setGameState(GameState.ENDING);
         setShardState(ShardState.INACTIVE);
         voidKits();
+
         if (type == WinType.SURVIVORS) {
-            PlayerUtil.broadcastTitle(ChatColor.GREEN + "SURVIVORS WIN!", "", 20, 60, 20);
-            Message.broadcast(Message.format("" + ChatColor.GREEN + ChatColor.BOLD + "The Survivors " + ChatColor.YELLOW
-                    + "have defeated " + ChatColor.RED + ChatColor.BOLD + "The Herobrine!"));
-            Message.broadcast(Message.format(type.getDesc()));
-            PlayerUtil.broadcastSound(Sound.ENTITY_WITHER_DEATH, 1f, 1f);
-            for (Player p : survivors) StatManager.get().getPointsTracker().increment(p.getUniqueId(), 10);
+            PlayerUtil.broadcastTitle(gameLobby, "&aSURVIVORS WIN!", "", 1000, 3000, 1000);
+            Message.broadcast(gameLobby, Message.format("&a&lThe Survivors &ehave defeated &c&lThe Herobrine!"));
+            Message.broadcast(gameLobby, Message.format(type.getDesc()));
+            PlayerUtil.broadcastSound(gameLobby, Sound.ENTITY_WITHER_DEATH, 1f, 1f);
+            for (Player p : survivors)
+                gameLobby.getStatManager().getPointsTracker().increment(p.getUniqueId(), 10);
 
             herobrine.getWorld().strikeLightningEffect(herobrine.getLocation().add(0, 0.5, 0));
             Bukkit.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
@@ -516,40 +549,41 @@ public class GameManager {
                 }
             });
         } else {
-            PlayerUtil.broadcastTitle(ChatColor.RED + "HEROBRINE" + ChatColor.GREEN + " WINS!", "", 20, 60, 20);
-            Message.broadcast(Message.format("" + ChatColor.RED + ChatColor.BOLD + "The Herobrine " + ChatColor.YELLOW
-                    + "has defeated all the survivors."));
-            Message.broadcast(Message.format(type.getDesc()));
-            PlayerUtil.broadcastSound(Sound.ENTITY_ENDER_DRAGON_HURT, 1f, 1f);
-            StatManager.get().getPointsTracker().increment(herobrine.getUniqueId(), 10);
+            PlayerUtil.broadcastTitle(gameLobby, "&cHEROBRINE &aWINS!", "", 1000, 3000, 1000);
+            Message.broadcast(gameLobby, Message.format("&c&lThe Herobrine &ehas defeated all the survivors."));
+            Message.broadcast(gameLobby, Message.format(type.getDesc()));
+            PlayerUtil.broadcastSound(gameLobby, Sound.ENTITY_ENDER_DRAGON_HURT, 1f, 1f);
+            gameLobby.getStatManager().getPointsTracker().increment(herobrine.getUniqueId(), 10);
         }
 
-        StatManager.get().stopTracking();
-        StatManager.get().push();
-        Message.broadcast(Message.format(ChatColor.GRAY + "The lobby will restart in 15 seconds."));
-        Bukkit.getServer()
-                .getScheduler()
-                .runTaskLater(plugin, Bukkit.getServer().spigot()::restart, 300);
+        gameLobby.getStatManager().stopTracking();
+        gameLobby.getStatManager().push();
+        Message.broadcast(gameLobby, Message.format("&7The lobby will restart in 15 seconds."));
+        Bukkit.getServer().getScheduler().runTaskLater(plugin, () -> gameLobby.shutdown(true, true), 300);
     }
 
     public void endCheck() {
         if (gameState != GameState.LIVE) return;
 
-        Console.debug("=== END CHECK ===");
-        Console.debug("Survivors: " + getSurvivors().size());
-        Console.debug("Herobrine: " + (getHerobrine().isOnline() ? "Online" : "Offline"));
-        Console.debug("======");
+        Console.debug(gameLobby, "=== END CHECK ===");
+        Console.debug(gameLobby, "Survivors: " + getSurvivors().size());
+        Console.debug(gameLobby, "Herobrine: " + (getHerobrine().isOnline() ? "Online" : "Offline"));
+        if (getHerobrine().isOnline())
+            Console.debug(
+                    gameLobby, "Herobrine World: " + getHerobrine().getWorld().getName());
+        Console.debug(gameLobby, "======");
 
-        if (getSurvivors().size() == 0) {
+        if (getSurvivors().isEmpty()) {
             end(WinType.HEROBRINE);
-        } else if (!getHerobrine().isOnline()) {
+        } else if (!getHerobrine().getWorld().getName().startsWith(gameLobby.getLobbyId())
+                || !getHerobrine().isOnline()) {
             end(WinType.SURVIVORS);
         }
     }
 
     public void capture(Player player) {
         player.getInventory().remove(Material.NETHER_STAR);
-        setTags(player, null, ChatColor.DARK_GREEN, ScoreboardUpdateAction.UPDATE);
+        setTags(player, null, NamedTextColor.DARK_GREEN, ScoreboardUpdateAction.UPDATE);
         shardCarrier = null;
         shardCount++;
         if (shardCount == 3) {
@@ -557,9 +591,9 @@ public class GameManager {
             herobrine.removePotionEffect(PotionEffectType.INVISIBILITY);
             updateTags(ScoreboardUpdateAction.UPDATE);
         } else setShardState(ShardState.WAITING);
-        new CaptureSequence(player).runTaskAsynchronously(plugin);
+        new CaptureSequence(player, this, gameLobby.getWorldManager()).runTaskAsynchronously(plugin);
         updateHerobrine();
-        Bukkit.getServer().getPluginManager().callEvent(new ShardCaptureEvent(player));
+        Bukkit.getServer().getPluginManager().callEvent(new ShardCaptureEvent(player, gameLobby.getLobbyId()));
     }
 
     // Uses 1.8 damage, the damage towards herobrine
@@ -617,8 +651,7 @@ public class GameManager {
         PlayerUtil.clearInventory(player);
 
         GUIItem kitItem = new GUIItem(Material.COMPASS);
-        kitItem.displayName(
-                ChatColor.GREEN + "" + ChatColor.BOLD + "Choose " + ChatColor.AQUA + ChatColor.BOLD + "Class");
+        kitItem.displayName("&a&lChoose &b&lClass");
         player.getInventory().setItem(0, kitItem.build());
     }
 
@@ -653,7 +686,7 @@ public class GameManager {
         playerKits.put(player, kit);
         saveKit(player, kit);
 
-        if (inform) player.sendMessage(Message.format(ChatColor.YELLOW + "Set your class to " + kit.getDisplayName()));
+        if (inform) Message.send(player, Message.format("&eSet your class to " + kit.getDisplayName()));
     }
 
     public void saveKit(Player player, Kit kit) {
@@ -687,14 +720,14 @@ public class GameManager {
     }
 
     public void updateTags(ScoreboardUpdateAction action) {
-        for (Player p : Bukkit.getServer().getOnlinePlayers()) {
+        for (Player p : gameLobby.getPlayers()) {
             setTags(p, getTeamPrefixes().get(p), getTeamColours().get(p), action);
         }
     }
 
-    public void setTags(Player player, String prefix, ChatColor color, ScoreboardUpdateAction action) {
+    public void setTags(Player player, String prefix, NamedTextColor color, ScoreboardUpdateAction action) {
         if (prefix == null) prefix = "";
-        if (color == null) color = ChatColor.WHITE;
+        if (color == null) color = NamedTextColor.WHITE;
 
         for (Scoreboard s : getScoreboards().values()) {
             org.bukkit.scoreboard.Scoreboard sc = s.getHolder().getScoreboard();
@@ -705,8 +738,8 @@ public class GameManager {
             }
 
             Team team = sc.getTeam(teamName);
-            team.setPrefix(prefix);
-            team.setColor(color);
+            team.prefix(Message.legacySerializerAnyCase(prefix));
+            team.color(color);
             if (player == herobrine && shardCount == 3)
                 team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.ALWAYS);
             else if (player == herobrine) team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
@@ -720,8 +753,8 @@ public class GameManager {
                     team.unregister();
                     sc.registerNewTeam(teamName);
                     team = sc.getTeam(teamName);
-                    team.setPrefix(prefix);
-                    team.setColor(color);
+                    team.prefix(Message.legacySerializerAnyCase(prefix));
+                    team.color(color);
                     if (player == herobrine && shardCount == 3)
                         team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.ALWAYS);
                     else if (player == herobrine)
