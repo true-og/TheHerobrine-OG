@@ -1,9 +1,9 @@
 package uk.hotten.herobrine.stat.trackers;
 
+import org.bukkit.event.EventHandler;
 import uk.hotten.herobrine.events.ShardCaptureEvent;
 import uk.hotten.herobrine.stat.StatManager;
 import uk.hotten.herobrine.stat.StatTracker;
-import org.bukkit.event.EventHandler;
 
 public class CaptureTracker extends StatTracker {
 

@@ -2,11 +2,19 @@ package uk.hotten.herobrine.world;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import java.io.File;
+import java.util.*;
 import lombok.Getter;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.chat.hover.content.Text;
+import org.apache.commons.io.FileUtils;
+import org.bukkit.*;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.plugin.java.JavaPlugin;
 import uk.hotten.herobrine.events.GameStateUpdateEvent;
 import uk.hotten.herobrine.game.GameManager;
 import uk.hotten.herobrine.game.runnables.MapVotingRunnable;
@@ -14,34 +22,41 @@ import uk.hotten.herobrine.utils.Console;
 import uk.hotten.herobrine.utils.GameState;
 import uk.hotten.herobrine.utils.Message;
 import uk.hotten.herobrine.world.data.Datapoint;
-import uk.hotten.herobrine.world.data.VotingMap;
 import uk.hotten.herobrine.world.data.MapBase;
 import uk.hotten.herobrine.world.data.MapData;
-import org.apache.commons.io.FileUtils;
-import org.bukkit.*;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.plugin.java.JavaPlugin;
-
-import java.io.File;
-import java.util.*;
+import uk.hotten.herobrine.world.data.VotingMap;
 
 public class WorldManager implements Listener {
 
     private JavaPlugin plugin;
-    @Getter private static WorldManager instance;
+
+    @Getter
+    private static WorldManager instance;
 
     private String fileBase;
-    @Getter private MapBase availableMaps;
-    @Getter private MapData gameMapData;
-    @Getter private World gameWorld;
 
-    @Getter private HashMap<Integer, VotingMap> votingMaps;
-    @Getter private HashMap<Player, Integer> playerVotes;
+    @Getter
+    private MapBase availableMaps;
+
+    @Getter
+    private MapData gameMapData;
+
+    @Getter
+    private World gameWorld;
+
+    @Getter
+    private HashMap<Integer, VotingMap> votingMaps;
+
+    @Getter
+    private HashMap<Player, Integer> playerVotes;
+
     private int maxVotingMaps;
-    @Getter private int endVotingAt;
-    @Getter private boolean votingRunning = false;
+
+    @Getter
+    private int endVotingAt;
+
+    @Getter
+    private boolean votingRunning = false;
 
     public Location herobrineSpawn;
     public Location survivorSpawn;
@@ -49,7 +64,6 @@ public class WorldManager implements Listener {
     public ArrayList<Location> shardSpawns;
 
     private ArrayList<Chunk> noUnload;
-
 
     public WorldManager(JavaPlugin plugin) {
         Console.info("Loading World Manager...");
@@ -108,14 +122,14 @@ public class WorldManager implements Listener {
             MapData mapData;
             try {
                 mapData = mapper.readValue(file, MapData.class);
-                Console.debug("Parsed map data id " + (reps+1));
+                Console.debug("Parsed map data id " + (reps + 1));
             } catch (Exception e) {
                 e.printStackTrace();
                 Console.error("Error parsing mapdata.yaml! Is it correctly formatted?");
                 return;
             }
 
-            votingMaps.put(reps+1, new VotingMap((reps+1), mapData, map));
+            votingMaps.put(reps + 1, new VotingMap((reps + 1), mapData, map));
             maps.remove(map);
 
             reps++;
@@ -127,19 +141,22 @@ public class WorldManager implements Listener {
 
     public void sendVotingMessage(Player player) {
         ArrayList<Player> toSend = new ArrayList<>();
-        if (player == null)
-            toSend.addAll(Bukkit.getServer().getOnlinePlayers());
-        else
-            toSend.add(player);
+        if (player == null) toSend.addAll(Bukkit.getServer().getOnlinePlayers());
+        else toSend.add(player);
 
         for (Player p : toSend) {
             p.sendMessage(Message.format(ChatColor.GOLD + "Vote for a map with /vote #."));
             p.sendMessage(Message.format(ChatColor.GOLD + "Map choices up for voting:"));
             int current = 1;
             for (Map.Entry<Integer, VotingMap> e : votingMaps.entrySet()) {
-                TextComponent textComponent = new TextComponent(Message.format("" + ChatColor.GOLD + ChatColor.BOLD + current + ". "
-                        + ChatColor.GOLD + e.getValue().getMapData().getName() + " (" + ChatColor.AQUA + e.getValue().getVotes() + ChatColor.GOLD + " votes)"));
-                textComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(ChatColor.GOLD + "Click here to vote for " + ChatColor.AQUA + e.getValue().getMapData().getName())));
+                TextComponent textComponent =
+                        new TextComponent(Message.format("" + ChatColor.GOLD + ChatColor.BOLD + current + ". "
+                                + ChatColor.GOLD + e.getValue().getMapData().getName() + " (" + ChatColor.AQUA
+                                + e.getValue().getVotes() + ChatColor.GOLD + " votes)"));
+                textComponent.setHoverEvent(new HoverEvent(
+                        HoverEvent.Action.SHOW_TEXT,
+                        new Text(ChatColor.GOLD + "Click here to vote for " + ChatColor.AQUA
+                                + e.getValue().getMapData().getName())));
                 textComponent.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/vote " + current));
                 p.spigot().sendMessage(textComponent);
                 current++;
@@ -159,7 +176,8 @@ public class WorldManager implements Listener {
         }
 
         Console.debug("Selected highest voted map -> " + highest.getMapData().getName());
-        Message.broadcast(Message.format(ChatColor.GOLD + "Voting has ended! The map " + ChatColor.AQUA + highest.getMapData().getName() + ChatColor.GOLD + " has won!"));
+        Message.broadcast(Message.format(ChatColor.GOLD + "Voting has ended! The map " + ChatColor.AQUA
+                + highest.getMapData().getName() + ChatColor.GOLD + " has won!"));
         votingRunning = false;
 
         loadMap(highest);
@@ -189,7 +207,6 @@ public class WorldManager implements Listener {
         gameWorld.setDifficulty(Difficulty.NORMAL);
         gameWorld.setTime(18000);
 
-
         // Load data points
         gameMapData = map.getMapData();
 
@@ -199,13 +216,13 @@ public class WorldManager implements Listener {
                 case SURVIVOR_SPAWN:
                     survivorSpawn = dLoc;
                     dLoc.getChunk().load(true);
-                    //dLoc.getChunk().setForceLoaded(true);
+                    // dLoc.getChunk().setForceLoaded(true);
                     noUnload.add(dLoc.getChunk());
                     break;
                 case HEROBRINE_SPAWN:
                     herobrineSpawn = dLoc;
                     dLoc.getChunk().load(true);
-                    //dLoc.getChunk().setForceLoaded(true);
+                    // dLoc.getChunk().setForceLoaded(true);
                     noUnload.add(dLoc.getChunk());
                     break;
                 case ALTER:
@@ -224,14 +241,20 @@ public class WorldManager implements Listener {
     @EventHandler
     public void gameStart(GameStateUpdateEvent event) {
         if (event.getNewState() == GameState.LIVE)
-            Bukkit.getServer().getScheduler().runTaskLater(plugin, () -> {
-                for (Chunk c : noUnload)
-                    c.setForceLoaded(false);
-                noUnload.clear();
-            }, 100);
+            Bukkit.getServer()
+                    .getScheduler()
+                    .runTaskLater(
+                            plugin,
+                            () -> {
+                                for (Chunk c : noUnload) c.setForceLoaded(false);
+                                noUnload.clear();
+                            },
+                            100);
     }
 
-    public void clean() { clean(true); }
+    public void clean() {
+        clean(true);
+    }
 
     public void clean(boolean clearVotes) {
         if (gameWorld != null) {

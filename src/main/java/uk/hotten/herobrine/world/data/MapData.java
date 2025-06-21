@@ -1,16 +1,24 @@
 package uk.hotten.herobrine.world.data;
 
-import lombok.Getter;
-
 import java.util.List;
+import lombok.Getter;
 
 public class MapData {
 
-    @Getter private String name;
-    @Getter private String builder;
-    @Getter private double shardMin;
-    @Getter private double shardMax;
-    @Getter private List<Datapoint> datapoints;
+    @Getter
+    private String name;
+
+    @Getter
+    private String builder;
+
+    @Getter
+    private double shardMin;
+
+    @Getter
+    private double shardMax;
+
+    @Getter
+    private List<Datapoint> datapoints;
 
     public MapData(String name, String builder, double shardMin, double shardMax, List<Datapoint> datapoints) {
         this.name = name;
@@ -20,6 +28,5 @@ public class MapData {
         this.datapoints = datapoints;
     }
 
-    public MapData() { }
-
+    public MapData() {}
 }

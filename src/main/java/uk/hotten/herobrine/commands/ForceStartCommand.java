@@ -34,11 +34,11 @@ public class ForceStartCommand implements CommandExecutor {
             }
         }
 
-        if (startTime < wm.getEndVotingAt())
-            startTime = wm.getEndVotingAt();
+        if (startTime < wm.getEndVotingAt()) startTime = wm.getEndVotingAt();
 
-        sender.sendMessage(Message.format(ChatColor.GREEN + "The game will start in " + startTime + " seconds unless the player count goes below 2."));
-        gm.startTimer = startTime+1;
+        sender.sendMessage(Message.format(ChatColor.GREEN + "The game will start in " + startTime
+                + " seconds unless the player count goes below 2."));
+        gm.startTimer = startTime + 1;
         gm.setGameState(GameState.STARTING);
         new StartingRunnable(true).runTaskTimerAsynchronously(gm.getPlugin(), 0, 20);
         return true;

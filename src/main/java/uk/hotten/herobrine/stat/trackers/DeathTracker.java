@@ -1,14 +1,14 @@
 package uk.hotten.herobrine.stat.trackers;
 
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import uk.hotten.herobrine.game.GameManager;
 import uk.hotten.herobrine.stat.StatManager;
 import uk.hotten.herobrine.stat.StatTracker;
 import uk.hotten.herobrine.utils.GameState;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.entity.PlayerDeathEvent;
 
 public class DeathTracker extends StatTracker {
 
@@ -21,11 +21,9 @@ public class DeathTracker extends StatTracker {
         Player player = event.getEntity();
 
         GameManager gm = GameManager.get();
-        if (gm.getGameState() != GameState.LIVE)
-            return;
+        if (gm.getGameState() != GameState.LIVE) return;
 
-        if (gm.getSurvivors().contains(player) || gm.getHerobrine() == player)
-            increment(player.getUniqueId(), 1);
+        if (gm.getSurvivors().contains(player) || gm.getHerobrine() == player) increment(player.getUniqueId(), 1);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -33,10 +31,8 @@ public class DeathTracker extends StatTracker {
         Player player = event.getPlayer();
 
         GameManager gm = GameManager.get();
-        if (gm.getGameState() != GameState.LIVE)
-            return;
+        if (gm.getGameState() != GameState.LIVE) return;
 
-        if (gm.getSurvivors().contains(player) || gm.getHerobrine() == player)
-            increment(player.getUniqueId(), 1);
+        if (gm.getSurvivors().contains(player) || gm.getHerobrine() == player) increment(player.getUniqueId(), 1);
     }
 }

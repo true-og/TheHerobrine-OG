@@ -1,18 +1,19 @@
 package uk.hotten.herobrine.kit;
 
+import java.util.ArrayList;
 import lombok.Getter;
 import org.bukkit.Bukkit;
-import uk.hotten.herobrine.game.GameManager;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
-
-import java.util.ArrayList;
+import uk.hotten.herobrine.game.GameManager;
 
 public abstract class KitAbility implements Listener {
 
     public GameManager gm;
 
-    @Getter private String displayName;
+    @Getter
+    private String displayName;
+
     private ArrayList<Player> cooldown;
 
     public KitAbility(GameManager gm, String displayName) {
@@ -25,9 +26,7 @@ public abstract class KitAbility implements Listener {
      * @implNote Runs when the game starts, called from (apply in Kit)
      * @param player
      */
-    public void apply(Player player) {
-
-    }
+    public void apply(Player player) {}
 
     public void startCooldown(Player player) {
         cooldown.add(player);
@@ -37,5 +36,4 @@ public abstract class KitAbility implements Listener {
     public boolean isOnCooldown(Player player) {
         return cooldown.contains(player);
     }
-
 }

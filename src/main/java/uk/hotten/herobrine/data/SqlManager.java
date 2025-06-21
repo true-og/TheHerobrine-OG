@@ -1,11 +1,10 @@
 package uk.hotten.herobrine.data;
 
-import uk.hotten.herobrine.utils.Console;
-import org.bukkit.plugin.java.JavaPlugin;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import org.bukkit.plugin.java.JavaPlugin;
+import uk.hotten.herobrine.utils.Console;
 
 public class SqlManager {
 
@@ -27,13 +26,15 @@ public class SqlManager {
         Console.info("SQL Manager is ready!");
     }
 
-    public static SqlManager get() { return instance; }
+    public static SqlManager get() {
+        return instance;
+    }
 
     public Connection createConnection() throws SQLException, ClassNotFoundException {
         synchronized (this) {
             Class.forName("com.mysql.jdbc.Driver");
-            return DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + "theherobrine?userSSL=false", username, password);
+            return DriverManager.getConnection(
+                    "jdbc:mysql://" + host + ":" + port + "/" + "theherobrine?userSSL=false", username, password);
         }
     }
-
 }

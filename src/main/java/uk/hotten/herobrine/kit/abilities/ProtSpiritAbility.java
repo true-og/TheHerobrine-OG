@@ -28,28 +28,30 @@ public class ProtSpiritAbility extends KitAbility {
     @Override
     public void apply(Player player) {
         this.player = player;
-        GUIItem item = new GUIItem(Material.ENDER_PEARL).displayName(ChatColor.AQUA + "Protection " + ChatColor.BOLD + "Spirit!").amount(amount);
-        item.lore(Message.addLinebreaks("" + ChatColor.GRAY + ChatColor.ITALIC + "Protect yourself with a spirit of rapid healing for 12 seconds", "" + ChatColor.GRAY + ChatColor.ITALIC));
+        GUIItem item = new GUIItem(Material.ENDER_PEARL)
+                .displayName(ChatColor.AQUA + "Protection " + ChatColor.BOLD + "Spirit!")
+                .amount(amount);
+        item.lore(Message.addLinebreaks(
+                "" + ChatColor.GRAY + ChatColor.ITALIC
+                        + "Protect yourself with a spirit of rapid healing for 12 seconds",
+                "" + ChatColor.GRAY + ChatColor.ITALIC));
 
         player.getInventory().setItem(slot, item.build());
     }
 
     @EventHandler
     public void use(PlayerInteractEvent event) {
-        if (gm.getGameState() != GameState.LIVE)
-            return;
+        if (gm.getGameState() != GameState.LIVE) return;
 
         Player player = event.getPlayer();
 
-        if (this.player != player)
-            return;
+        if (this.player != player) return;
 
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_AIR) {
             if (player.getInventory().getItemInMainHand().getType() == Material.ENDER_PEARL) {
                 event.setCancelled(true);
 
-                if (isOnCooldown(player))
-                    return;
+                if (isOnCooldown(player)) return;
 
                 PlayerUtil.removeAmountOfItem(player, player.getInventory().getItemInMainHand(), 1);
                 new ProtSpiritHandler(player).runTaskTimerAsynchronously(gm.getPlugin(), 0, 10);

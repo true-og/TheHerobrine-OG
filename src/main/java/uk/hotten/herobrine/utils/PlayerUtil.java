@@ -1,5 +1,6 @@
 package uk.hotten.herobrine.utils;
 
+import java.util.Random;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.*;
@@ -10,8 +11,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-
-import java.util.Random;
 
 public class PlayerUtil {
 
@@ -63,7 +62,8 @@ public class PlayerUtil {
         }
     }
 
-    public static void addEffect(Player player, PotionEffectType type, int duration, int amplifier, boolean particles, boolean icon) {
+    public static void addEffect(
+            Player player, PotionEffectType type, int duration, int amplifier, boolean particles, boolean icon) {
         PotionEffect effect = new PotionEffect(type, duration, amplifier, true, particles, icon);
         player.addPotionEffect(effect);
     }
@@ -71,8 +71,8 @@ public class PlayerUtil {
     public static Player randomPlayer() {
 
         Random random = new Random();
-        Player player = (Player) Bukkit.getOnlinePlayers().toArray()
-                [random.nextInt(Bukkit.getOnlinePlayers().size())];
+        Player player = (Player) Bukkit.getOnlinePlayers()
+                .toArray()[random.nextInt(Bukkit.getOnlinePlayers().size())];
 
         return player;
     }
@@ -94,10 +94,8 @@ public class PlayerUtil {
     public static void decreaseHealth(Player player, double hp, Player damager) {
         double newHealth = player.getHealth() - hp;
         if (newHealth <= 0) {
-            if (damager != null)
-                player.damage(Integer.MAX_VALUE, damager);
-            else
-                player.damage(Integer.MAX_VALUE);
+            if (damager != null) player.damage(Integer.MAX_VALUE, damager);
+            else player.damage(Integer.MAX_VALUE);
         } else {
             player.setHealth(newHealth);
         }
@@ -120,7 +118,6 @@ public class PlayerUtil {
         fwm.addEffect(FireworkEffect.builder().withColor(colour).flicker(true).build());
 
         fw.setFireworkMeta(fwm);
-        //fw.detonate();
+        // fw.detonate();
     }
-
 }

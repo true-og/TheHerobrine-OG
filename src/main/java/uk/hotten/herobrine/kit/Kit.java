@@ -1,31 +1,49 @@
 package uk.hotten.herobrine.kit;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.Getter;
-import uk.hotten.gxui.GUIItem;
-import uk.hotten.herobrine.game.GameManager;
-import uk.hotten.herobrine.utils.PlayerUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import uk.hotten.gxui.GUIItem;
+import uk.hotten.herobrine.game.GameManager;
+import uk.hotten.herobrine.utils.PlayerUtil;
 
 public abstract class Kit implements Listener {
 
     public GameManager gm;
 
-    @Getter private String internalName; // don't change this later, it will break things
-    @Getter private String displayName;
-    @Getter private String permission;
-    @Getter private boolean requirePermission;
-    @Getter private ArrayList<String> desc;
-    @Getter private GUIItem displayItem;
+    @Getter
+    private String internalName; // don't change this later, it will break things
+
+    @Getter
+    private String displayName;
+
+    @Getter
+    private String permission;
+
+    @Getter
+    private boolean requirePermission;
+
+    @Getter
+    private ArrayList<String> desc;
+
+    @Getter
+    private GUIItem displayItem;
+
     public HashMap<Player, ArrayList<KitAbility>> abilities;
 
-    public Kit(GameManager gm, String internalName, String displayName, String permission, boolean requirePermission, ArrayList<String> desc, GUIItem displayItem) {
+    public Kit(
+            GameManager gm,
+            String internalName,
+            String displayName,
+            String permission,
+            boolean requirePermission,
+            ArrayList<String> desc,
+            GUIItem displayItem) {
         this.gm = gm;
 
         this.internalName = internalName;
@@ -46,15 +64,13 @@ public abstract class Kit implements Listener {
     }
 
     public boolean ownsKit(Player player) {
-        if (permission == null)
-            return true;
+        if (permission == null) return true;
 
         return player.hasPermission(permission);
     }
 
     public void addAbilityToPlayer(Player player, KitAbility ability) {
-        if (!abilities.containsKey(player))
-            abilities.put(player, new ArrayList<>());
+        if (!abilities.containsKey(player)) abilities.put(player, new ArrayList<>());
 
         abilities.get(player).add(ability);
         Bukkit.getServer().getPluginManager().registerEvents(ability, gm.getPlugin());
@@ -63,12 +79,12 @@ public abstract class Kit implements Listener {
 
     public void voidAbilities() {
         for (Map.Entry<Player, ArrayList<KitAbility>> entry : abilities.entrySet()) {
-            for (KitAbility a : entry.getValue())
-                HandlerList.unregisterAll(a);
+            for (KitAbility a : entry.getValue()) HandlerList.unregisterAll(a);
         }
         abilities = new HashMap<>();
     }
 
     public abstract void setupAbilities(Player player);
+
     public abstract void setupPlayer(Player player);
 }

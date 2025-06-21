@@ -1,6 +1,13 @@
 package uk.hotten.herobrine.stat;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import lombok.Getter;
+import org.bukkit.plugin.java.JavaPlugin;
 import uk.hotten.herobrine.data.SqlManager;
 import uk.hotten.herobrine.game.GameManager;
 import uk.hotten.herobrine.stat.trackers.CaptureTracker;
@@ -8,14 +15,6 @@ import uk.hotten.herobrine.stat.trackers.DeathTracker;
 import uk.hotten.herobrine.stat.trackers.KillsTracker;
 import uk.hotten.herobrine.stat.trackers.PointsTracker;
 import uk.hotten.herobrine.utils.Console;
-import org.bukkit.plugin.java.JavaPlugin;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 public class StatManager {
 
@@ -25,13 +24,23 @@ public class StatManager {
     private GameManager gm;
     private static StatManager instance;
 
-    @Getter private StatTracker pointsTracker;
+    @Getter
+    private StatTracker pointsTracker;
 
-    @Getter private HashMap<UUID, Integer> points;
-    @Getter private HashMap<UUID, Integer> captures;
-    @Getter private HashMap<UUID, Integer> kills;
-    @Getter private HashMap<UUID, Integer> deaths;
-    @Getter HashMap<UUID, GameRank> gameRanks;
+    @Getter
+    private HashMap<UUID, Integer> points;
+
+    @Getter
+    private HashMap<UUID, Integer> captures;
+
+    @Getter
+    private HashMap<UUID, Integer> kills;
+
+    @Getter
+    private HashMap<UUID, Integer> deaths;
+
+    @Getter
+    HashMap<UUID, GameRank> gameRanks;
 
     private String highestPlayerUUID;
     private int showDeathBringerAt;
@@ -43,10 +52,7 @@ public class StatManager {
         instance = this;
 
         gm.setStatTrackers(new StatTracker[] {
-                new PointsTracker(this),
-                new CaptureTracker(this),
-                new KillsTracker(this),
-                new DeathTracker(this)
+            new PointsTracker(this), new CaptureTracker(this), new KillsTracker(this), new DeathTracker(this)
         });
 
         for (StatTracker tracker : gm.getStatTrackers()) {
@@ -64,15 +70,15 @@ public class StatManager {
 
         showDeathBringerAt = plugin.getConfig().getInt("showDeathBringerAt");
         highestPlayerUUID = getHighestPlayer();
-        if (highestPlayerUUID == null)
-            Console.error("Failed to get UUID of highest player.");
-        else
-            Console.info("UUID of highest player is " + highestPlayerUUID);
+        if (highestPlayerUUID == null) Console.error("Failed to get UUID of highest player.");
+        else Console.info("UUID of highest player is " + highestPlayerUUID);
 
         Console.info("Stat Manager is ready!");
     }
 
-    public static StatManager get() { return instance; }
+    public static StatManager get() {
+        return instance;
+    }
 
     public void startTracking() {
         for (StatTracker tracker : gm.getStatTrackers()) {
@@ -113,7 +119,8 @@ public class StatManager {
         try {
             Connection connection = SqlManager.get().createConnection();
 
-            PreparedStatement statement = connection.prepareStatement("SELECT UUID FROM hb_stat ORDER BY points DESC LIMIT 1;");
+            PreparedStatement statement =
+                    connection.prepareStatement("SELECT UUID FROM hb_stat ORDER BY points DESC LIMIT 1;");
             ResultSet rs = statement.executeQuery();
 
             String result;
@@ -136,7 +143,8 @@ public class StatManager {
         try {
             Connection connection = SqlManager.get().createConnection();
 
-            PreparedStatement statement = connection.prepareStatement("UPDATE hb_stat SET " + name + "=? WHERE `uuid`=?");
+            PreparedStatement statement =
+                    connection.prepareStatement("UPDATE hb_stat SET " + name + "=? WHERE `uuid`=?");
             int next = prev + amount;
 
             statement.setInt(1, next);
@@ -211,8 +219,7 @@ public class StatManager {
     }
 
     public void check(UUID uuid) {
-        if (!exists(uuid))
-            create(uuid);
+        if (!exists(uuid)) create(uuid);
 
         points.put(uuid, getCurrentStat(uuid, pointsTracker));
         captures.put(uuid, getCurrentStat(uuid, "captures"));
@@ -221,12 +228,10 @@ public class StatManager {
 
         if (uuid.toString().equals(highestPlayerUUID) && points.get(uuid) >= showDeathBringerAt)
             gameRanks.put(uuid, GameRank.DEATHBRINGER);
-        else
-            gameRanks.put(uuid, GameRank.findRank(points.get(uuid)));
+        else gameRanks.put(uuid, GameRank.findRank(points.get(uuid)));
     }
 
     public GameRank getGameRank(UUID uuid) {
         return gameRanks.get(uuid);
     }
-
 }

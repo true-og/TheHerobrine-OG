@@ -14,7 +14,8 @@ public class MapVotingRunnable extends BukkitRunnable {
         GameManager gm = GameManager.get();
         WorldManager wm = WorldManager.getInstance();
 
-        if ((gm.getGameState() != GameState.WAITING && gm.getGameState() != GameState.STARTING) || !wm.isVotingRunning()) {
+        if ((gm.getGameState() != GameState.WAITING && gm.getGameState() != GameState.STARTING)
+                || !wm.isVotingRunning()) {
             cancel();
             return;
         }

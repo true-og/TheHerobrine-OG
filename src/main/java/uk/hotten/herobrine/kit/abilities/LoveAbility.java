@@ -27,30 +27,28 @@ public class LoveAbility extends KitAbility {
     @Override
     public void apply(Player player) {
         this.player = player;
-        GUIItem item = new GUIItem(Material.FEATHER).displayName(ChatColor.RED + "Overwhelming " + ChatColor.BOLD + "Love");
-        item.lore(Message.addLinebreaks("" + ChatColor.GRAY + ChatColor.ITALIC + "Heal all your survivors 3 hearts", "" + ChatColor.GRAY + ChatColor.ITALIC));
+        GUIItem item =
+                new GUIItem(Material.FEATHER).displayName(ChatColor.RED + "Overwhelming " + ChatColor.BOLD + "Love");
+        item.lore(Message.addLinebreaks(
+                "" + ChatColor.GRAY + ChatColor.ITALIC + "Heal all your survivors 3 hearts",
+                "" + ChatColor.GRAY + ChatColor.ITALIC));
 
-        if (slot == -1)
-            player.getInventory().addItem(item.build());
-        else
-            player.getInventory().setItem(slot, item.build());
+        if (slot == -1) player.getInventory().addItem(item.build());
+        else player.getInventory().setItem(slot, item.build());
     }
 
     @EventHandler
     public void use(PlayerInteractEvent event) {
-        if (gm.getGameState() != GameState.LIVE)
-            return;
+        if (gm.getGameState() != GameState.LIVE) return;
 
         Player player = event.getPlayer();
 
-        if (this.player != player)
-            return;
+        if (this.player != player) return;
 
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_AIR) {
             if (player.getInventory().getItemInMainHand().getType() == Material.FEATHER) {
 
-                if (isOnCooldown(player))
-                    return;
+                if (isOnCooldown(player)) return;
 
                 PlayerUtil.removeAmountOfItem(player, player.getInventory().getItemInMainHand(), 1);
                 for (Player p : gm.getSurvivors()) {

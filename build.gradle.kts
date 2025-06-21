@@ -1,12 +1,15 @@
 plugins {
+    id("java") // Tell gradle this is a java project.
+    id("java-library") // Import helper for source-based libraries.
+    id("com.diffplug.spotless") version "7.0.4" // Import auto-formatter.
     id("com.gradleup.shadow") version "8.3.6" // Import shadow API.
-    java // Tell gradle this is a java project.
     eclipse // Import eclipse plugin for IDE integration.
-    kotlin("jvm") version "2.1.21" // Import kotlin jvm plugin for kotlin/java integration.
 }
 
 group = "uk.hotten.herobrine"
+
 version = "1.3.3"
+
 val apiVersion = "1.19" // Minecraft server target version.
 
 java {
@@ -28,7 +31,7 @@ repositories {
     maven { url = uri("https://repo.dmulloy2.net/repository/public/") }
     maven { url = uri("https://repo.hotten.cloud/snapshots") }
     maven { url = uri("https://repo.hotten.cloud/releases") }
-	maven { url = uri("https://repo.purpurmc.org/snapshots") }
+    maven { url = uri("https://repo.purpurmc.org/snapshots") }
 }
 
 dependencies {
@@ -40,13 +43,14 @@ dependencies {
     api("redis.clients:jedis:3.4.1")
     api("xyz.xenondevs:particle:1.8.3")
     api("me.tigerhix.lib:scoreboard:1.0.1-SNAPSHOT")
-    compileOnly("org.spigotmc:spigot-api:1.19.4-R0.1-SNAPSHOT")
     compileOnly("com.comphenix.protocol:ProtocolLib:5.1.0")
     compileOnly("org.projectlombok:lombok:1.18.34")
-	annotationProcessor("org.projectlombok:lombok:1.18.34")
-	implementation("uk.hotten:gxui:1.2.1")
+    annotationProcessor("org.projectlombok:lombok:1.18.34")
+    implementation("uk.hotten:gxui:1.2.1")
     compileOnly("org.purpurmc.purpur:purpur-api:1.19.4-R0.1-SNAPSHOT")
     compileOnly("io.github.miniplaceholders:miniplaceholders-api:2.2.3")
+    compileOnlyApi(project(":libs:Utilities-OG")) // Import TrueOG Network Utilities-OG API.
+    compileOnlyApi(project(":libs:GxUI-OG")) // Import TrueOG Network GxUI-OG API.
 }
 
 tasks.register("updatePluginYmlVersion") {
@@ -66,15 +70,20 @@ fun revertPluginYmlVersion() {
 }
 
 tasks.withType<JavaCompile>().configureEach {
-    options.compilerArgs.addAll(listOf("-parameters", "-Xlint:deprecation"))
+    options.compilerArgs.add("-parameters")
+    options.compilerArgs.add("-Xlint:deprecation") // Triggers deprecation warning messages.
     options.encoding = "UTF-8"
     options.isFork = true
 }
 
-tasks.processResources {
-    inputs.property("version", version)
-    filesMatching("plugin.yml") {
-        expand(mapOf("version" to version, "apiVersion" to apiVersion))
+tasks.named<ProcessResources>("processResources") {
+    val props = mapOf("version" to version, "apiVersion" to apiVersion)
+
+    inputs.properties(props) // Indicates to rerun if version changes.
+
+    filesMatching("plugin.yml") { expand(props) }
+    from("LICENSE") { // Bundle license into .jars.
+        into("/")
     }
 }
 
@@ -86,20 +95,25 @@ tasks.shadowJar {
     doLast { revertPluginYmlVersion() }
 }
 
-tasks.withType<AbstractArchiveTask>().configureEach {
+tasks.withType<AbstractArchiveTask>().configureEach { // Ensure reproducible .jars
     isPreserveFileTimestamps = false
     isReproducibleFileOrder = true
 }
 
 tasks.build {
+    dependsOn(tasks.spotlessApply)
     dependsOn(tasks.shadowJar)
 }
 
-tasks.jar {
-    archiveClassifier.set("part")
-}
+tasks.jar { archiveClassifier.set("part") }
 
-kotlin {
-    jvmToolchain(17)
+spotless {
+    java {
+        removeUnusedImports()
+        palantirJavaFormat()
+    }
+    kotlinGradle {
+        ktfmt().kotlinlangStyle().configure { it.setMaxWidth(120) }
+        target("build.gradle.kts", "settings.gradle.kts")
+    }
 }
-

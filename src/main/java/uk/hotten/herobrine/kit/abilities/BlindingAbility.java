@@ -1,11 +1,5 @@
 package uk.hotten.herobrine.kit.abilities;
 
-import uk.hotten.gxui.GUIItem;
-import uk.hotten.herobrine.game.GameManager;
-import uk.hotten.herobrine.kit.KitAbility;
-import uk.hotten.herobrine.utils.GameState;
-import uk.hotten.herobrine.utils.Message;
-import uk.hotten.herobrine.utils.PlayerUtil;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -15,6 +9,12 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
+import uk.hotten.gxui.GUIItem;
+import uk.hotten.herobrine.game.GameManager;
+import uk.hotten.herobrine.kit.KitAbility;
+import uk.hotten.herobrine.utils.GameState;
+import uk.hotten.herobrine.utils.Message;
+import uk.hotten.herobrine.utils.PlayerUtil;
 
 public class BlindingAbility extends KitAbility {
 
@@ -31,31 +31,31 @@ public class BlindingAbility extends KitAbility {
     @Override
     public void apply(Player player) {
         this.player = player;
-        GUIItem charge = new GUIItem(Material.GOLD_NUGGET).displayName(ChatColor.GOLD + "Charge of " + ChatColor.BOLD + "Blinding!").amount(amount);
-        charge.lore(Message.addLinebreaks("" + ChatColor.GRAY + ChatColor.ITALIC + "Launches a charge that blinds survivors within a 6 block radius", "" + ChatColor.GRAY + ChatColor.ITALIC));
+        GUIItem charge = new GUIItem(Material.GOLD_NUGGET)
+                .displayName(ChatColor.GOLD + "Charge of " + ChatColor.BOLD + "Blinding!")
+                .amount(amount);
+        charge.lore(Message.addLinebreaks(
+                "" + ChatColor.GRAY + ChatColor.ITALIC
+                        + "Launches a charge that blinds survivors within a 6 block radius",
+                "" + ChatColor.GRAY + ChatColor.ITALIC));
 
-        if (slot == -1)
-            player.getInventory().addItem(charge.build());
-        else
-            player.getInventory().setItem(slot, charge.build());
+        if (slot == -1) player.getInventory().addItem(charge.build());
+        else player.getInventory().setItem(slot, charge.build());
     }
 
     @EventHandler
     public void use(PlayerInteractEvent event) {
-        if (gm.getGameState() != GameState.LIVE)
-            return;
+        if (gm.getGameState() != GameState.LIVE) return;
 
         Player player = event.getPlayer();
         Location l = player.getLocation();
 
-        if (this.player != player)
-            return;
+        if (this.player != player) return;
 
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_AIR) {
             if (player.getInventory().getItemInMainHand().getType() == Material.GOLD_NUGGET) {
 
-                if (isOnCooldown(player))
-                    return;
+                if (isOnCooldown(player)) return;
 
                 Item nugget = player.getWorld().dropItem(l, new ItemStack(Material.GOLD_NUGGET));
                 nugget.setVelocity(l.getDirection().normalize().multiply(2f));

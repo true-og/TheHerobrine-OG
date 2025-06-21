@@ -25,30 +25,30 @@ public class HarmingTotemAbility extends KitAbility {
     @Override
     public void apply(Player player) {
         this.player = player;
-        GUIItem item = new GUIItem(Material.NETHER_BRICK_FENCE).displayName("" + ChatColor.YELLOW + ChatColor.BOLD + "Totem: " + ChatColor.RED + "Pain");
-        item.lore(Message.addLinebreaks("" + ChatColor.GRAY + ChatColor.ITALIC + "Creates an aura of pain to damage The Herobrine for 60 seconds", "" + ChatColor.GRAY + ChatColor.ITALIC));
+        GUIItem item = new GUIItem(Material.NETHER_BRICK_FENCE)
+                .displayName("" + ChatColor.YELLOW + ChatColor.BOLD + "Totem: " + ChatColor.RED + "Pain");
+        item.lore(Message.addLinebreaks(
+                "" + ChatColor.GRAY + ChatColor.ITALIC
+                        + "Creates an aura of pain to damage The Herobrine for 60 seconds",
+                "" + ChatColor.GRAY + ChatColor.ITALIC));
 
         player.getInventory().setItem(slot, item.build());
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void use(BlockPlaceEvent event) {
-        if (gm.getGameState() != GameState.LIVE)
-            return;
+        if (gm.getGameState() != GameState.LIVE) return;
 
         Player player = event.getPlayer();
 
-        if (this.player != player)
-            return;
+        if (this.player != player) return;
 
         if (event.getBlock().getType() == Material.NETHER_BRICK_FENCE) {
 
-            if (isOnCooldown(player))
-                return;
+            if (isOnCooldown(player)) return;
 
             new HarmingTotemHandler(event.getBlock(), player).runTaskTimerAsynchronously(gm.getPlugin(), 0, 20);
             startCooldown(player);
         }
     }
-
 }

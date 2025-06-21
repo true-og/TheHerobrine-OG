@@ -18,27 +18,30 @@ import uk.hotten.herobrine.utils.Message;
 public class SorcererKit extends Kit {
 
     public SorcererKit(GameManager gm, boolean requirePermission) {
-        super(gm,
+        super(
+                gm,
                 "sorcerer",
                 ChatColor.RED + "Sorcerer",
                 "theherobrine.kit.unlockable.sorcerer",
                 requirePermission,
                 Message.createArray(
-                        ChatColor.DARK_GRAY + "- " + ChatColor.GREEN + "Axe of Death" + ChatColor.DARK_GRAY + ChatColor.ITALIC + " (weapon)",
+                        ChatColor.DARK_GRAY + "- " + ChatColor.GREEN + "Axe of Death" + ChatColor.DARK_GRAY
+                                + ChatColor.ITALIC + " (weapon)",
                         "",
-                        ChatColor.DARK_GRAY + "- " + ChatColor.AQUA + "Summon Woofless" + ChatColor.DARK_GRAY + ChatColor.ITALIC + " (x1)",
+                        ChatColor.DARK_GRAY + "- " + ChatColor.AQUA + "Summon Woofless" + ChatColor.DARK_GRAY
+                                + ChatColor.ITALIC + " (x1)",
                         "   " + ChatColor.GRAY + ChatColor.ITALIC + "It's dangerous to go alone, take a friend!",
                         "",
-                        ChatColor.DARK_GRAY + "- " + ChatColor.YELLOW + ChatColor.BOLD + "Totem: " + ChatColor.GREEN + "Healing" + ChatColor.DARK_GRAY + ChatColor.ITALIC + " (x1)",
+                        ChatColor.DARK_GRAY + "- " + ChatColor.YELLOW + ChatColor.BOLD + "Totem: " + ChatColor.GREEN
+                                + "Healing" + ChatColor.DARK_GRAY + ChatColor.ITALIC + " (x1)",
                         "   " + ChatColor.GRAY + ChatColor.ITALIC + "Creates an aura of health to heal",
                         "   " + ChatColor.GRAY + ChatColor.ITALIC + "survivors for 60 seconds",
                         "",
-                        ChatColor.DARK_GRAY + "- " + ChatColor.YELLOW + ChatColor.BOLD + "Totem: " + ChatColor.RED + "Pain" + ChatColor.DARK_GRAY + ChatColor.ITALIC + " (x1)",
+                        ChatColor.DARK_GRAY + "- " + ChatColor.YELLOW + ChatColor.BOLD + "Totem: " + ChatColor.RED
+                                + "Pain" + ChatColor.DARK_GRAY + ChatColor.ITALIC + " (x1)",
                         "   " + ChatColor.GRAY + ChatColor.ITALIC + "Creates an aura of pain to damage",
-                        "   " + ChatColor.GRAY + ChatColor.ITALIC + "The Herobrine for 60 seconds"
-                ),
-                new GUIItem(Material.GOLDEN_BOOTS).displayName(ChatColor.RED + "Sorcerer")
-        );
+                        "   " + ChatColor.GRAY + ChatColor.ITALIC + "The Herobrine for 60 seconds"),
+                new GUIItem(Material.GOLDEN_BOOTS).displayName(ChatColor.RED + "Sorcerer"));
     }
 
     @Override
@@ -51,7 +54,9 @@ public class SorcererKit extends Kit {
 
     @Override
     public void setupPlayer(Player player) {
-        GUIItem axe = new GUIItem(Material.IRON_AXE).displayName(ChatColor.GREEN + "Axe of Death").unbreakable(true);
+        GUIItem axe = new GUIItem(Material.IRON_AXE)
+                .displayName(ChatColor.GREEN + "Axe of Death")
+                .unbreakable(true);
 
         player.getInventory().setItem(0, axe.build());
 
@@ -63,8 +68,14 @@ public class SorcererKit extends Kit {
         helmet.setItemMeta(helMeta);
         player.getInventory().setHelmet(helmet);
 
-        player.getInventory().setChestplate(new GUIItem(Material.LEATHER_CHESTPLATE).unbreakable(true).build());
-        player.getInventory().setLeggings(new GUIItem(Material.LEATHER_LEGGINGS).unbreakable(true).build());
-        player.getInventory().setBoots(new GUIItem(Material.GOLDEN_BOOTS).unbreakable(true).build());
+        player.getInventory()
+                .setChestplate(new GUIItem(Material.LEATHER_CHESTPLATE)
+                        .unbreakable(true)
+                        .build());
+        player.getInventory()
+                .setLeggings(
+                        new GUIItem(Material.LEATHER_LEGGINGS).unbreakable(true).build());
+        player.getInventory()
+                .setBoots(new GUIItem(Material.GOLDEN_BOOTS).unbreakable(true).build());
     }
 }

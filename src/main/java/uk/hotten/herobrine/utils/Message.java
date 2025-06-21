@@ -1,18 +1,17 @@
 package uk.hotten.herobrine.utils;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.StringTokenizer;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.StringTokenizer;
-
 public class Message {
 
     public static String format(String body) {
-        return "" + ChatColor.DARK_GRAY + "▍ " + ChatColor.DARK_AQUA + "TheHerobrine " + ChatColor.DARK_GRAY + "▏ " + ChatColor.RESET + body;
+        return "" + ChatColor.DARK_GRAY + "▍ " + ChatColor.DARK_AQUA + "TheHerobrine " + ChatColor.DARK_GRAY + "▏ "
+                + ChatColor.RESET + body;
     }
 
     public static void broadcast(String message) {
@@ -27,10 +26,8 @@ public class Message {
         }
     }
 
-
     public static String formatTime(int seconds) {
-        if (seconds < 60)
-            return "" + seconds + " second" + (seconds != 1 ? "s" : "");
+        if (seconds < 60) return "" + seconds + " second" + (seconds != 1 ? "s" : "");
         return formatTimeFull(seconds);
     }
 
@@ -39,10 +36,8 @@ public class Message {
         int h = seconds / 60;
         int m = h % 60;
         h = h / 60;
-        if (h == 0)
-            return (m < 10 ? "0" + m : "" + m) + ":" + (s < 10 ? "0" + s : "" + s);
-        else
-            return (h < 10 ? "0" + h : "" + h) + ":" + (m < 10 ? "0" + m : "" + m) + ":" + (s < 10 ? "0" + s : "" + s);
+        if (h == 0) return (m < 10 ? "0" + m : "" + m) + ":" + (s < 10 ? "0" + s : "" + s);
+        else return (h < 10 ? "0" + h : "" + h) + ":" + (m < 10 ? "0" + m : "" + m) + ":" + (s < 10 ? "0" + s : "" + s);
     }
 
     public static ArrayList<String> createArray(String... lines) {
@@ -76,5 +71,4 @@ public class Message {
 
         return result;
     }
-
 }

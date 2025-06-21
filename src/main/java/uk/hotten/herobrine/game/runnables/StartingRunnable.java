@@ -1,13 +1,13 @@
 package uk.hotten.herobrine.game.runnables;
 
-import uk.hotten.herobrine.game.GameManager;
-import uk.hotten.herobrine.utils.Message;
-import uk.hotten.herobrine.utils.PlayerUtil;
-import uk.hotten.herobrine.world.WorldManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.scheduler.BukkitRunnable;
+import uk.hotten.herobrine.game.GameManager;
+import uk.hotten.herobrine.utils.Message;
+import uk.hotten.herobrine.utils.PlayerUtil;
+import uk.hotten.herobrine.world.WorldManager;
 
 public class StartingRunnable extends BukkitRunnable {
 
@@ -25,7 +25,8 @@ public class StartingRunnable extends BukkitRunnable {
     public void run() {
         GameManager gm = GameManager.get();
 
-        if ((gm.getRequiredToStart() > gm.getSurvivors().size() && !ignorePlayerCount) || (ignorePlayerCount && gm.getSurvivors().size() <= 1)) {
+        if ((gm.getRequiredToStart() > gm.getSurvivors().size() && !ignorePlayerCount)
+                || (ignorePlayerCount && gm.getSurvivors().size() <= 1)) {
             Message.broadcast(Message.format("" + ChatColor.RED + "Start cancelled! Waiting for players..."));
             gm.startWaiting();
             cancel();
@@ -42,7 +43,8 @@ public class StartingRunnable extends BukkitRunnable {
         gm.startTimer--;
 
         if (gm.startTimer == WorldManager.getInstance().getEndVotingAt())
-            Bukkit.getServer().getScheduler().runTask(gm.getPlugin(), () -> WorldManager.getInstance().selectAndLoadMapFromVote());
+            Bukkit.getServer().getScheduler().runTask(gm.getPlugin(), () -> WorldManager.getInstance()
+                    .selectAndLoadMapFromVote());
 
         if (gm.startTimer == 0) {
             Bukkit.getServer().getScheduler().runTask(gm.getPlugin(), gm::start);
@@ -52,14 +54,14 @@ public class StartingRunnable extends BukkitRunnable {
 
         String time = (gm.startTimer < 60 ? Message.formatTime(gm.startTimer) : Message.formatTimeFull(gm.startTimer));
         if (gm.startTimer > 5) {
-            PlayerUtil.broadcastActionbar("" + ChatColor.YELLOW + "Get ready! The game will start in " + ChatColor.GREEN + time);
+            PlayerUtil.broadcastActionbar(
+                    "" + ChatColor.YELLOW + "Get ready! The game will start in " + ChatColor.GREEN + time);
         } else {
-            if (gm.startTimer <= 5)
-                PlayerUtil.broadcastSound(Sound.BLOCK_NOTE_BLOCK_HAT, 1f, 1f);
-            if (gm.startTimer <= 3)
-                PlayerUtil.broadcastSound(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
+            if (gm.startTimer <= 5) PlayerUtil.broadcastSound(Sound.BLOCK_NOTE_BLOCK_HAT, 1f, 1f);
+            if (gm.startTimer <= 3) PlayerUtil.broadcastSound(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
 
-            PlayerUtil.broadcastActionbar("" + ChatColor.GREEN + "Get ready! The game will start in " + ChatColor.RED + time);
+            PlayerUtil.broadcastActionbar(
+                    "" + ChatColor.GREEN + "Get ready! The game will start in " + ChatColor.RED + time);
         }
     }
 }

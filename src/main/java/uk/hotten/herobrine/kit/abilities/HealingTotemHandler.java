@@ -18,7 +18,8 @@ public class HealingTotemHandler extends BukkitRunnable {
 
     public HealingTotemHandler(Block block) {
         this.block = block;
-        wah = new WisdomAnimationHandler(block.getLocation().add(0, 1, 0)).runTaskTimer(GameManager.get().getPlugin(), 0, 5);
+        wah = new WisdomAnimationHandler(block.getLocation().add(0, 1, 0))
+                .runTaskTimer(GameManager.get().getPlugin(), 0, 5);
     }
 
     @Override

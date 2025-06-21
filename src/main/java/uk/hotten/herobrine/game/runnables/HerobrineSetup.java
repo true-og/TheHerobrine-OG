@@ -1,13 +1,12 @@
 package uk.hotten.herobrine.game.runnables;
 
-import uk.hotten.herobrine.game.GameManager;
-import uk.hotten.herobrine.utils.Message;
-import uk.hotten.herobrine.utils.PlayerUtil;
+import java.util.concurrent.TimeUnit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
-
-import java.util.concurrent.TimeUnit;
+import uk.hotten.herobrine.game.GameManager;
+import uk.hotten.herobrine.utils.Message;
+import uk.hotten.herobrine.utils.PlayerUtil;
 
 public class HerobrineSetup extends BukkitRunnable {
 
@@ -16,18 +15,49 @@ public class HerobrineSetup extends BukkitRunnable {
     @Override
     public void run() {
         try {
-            player.sendMessage(Message.format(ChatColor.GREEN + "You are " + ChatColor.RED + ChatColor.BOLD + "THE HEROBRINE! " + ChatColor.MAGIC + "###" + ChatColor.RESET));
+            player.sendMessage(Message.format(ChatColor.GREEN + "You are " + ChatColor.RED + ChatColor.BOLD
+                    + "THE HEROBRINE! " + ChatColor.MAGIC + "###" + ChatColor.RESET));
             player.sendMessage(Message.format(ChatColor.GRAY + "Destroy all survivors to take over the WORLD!"));
 
-            PlayerUtil.sendTitle(player, ChatColor.AQUA + "Welcome to the Herobrine", ChatColor.YELLOW + "You are " + ChatColor.RED + "THE HEROBRINE", 10, 80, 10);
+            PlayerUtil.sendTitle(
+                    player,
+                    ChatColor.AQUA + "Welcome to the Herobrine",
+                    ChatColor.YELLOW + "You are " + ChatColor.RED + "THE HEROBRINE",
+                    10,
+                    80,
+                    10);
             TimeUnit.SECONDS.sleep(4);
-            PlayerUtil.sendTitle(player, ChatColor.AQUA + "Be careful of the Survivors!", ChatColor.YELLOW + "They want to take you down", 10, 60, 10);
+            PlayerUtil.sendTitle(
+                    player,
+                    ChatColor.AQUA + "Be careful of the Survivors!",
+                    ChatColor.YELLOW + "They want to take you down",
+                    10,
+                    60,
+                    10);
             TimeUnit.SECONDS.sleep(3);
-            PlayerUtil.sendTitle(player, ChatColor.AQUA + "Their aim is to capture shards", ChatColor.YELLOW + "and make the you weaker", 10, 60, 10);
+            PlayerUtil.sendTitle(
+                    player,
+                    ChatColor.AQUA + "Their aim is to capture shards",
+                    ChatColor.YELLOW + "and make the you weaker",
+                    10,
+                    60,
+                    10);
             TimeUnit.SECONDS.sleep(3);
-            PlayerUtil.sendTitle(player, ChatColor.AQUA + "Shards spawn randomly", ChatColor.YELLOW + "Use your compass to find them", 10, 60, 10);
+            PlayerUtil.sendTitle(
+                    player,
+                    ChatColor.AQUA + "Shards spawn randomly",
+                    ChatColor.YELLOW + "Use your compass to find them",
+                    10,
+                    60,
+                    10);
             TimeUnit.SECONDS.sleep(3);
-            PlayerUtil.sendTitle(player, ChatColor.AQUA + "Stop them from capturing to win", ChatColor.YELLOW + "Use your special items to help", 10, 60, 10);
+            PlayerUtil.sendTitle(
+                    player,
+                    ChatColor.AQUA + "Stop them from capturing to win",
+                    ChatColor.YELLOW + "Use your special items to help",
+                    10,
+                    60,
+                    10);
         } catch (Exception e) {
             e.printStackTrace();
             player.sendMessage(Message.format(ChatColor.RED + "Error displaying your titles!"));

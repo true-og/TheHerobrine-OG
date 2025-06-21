@@ -7,14 +7,14 @@ import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketEvent;
 import me.tigerhix.lib.scoreboard.ScoreboardLib;
 import org.bukkit.Sound;
+import org.bukkit.plugin.java.JavaPlugin;
 import uk.hotten.herobrine.commands.*;
+import uk.hotten.herobrine.data.RedisManager;
 import uk.hotten.herobrine.data.SqlManager;
 import uk.hotten.herobrine.game.GameManager;
-import uk.hotten.herobrine.data.RedisManager;
 import uk.hotten.herobrine.stat.StatManager;
 import uk.hotten.herobrine.utils.Console;
 import uk.hotten.herobrine.world.WorldManager;
-import org.bukkit.plugin.java.JavaPlugin;
 
 public class HerobrinePluginOG extends JavaPlugin {
 
@@ -42,20 +42,18 @@ public class HerobrinePluginOG extends JavaPlugin {
         getCommand("vote").setExecutor(new VoteCommand());
 
         // Stops the eye of ender break SFX from the Notch's Wisdom and Totem of Healing abilities
-        protocolManager.addPacketListener(
-                new PacketAdapter(this, PacketType.Play.Server.NAMED_SOUND_EFFECT) {
-                    @Override
-                    public void onPacketSending(PacketEvent event) {
-                        if (!gameManager.getSurvivors().contains(event.getPlayer()) && gameManager.getHerobrine() != event.getPlayer())
-                            return;
+        protocolManager.addPacketListener(new PacketAdapter(this, PacketType.Play.Server.NAMED_SOUND_EFFECT) {
+            @Override
+            public void onPacketSending(PacketEvent event) {
+                if (!gameManager.getSurvivors().contains(event.getPlayer())
+                        && gameManager.getHerobrine() != event.getPlayer()) return;
 
-                        Sound effectId = event.getPacket().getSoundEffects().readSafely(0);
-                        if (effectId == Sound.ENTITY_ENDER_EYE_DEATH) {
-                            event.setCancelled(true);
-                        }
-                    }
+                Sound effectId = event.getPacket().getSoundEffects().readSafely(0);
+                if (effectId == Sound.ENTITY_ENDER_EYE_DEATH) {
+                    event.setCancelled(true);
                 }
-        );
+            }
+        });
 
         ScoreboardLib.setPluginInstance(this);
 

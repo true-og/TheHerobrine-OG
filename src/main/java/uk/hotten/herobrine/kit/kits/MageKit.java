@@ -19,22 +19,25 @@ import uk.hotten.herobrine.utils.Message;
 public class MageKit extends Kit {
 
     public MageKit(GameManager gm, boolean requirePermission) {
-        super(gm,
+        super(
+                gm,
                 "mage",
                 ChatColor.AQUA + "Mage",
                 "theherobrine.kit.unlockable.mage",
                 requirePermission,
                 Message.createArray(
-                        ChatColor.DARK_GRAY + "- " + ChatColor.GOLD + "Elder's Sword" + ChatColor.DARK_GRAY + ChatColor.ITALIC + " (weapon)",
+                        ChatColor.DARK_GRAY + "- " + ChatColor.GOLD + "Elder's Sword" + ChatColor.DARK_GRAY
+                                + ChatColor.ITALIC + " (weapon)",
                         "",
-                        ChatColor.DARK_GRAY + "- " + ChatColor.GREEN + "Water of " + ChatColor.BOLD + "Reckoning" + ChatColor.DARK_GRAY + ChatColor.ITALIC + " (bow)",
-                        ChatColor.DARK_GRAY + "- " + ChatColor.AQUA + "Mana " + ChatColor.BOLD + "Arrow" + ChatColor.DARK_GRAY + ChatColor.ITALIC + " (x32)",
+                        ChatColor.DARK_GRAY + "- " + ChatColor.GREEN + "Water of " + ChatColor.BOLD + "Reckoning"
+                                + ChatColor.DARK_GRAY + ChatColor.ITALIC + " (bow)",
+                        ChatColor.DARK_GRAY + "- " + ChatColor.AQUA + "Mana " + ChatColor.BOLD + "Arrow"
+                                + ChatColor.DARK_GRAY + ChatColor.ITALIC + " (x32)",
                         "",
-                        ChatColor.DARK_GRAY + "- " + ChatColor.RED + "Overwhelming " + ChatColor.BOLD + "Love" + ChatColor.DARK_GRAY + ChatColor.ITALIC + " (x1)",
-                        "   " + ChatColor.GRAY + ChatColor.ITALIC + "Heal all your survivors 3 hearts"
-                ),
-                new GUIItem(Material.WOODEN_SWORD).displayName(ChatColor.AQUA + "Mage")
-        );
+                        ChatColor.DARK_GRAY + "- " + ChatColor.RED + "Overwhelming " + ChatColor.BOLD + "Love"
+                                + ChatColor.DARK_GRAY + ChatColor.ITALIC + " (x1)",
+                        "   " + ChatColor.GRAY + ChatColor.ITALIC + "Heal all your survivors 3 hearts"),
+                new GUIItem(Material.WOODEN_SWORD).displayName(ChatColor.AQUA + "Mage"));
     }
 
     @Override
@@ -45,9 +48,15 @@ public class MageKit extends Kit {
 
     @Override
     public void setupPlayer(Player player) {
-        GUIItem sword = new GUIItem(Material.WOODEN_SWORD).displayName(ChatColor.GOLD + "Elder's Sword").unbreakable(true);
-        GUIItem bow = new GUIItem(Material.BOW).displayName(ChatColor.GREEN + "Water of " + ChatColor.BOLD + "Reckoning").unbreakable(true);
-        GUIItem arrow = new GUIItem(Material.ARROW).displayName(ChatColor.AQUA + "Mana " + ChatColor.BOLD + "Arrow").amount(32);
+        GUIItem sword = new GUIItem(Material.WOODEN_SWORD)
+                .displayName(ChatColor.GOLD + "Elder's Sword")
+                .unbreakable(true);
+        GUIItem bow = new GUIItem(Material.BOW)
+                .displayName(ChatColor.GREEN + "Water of " + ChatColor.BOLD + "Reckoning")
+                .unbreakable(true);
+        GUIItem arrow = new GUIItem(Material.ARROW)
+                .displayName(ChatColor.AQUA + "Mana " + ChatColor.BOLD + "Arrow")
+                .amount(32);
 
         ItemStack healing = new ItemStack(Material.POTION);
         PotionMeta pmHealing = (PotionMeta) healing.getItemMeta();
@@ -68,8 +77,14 @@ public class MageKit extends Kit {
         helmet.setItemMeta(helMeta);
         player.getInventory().setHelmet(helmet);
 
-        player.getInventory().setChestplate(new GUIItem(Material.LEATHER_CHESTPLATE).unbreakable(true).build());
-        player.getInventory().setLeggings(new GUIItem(Material.LEATHER_LEGGINGS).unbreakable(true).build());
-        player.getInventory().setBoots(new GUIItem(Material.LEATHER_BOOTS).unbreakable(true).build());
+        player.getInventory()
+                .setChestplate(new GUIItem(Material.LEATHER_CHESTPLATE)
+                        .unbreakable(true)
+                        .build());
+        player.getInventory()
+                .setLeggings(
+                        new GUIItem(Material.LEATHER_LEGGINGS).unbreakable(true).build());
+        player.getInventory()
+                .setBoots(new GUIItem(Material.LEATHER_BOOTS).unbreakable(true).build());
     }
 }

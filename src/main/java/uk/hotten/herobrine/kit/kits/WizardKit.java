@@ -1,10 +1,5 @@
 package uk.hotten.herobrine.kit.kits;
 
-import uk.hotten.gxui.GUIItem;
-import uk.hotten.herobrine.game.GameManager;
-import uk.hotten.herobrine.kit.Kit;
-import uk.hotten.herobrine.kit.abilities.DreamweaverAbility;
-import uk.hotten.herobrine.kit.abilities.LocatorAbility;
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.Material;
@@ -14,25 +9,34 @@ import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionType;
+import uk.hotten.gxui.GUIItem;
+import uk.hotten.herobrine.game.GameManager;
+import uk.hotten.herobrine.kit.Kit;
+import uk.hotten.herobrine.kit.abilities.DreamweaverAbility;
+import uk.hotten.herobrine.kit.abilities.LocatorAbility;
 import uk.hotten.herobrine.utils.Message;
 
 public class WizardKit extends Kit {
 
     public WizardKit(GameManager gm, boolean requirePermission) {
-        super(gm,
+        super(
+                gm,
                 "wizard",
                 ChatColor.DARK_PURPLE + "Wizard",
                 "theherobrine.kit.classic.wizzard",
                 requirePermission,
                 Message.createArray(
-                        ChatColor.DARK_GRAY + "- " + ChatColor.GREEN + "Blade of Heroism" + ChatColor.DARK_GRAY + ChatColor.ITALIC + " (weapon)",
+                        ChatColor.DARK_GRAY + "- " + ChatColor.GREEN + "Blade of Heroism" + ChatColor.DARK_GRAY
+                                + ChatColor.ITALIC + " (weapon)",
                         "",
-                        ChatColor.DARK_GRAY + "- " + ChatColor.GREEN + "Elixir: Speed" + ChatColor.DARK_GRAY + ChatColor.ITALIC + " (x1)",
-                        ChatColor.DARK_GRAY + "- " + ChatColor.GREEN + "Elixir: Strength" + ChatColor.DARK_GRAY + ChatColor.ITALIC + " (x1)",
+                        ChatColor.DARK_GRAY + "- " + ChatColor.GREEN + "Elixir: Speed" + ChatColor.DARK_GRAY
+                                + ChatColor.ITALIC + " (x1)",
+                        ChatColor.DARK_GRAY + "- " + ChatColor.GREEN + "Elixir: Strength" + ChatColor.DARK_GRAY
+                                + ChatColor.ITALIC + " (x1)",
                         "",
-                        ChatColor.DARK_GRAY + "- " + ChatColor.GREEN + "Dreamweaver Bandage" + ChatColor.DARK_GRAY + ChatColor.ITALIC + " (x2)",
-                        "   " + ChatColor.GRAY + ChatColor.ITALIC + "Bandage yourself to full health"
-                ),
+                        ChatColor.DARK_GRAY + "- " + ChatColor.GREEN + "Dreamweaver Bandage" + ChatColor.DARK_GRAY
+                                + ChatColor.ITALIC + " (x2)",
+                        "   " + ChatColor.GRAY + ChatColor.ITALIC + "Bandage yourself to full health"),
                 new GUIItem(Material.SPLASH_POTION).displayName(ChatColor.DARK_PURPLE + "Wizard"));
     }
 
@@ -45,7 +49,9 @@ public class WizardKit extends Kit {
     @Override
     public void setupPlayer(Player player) {
         // Items
-        GUIItem blade = new GUIItem(Material.STONE_SWORD).displayName(ChatColor.GREEN + "Blade of Heroism").unbreakable(true);
+        GUIItem blade = new GUIItem(Material.STONE_SWORD)
+                .displayName(ChatColor.GREEN + "Blade of Heroism")
+                .unbreakable(true);
 
         ItemStack swift = new ItemStack(Material.SPLASH_POTION);
         PotionMeta pmSwift = (PotionMeta) swift.getItemMeta();
@@ -70,9 +76,15 @@ public class WizardKit extends Kit {
         helMeta.setUnbreakable(true);
         helmet.setItemMeta(helMeta);
         player.getInventory().setHelmet(helmet);
-        
-        player.getInventory().setChestplate(new GUIItem(Material.LEATHER_CHESTPLATE).unbreakable(true).build());
-        player.getInventory().setLeggings(new GUIItem(Material.LEATHER_LEGGINGS).unbreakable(true).build());
-        player.getInventory().setBoots(new GUIItem(Material.LEATHER_BOOTS).unbreakable(true).build());
+
+        player.getInventory()
+                .setChestplate(new GUIItem(Material.LEATHER_CHESTPLATE)
+                        .unbreakable(true)
+                        .build());
+        player.getInventory()
+                .setLeggings(
+                        new GUIItem(Material.LEATHER_LEGGINGS).unbreakable(true).build());
+        player.getInventory()
+                .setBoots(new GUIItem(Material.LEATHER_BOOTS).unbreakable(true).build());
     }
 }

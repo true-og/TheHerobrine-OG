@@ -1,12 +1,12 @@
 package uk.hotten.herobrine.kit.abilities;
 
-import org.bukkit.scheduler.BukkitTask;
-import uk.hotten.herobrine.game.GameManager;
-import uk.hotten.herobrine.utils.PlayerUtil;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
+import uk.hotten.herobrine.game.GameManager;
+import uk.hotten.herobrine.utils.PlayerUtil;
 
 public class WisdomHandler extends BukkitRunnable {
 
@@ -16,7 +16,8 @@ public class WisdomHandler extends BukkitRunnable {
 
     public WisdomHandler(Location location) {
         this.location = location;
-        wah = new WisdomAnimationHandler(location).runTaskTimer(GameManager.get().getPlugin(), 0, 5);
+        wah = new WisdomAnimationHandler(location)
+                .runTaskTimer(GameManager.get().getPlugin(), 0, 5);
     }
 
     @Override

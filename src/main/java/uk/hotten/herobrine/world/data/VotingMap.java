@@ -4,10 +4,17 @@ import lombok.Getter;
 
 public class VotingMap {
 
-    @Getter private int id;
-    @Getter private MapData mapData;
-    @Getter private String internalName;
-    @Getter private int votes = 0;
+    @Getter
+    private int id;
+
+    @Getter
+    private MapData mapData;
+
+    @Getter
+    private String internalName;
+
+    @Getter
+    private int votes = 0;
 
     public VotingMap(int id, MapData mapData, String internalName) {
         this.id = id;

@@ -1,13 +1,11 @@
 package uk.hotten.herobrine.utils;
 
-import lombok.Getter;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import lombok.Getter;
 
 public enum ShardName {
-
     FURY("Fury"),
     MALCONTENT("Malcontent"),
     REPUGNANCE("Repugnance"),
@@ -25,5 +23,4 @@ public enum ShardName {
         Random random = new Random();
         return vals.get(random.nextInt(vals.size()));
     }
-
 }

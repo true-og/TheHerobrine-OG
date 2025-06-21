@@ -1,16 +1,18 @@
 package uk.hotten.herobrine.data;
 
 import lombok.Getter;
-import uk.hotten.herobrine.utils.Console;
 import org.bukkit.plugin.java.JavaPlugin;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
+import uk.hotten.herobrine.utils.Console;
 
 public class RedisManager {
 
     private JavaPlugin plugin;
-    @Getter private static RedisManager instance;
+
+    @Getter
+    private static RedisManager instance;
 
     private JedisPool readPool;
     private JedisPool writePool;
@@ -30,8 +32,7 @@ public class RedisManager {
         readPool = new JedisPool(new JedisPoolConfig(), host, port);
         writePool = new JedisPool(new JedisPoolConfig(), host, port);
 
-        if (testConnection())
-            Console.info("Redis Manager is ready!");
+        if (testConnection()) Console.info("Redis Manager is ready!");
     }
 
     private boolean testConnection() {
@@ -83,5 +84,4 @@ public class RedisManager {
             jedis.del(key);
         }
     }
-
 }

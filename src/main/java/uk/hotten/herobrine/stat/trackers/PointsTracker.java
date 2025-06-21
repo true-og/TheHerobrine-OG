@@ -8,5 +8,4 @@ public class PointsTracker extends StatTracker {
     public PointsTracker(StatManager sm) {
         super(sm, "Points", "points", "Your points!");
     }
-
 }

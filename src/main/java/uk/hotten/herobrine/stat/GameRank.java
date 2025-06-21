@@ -4,7 +4,6 @@ import lombok.Getter;
 import org.bukkit.ChatColor;
 
 public enum GameRank {
-
     SPIRIT(ChatColor.GRAY + "Spirit", 0, 99),
     DEFENDER(ChatColor.DARK_AQUA + "Defender", 100, 499),
     CASPER(ChatColor.AQUA + "Casper", 500, 1499),
@@ -24,12 +23,21 @@ public enum GameRank {
     SPOOKY("" + ChatColor.DARK_PURPLE + ChatColor.BOLD + "Spooky", 150000, 199999),
     ETHEREAL("" + ChatColor.RED + ChatColor.BOLD + "Ethereal", 200000, 249999),
     DEMONHUNTER("" + ChatColor.GRAY + ChatColor.BOLD + "DemonHunter", 250000, 299999),
-    DIVINE("" + ChatColor.LIGHT_PURPLE + ChatColor.BOLD + "Divine", 300000, (Integer.MAX_VALUE-1)),
-    DEATHBRINGER("" + ChatColor.DARK_RED + ChatColor.MAGIC + "# " + ChatColor.RESET + ChatColor.RED + ChatColor.BOLD + "Death Bringer", Integer.MAX_VALUE, Integer.MAX_VALUE); // reserved for top player
+    DIVINE("" + ChatColor.LIGHT_PURPLE + ChatColor.BOLD + "Divine", 300000, (Integer.MAX_VALUE - 1)),
+    DEATHBRINGER(
+            "" + ChatColor.DARK_RED + ChatColor.MAGIC + "# " + ChatColor.RESET + ChatColor.RED + ChatColor.BOLD
+                    + "Death Bringer",
+            Integer.MAX_VALUE,
+            Integer.MAX_VALUE); // reserved for top player
 
-    @Getter private String display;
-    @Getter int lowBound;
-    @Getter int highBound;
+    @Getter
+    private String display;
+
+    @Getter
+    int lowBound;
+
+    @Getter
+    int highBound;
 
     private GameRank(String display, int lowBound, int highBound) {
         this.display = display;
@@ -39,8 +47,7 @@ public enum GameRank {
 
     public static GameRank findRank(int points) {
         for (GameRank rank : GameRank.values()) {
-            if (points >= rank.getLowBound() && points <= rank.getHighBound())
-                return rank;
+            if (points >= rank.getLowBound() && points <= rank.getHighBound()) return rank;
         }
         return DEFENDER;
     }
