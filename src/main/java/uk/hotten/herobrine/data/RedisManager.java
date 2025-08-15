@@ -18,6 +18,7 @@ public class RedisManager {
     private boolean pwRequired;
 
     public RedisManager(JavaPlugin plugin) {
+
         Console.info("Loading Redis Manager...");
         instance = this;
 
@@ -29,56 +30,88 @@ public class RedisManager {
         readPool = new JedisPool(new JedisPoolConfig(), host, port);
         writePool = new JedisPool(new JedisPoolConfig(), host, port);
 
-        if (testConnection()) Console.info("Redis Manager is ready!");
+        if (testConnection())
+            Console.info("Redis Manager is ready!");
+
     }
 
     private boolean testConnection() {
+
         Console.debug("Testing redis connection...");
         try {
+
             try (Jedis jedis = readPool.getResource()) {
-                if (pwRequired) jedis.auth(password);
+
+                if (pwRequired)
+                    jedis.auth(password);
 
                 jedis.exists("testing");
 
                 Console.debug("Test successful!");
                 return true;
+
             }
+
         } catch (Exception e) {
+
             Console.error("Error testing connection! Please see below:");
             e.printStackTrace();
             return false;
+
         }
+
     }
 
     public boolean exists(String key) {
+
         try (Jedis jedis = readPool.getResource()) {
-            if (pwRequired) jedis.auth(password);
+
+            if (pwRequired)
+                jedis.auth(password);
 
             return jedis.exists(key);
+
         }
+
     }
 
     public String getKey(String key) {
+
         try (Jedis jedis = readPool.getResource()) {
-            if (pwRequired) jedis.auth(password);
+
+            if (pwRequired)
+                jedis.auth(password);
 
             return jedis.get(key);
+
         }
+
     }
 
     public void setKey(String key, String value) {
+
         try (Jedis jedis = writePool.getResource()) {
-            if (pwRequired) jedis.auth(password);
+
+            if (pwRequired)
+                jedis.auth(password);
 
             jedis.set(key, value);
+
         }
+
     }
 
     public void deleteKey(String key) {
+
         try (Jedis jedis = writePool.getResource()) {
-            if (pwRequired) jedis.auth(password);
+
+            if (pwRequired)
+                jedis.auth(password);
 
             jedis.del(key);
+
         }
+
     }
+
 }

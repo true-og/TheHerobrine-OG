@@ -11,15 +11,21 @@ public class CaptureTracker extends StatTracker {
     private GameLobby gameLobby;
 
     public CaptureTracker(StatManager sm, GameLobby gameLobby) {
+
         super(sm, "Captures", "captures", "How many shards you captured!");
         this.gameLobby = gameLobby;
+
     }
 
     @EventHandler
     public void capture(ShardCaptureEvent event) {
-        if (!event.getLobbyId().equals(gameLobby.getLobbyId())) return;
+
+        if (!event.getLobbyId().equals(gameLobby.getLobbyId()))
+            return;
 
         increment(event.getPlayer().getUniqueId(), 1);
         sm.getPointsTracker().increment(event.getPlayer().getUniqueId(), 10);
+
     }
+
 }

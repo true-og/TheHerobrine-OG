@@ -17,43 +17,61 @@ public class DeathTracker extends StatTracker {
     private GameLobby gameLobby;
 
     public DeathTracker(StatManager sm, GameLobby gameLobby) {
+
         super(sm, "Deaths", "deaths", "How many times you died!");
         this.gameLobby = gameLobby;
+
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void death(PlayerDeathEvent event) {
-        if (!event.getEntity().getWorld().getName().startsWith(gameLobby.getLobbyId())) return;
+
+        if (!event.getEntity().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+            return;
 
         Player player = event.getEntity();
 
         GameManager gm = gameLobby.getGameManager();
-        if (gm.getGameState() != GameState.LIVE) return;
+        if (gm.getGameState() != GameState.LIVE)
+            return;
 
-        if (gm.getSurvivors().contains(player) || gm.getHerobrine() == player) increment(player.getUniqueId(), 1);
+        if (gm.getSurvivors().contains(player) || gm.getHerobrine() == player)
+            increment(player.getUniqueId(), 1);
+
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onQuit(PlayerQuitEvent event) {
-        if (!event.getPlayer().getWorld().getName().startsWith(gameLobby.getLobbyId())) return;
+
+        if (!event.getPlayer().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+            return;
 
         Player player = event.getPlayer();
 
         GameManager gm = gameLobby.getGameManager();
-        if (gm.getGameState() != GameState.LIVE) return;
+        if (gm.getGameState() != GameState.LIVE)
+            return;
 
-        if (gm.getSurvivors().contains(player) || gm.getHerobrine() == player) increment(player.getUniqueId(), 1);
+        if (gm.getSurvivors().contains(player) || gm.getHerobrine() == player)
+            increment(player.getUniqueId(), 1);
+
     }
 
     @EventHandler
     public void onLeaveWorld(PlayerChangedWorldEvent event) {
-        if (event.getPlayer().getWorld().getName().startsWith(gameLobby.getLobbyId())) return;
+
+        if (event.getPlayer().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+            return;
 
         Player player = event.getPlayer();
 
         GameManager gm = gameLobby.getGameManager();
-        if (gm.getGameState() != GameState.LIVE) return;
+        if (gm.getGameState() != GameState.LIVE)
+            return;
 
-        if (gm.getSurvivors().contains(player) || gm.getHerobrine() == player) increment(player.getUniqueId(), 1);
+        if (gm.getSurvivors().contains(player) || gm.getHerobrine() == player)
+            increment(player.getUniqueId(), 1);
+
     }
+
 }

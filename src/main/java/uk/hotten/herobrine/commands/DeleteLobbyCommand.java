@@ -11,15 +11,20 @@ public class DeleteLobbyCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+
         if (args == null || args.length == 0) {
+
             Message.send(sender, Message.format("&cCorrect Usage: /hbdeletelobby <lobby>"));
             return true;
+
         }
 
         GameLobby gl = LobbyManager.getInstance().getLobby(args[0]);
         if (gl == null) {
+
             Message.send(sender, Message.format("&c" + args[0] + " does not exist."));
             return true;
+
         }
 
         Message.send(sender, Message.format("Shutting down " + gl.getLobbyId() + "..."));
@@ -27,5 +32,7 @@ public class DeleteLobbyCommand implements CommandExecutor {
         Message.send(sender, Message.format("&aLobby " + gl.getLobbyId() + " has been shutdown."));
 
         return true;
+
     }
+
 }

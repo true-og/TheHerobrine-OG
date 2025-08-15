@@ -21,12 +21,17 @@ public class MapData {
     private List<Datapoint> datapoints;
 
     public MapData(String name, String builder, double shardMin, double shardMax, List<Datapoint> datapoints) {
+
         this.name = name;
         this.builder = builder;
         this.shardMin = shardMin;
         this.shardMax = shardMax;
         this.datapoints = datapoints;
+
     }
 
-    public MapData() {}
+    public MapData() {
+
+    }
+
 }

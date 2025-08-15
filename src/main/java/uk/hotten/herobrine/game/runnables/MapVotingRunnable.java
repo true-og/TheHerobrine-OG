@@ -13,24 +13,33 @@ public class MapVotingRunnable extends BukkitRunnable {
     private WorldManager wm;
 
     public MapVotingRunnable(GameLobby gameLobby) {
+
         this.gm = gameLobby.getGameManager();
         this.wm = gameLobby.getWorldManager();
+
     }
 
     @Override
     public void run() {
 
         if ((gm.getGameState() != GameState.WAITING && gm.getGameState() != GameState.STARTING)
-                || !wm.isVotingRunning()) {
+                || !wm.isVotingRunning())
+        {
+
             cancel();
             return;
+
         }
 
         time++;
 
         if (time == 30) {
+
             wm.sendVotingMessage(null);
             time = 0;
+
         }
+
     }
+
 }

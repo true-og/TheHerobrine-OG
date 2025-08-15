@@ -18,38 +18,29 @@ import uk.hotten.herobrine.utils.Message;
 public class MageKit extends Kit {
 
     public MageKit(GameManager gm, boolean requirePermission) {
-        super(
-                gm,
-                "mage",
-                "&bMage",
-                "theherobrine.kit.unlockable.mage",
-                requirePermission,
-                Message.createArray(
-                        "&8- &6Elder's Sword &8&o(weapon)",
-                        "",
-                        "&8- &aWater of &lReckoning &8&o(bow)",
-                        "&8- &bMana &lArrow &8&o(x32)",
-                        "",
-                        "&8- &cOverwhelming &lLove &8&o(x1)",
+
+        super(gm, "mage", "&bMage", "theherobrine.kit.unlockable.mage", requirePermission,
+                Message.createArray("&8- &6Elder's Sword &8&o(weapon)", "", "&8- &aWater of &lReckoning &8&o(bow)",
+                        "&8- &bMana &lArrow &8&o(x32)", "", "&8- &cOverwhelming &lLove &8&o(x1)",
                         "   &7&oHeal all your survivors 3 hearts"),
                 new GUIItem(Material.WOODEN_SWORD).displayName("&bMage"));
+
     }
 
     @Override
     public void setupAbilities(Player player) {
+
         addAbilityToPlayer(player, new LocatorAbility(gm));
         addAbilityToPlayer(player, new LoveAbility(gm, 3));
+
     }
 
     @Override
     public void setupPlayer(Player player) {
-        GUIItem sword = new GUIItem(Material.WOODEN_SWORD)
-                .displayName("&6Elder's Sword")
-                .unbreakable(true);
-        GUIItem bow =
-                new GUIItem(Material.BOW).displayName("&aWater of &lReckoning").unbreakable(true);
-        GUIItem arrow =
-                new GUIItem(Material.ARROW).displayName("&bMana &lArrow").amount(32);
+
+        GUIItem sword = new GUIItem(Material.WOODEN_SWORD).displayName("&6Elder's Sword").unbreakable(true);
+        GUIItem bow = new GUIItem(Material.BOW).displayName("&aWater of &lReckoning").unbreakable(true);
+        GUIItem arrow = new GUIItem(Material.ARROW).displayName("&bMana &lArrow").amount(32);
 
         ItemStack healing = new ItemStack(Material.POTION);
         PotionMeta pmHealing = (PotionMeta) healing.getItemMeta();
@@ -70,14 +61,10 @@ public class MageKit extends Kit {
         helmet.setItemMeta(helMeta);
         player.getInventory().setHelmet(helmet);
 
-        player.getInventory()
-                .setChestplate(new GUIItem(Material.LEATHER_CHESTPLATE)
-                        .unbreakable(true)
-                        .build());
-        player.getInventory()
-                .setLeggings(
-                        new GUIItem(Material.LEATHER_LEGGINGS).unbreakable(true).build());
-        player.getInventory()
-                .setBoots(new GUIItem(Material.LEATHER_BOOTS).unbreakable(true).build());
+        player.getInventory().setChestplate(new GUIItem(Material.LEATHER_CHESTPLATE).unbreakable(true).build());
+        player.getInventory().setLeggings(new GUIItem(Material.LEATHER_LEGGINGS).unbreakable(true).build());
+        player.getInventory().setBoots(new GUIItem(Material.LEATHER_BOOTS).unbreakable(true).build());
+
     }
+
 }

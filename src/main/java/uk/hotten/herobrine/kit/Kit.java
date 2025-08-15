@@ -36,14 +36,10 @@ public abstract class Kit implements Listener {
 
     public HashMap<Player, ArrayList<KitAbility>> abilities;
 
-    public Kit(
-            GameManager gm,
-            String internalName,
-            String displayName,
-            String permission,
-            boolean requirePermission,
-            ArrayList<String> desc,
-            GUIItem displayItem) {
+    public Kit(GameManager gm, String internalName, String displayName, String permission, boolean requirePermission,
+            ArrayList<String> desc, GUIItem displayItem)
+    {
+
         this.gm = gm;
 
         this.internalName = internalName;
@@ -53,38 +49,54 @@ public abstract class Kit implements Listener {
         this.desc = desc;
         this.displayItem = displayItem;
         this.abilities = new HashMap<>();
+
     }
 
     public void apply(Player player) {
+
         PlayerUtil.clearInventory(player);
         PlayerUtil.clearEffects(player);
 
         setupPlayer(player);
         setupAbilities(player);
+
     }
 
     public boolean ownsKit(Player player) {
-        if (permission == null) return true;
+
+        if (permission == null)
+            return true;
 
         return player.hasPermission(permission);
+
     }
 
     public void addAbilityToPlayer(Player player, KitAbility ability) {
-        if (!abilities.containsKey(player)) abilities.put(player, new ArrayList<>());
+
+        if (!abilities.containsKey(player))
+            abilities.put(player, new ArrayList<>());
 
         abilities.get(player).add(ability);
         Bukkit.getServer().getPluginManager().registerEvents(ability, gm.getPlugin());
         ability.apply(player);
+
     }
 
     public void voidAbilities() {
+
         for (Map.Entry<Player, ArrayList<KitAbility>> entry : abilities.entrySet()) {
-            for (KitAbility a : entry.getValue()) HandlerList.unregisterAll(a);
+
+            for (KitAbility a : entry.getValue())
+                HandlerList.unregisterAll(a);
+
         }
+
         abilities = new HashMap<>();
+
     }
 
     public abstract void setupAbilities(Player player);
 
     public abstract void setupPlayer(Player player);
+
 }

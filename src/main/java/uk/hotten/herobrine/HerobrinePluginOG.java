@@ -34,7 +34,8 @@ public class HerobrinePluginOG extends JavaPlugin {
         Console.showDebug = getConfig().getBoolean("showDebugMessages");
         if (getConfig().getString("gamePrefix").toUpperCase().equals("DEFAULT"))
             Message.prefix = "&8▍ &3TheHerobrine &8▏";
-        else Message.prefix = getConfig().getString("gamePrefix");
+        else
+            Message.prefix = getConfig().getString("gamePrefix");
 
         new SqlManager(this);
         new RedisManager(this);
@@ -58,11 +59,14 @@ public class HerobrinePluginOG extends JavaPlugin {
         ScoreboardLib.setPluginInstance(this);
 
         Console.info("The Herobrine! is ready.");
+
     }
 
     @Override
     public void onDisable() {
 
         LobbyManager.getInstance().shutdown();
+
     }
+
 }

@@ -17,23 +17,32 @@ public abstract class KitAbility implements Listener {
     private ArrayList<Player> cooldown;
 
     public KitAbility(GameManager gm, String displayName) {
+
         this.gm = gm;
         this.displayName = displayName;
         cooldown = new ArrayList<>();
+
     }
 
     /**
      * @implNote Runs when the game starts, called from (apply in Kit)
      * @param player
      */
-    public void apply(Player player) {}
+    public void apply(Player player) {
+
+    }
 
     public void startCooldown(Player player) {
+
         cooldown.add(player);
         Bukkit.getServer().getScheduler().runTaskLater(gm.getPlugin(), () -> cooldown.remove(player), 60);
+
     }
 
     public boolean isOnCooldown(Player player) {
+
         return cooldown.contains(player);
+
     }
+
 }

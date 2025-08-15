@@ -22,22 +22,30 @@ public class HerobrineItemHider extends BukkitRunnable {
     private ProtocolManager protocolManager;
 
     public HerobrineItemHider(GameManager gm) {
+
         this.gm = gm;
         this.player = gm.getHerobrine();
         this.protocolManager = gm.getProtocolManager();
+
     }
 
     @Override
     public void run() {
+
         if (gm.getGameState() != GameState.LIVE) {
+
             cancel();
             return;
+
         }
 
         if (gm.getShardCount() == 3) {
+
             cancel();
             return;
+
         }
+
         List<Pair<EnumWrappers.ItemSlot, ItemStack>> hideList = new ArrayList<>();
         hideList.add(new Pair<>(EnumWrappers.ItemSlot.MAINHAND, new ItemStack(Material.AIR)));
         hideList.add(new Pair<>(EnumWrappers.ItemSlot.OFFHAND, new ItemStack(Material.AIR)));
@@ -47,13 +55,22 @@ public class HerobrineItemHider extends BukkitRunnable {
         hideItem.getSlotStackPairLists().write(0, hideList);
 
         for (Player p : gm.getGameLobby().getPlayers()) {
-            if (p == player) continue;
+
+            if (p == player)
+                continue;
             try {
+
                 protocolManager.sendServerPacket(p, hideItem);
+
             } catch (Exception e) {
+
                 Console.error(gm.getGameLobby(), "Failed to hide Herobrine's items from " + p.getName());
                 e.printStackTrace();
+
             }
+
         }
+
     }
+
 }

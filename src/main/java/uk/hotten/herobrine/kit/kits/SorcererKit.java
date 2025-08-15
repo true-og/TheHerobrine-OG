@@ -17,40 +17,31 @@ import uk.hotten.herobrine.utils.Message;
 public class SorcererKit extends Kit {
 
     public SorcererKit(GameManager gm, boolean requirePermission) {
-        super(
-                gm,
-                "sorcerer",
-                "&cSorcerer",
-                "theherobrine.kit.unlockable.sorcerer",
-                requirePermission,
-                Message.createArray(
-                        "&8- &aAxe of Death &8&o(weapon)",
-                        "",
-                        "&8- &bSummon Woofless &8&o(x1)",
-                        "   &7&oIt's dangerous to go alone, take a friend!",
-                        "",
-                        "&8- &e&lTotem: &aHealing &8&o(x1)",
-                        "   &7&oCreates an aura of health to heal",
-                        "   &7&osurvivors for 60 seconds",
-                        "",
-                        "&8- &e&lTotem: &cPain &8&o(x1)",
-                        "   &7&oCreates an aura of pain to damage",
+
+        super(gm, "sorcerer", "&cSorcerer", "theherobrine.kit.unlockable.sorcerer", requirePermission,
+                Message.createArray("&8- &aAxe of Death &8&o(weapon)", "", "&8- &bSummon Woofless &8&o(x1)",
+                        "   &7&oIt's dangerous to go alone, take a friend!", "", "&8- &e&lTotem: &aHealing &8&o(x1)",
+                        "   &7&oCreates an aura of health to heal", "   &7&osurvivors for 60 seconds", "",
+                        "&8- &e&lTotem: &cPain &8&o(x1)", "   &7&oCreates an aura of pain to damage",
                         "   &7&oThe Herobrine for 60 seconds"),
                 new GUIItem(Material.GOLDEN_BOOTS).displayName("&cSorcerer"));
+
     }
 
     @Override
     public void setupAbilities(Player player) {
+
         addAbilityToPlayer(player, new LocatorAbility(gm));
         addAbilityToPlayer(player, new WooflessAbility(gm, 1));
         addAbilityToPlayer(player, new HealingTotemAbility(gm, 2));
         addAbilityToPlayer(player, new HarmingTotemAbility(gm, 3));
+
     }
 
     @Override
     public void setupPlayer(Player player) {
-        GUIItem axe =
-                new GUIItem(Material.IRON_AXE).displayName("&aAxe of Death").unbreakable(true);
+
+        GUIItem axe = new GUIItem(Material.IRON_AXE).displayName("&aAxe of Death").unbreakable(true);
 
         player.getInventory().setItem(0, axe.build());
 
@@ -62,14 +53,10 @@ public class SorcererKit extends Kit {
         helmet.setItemMeta(helMeta);
         player.getInventory().setHelmet(helmet);
 
-        player.getInventory()
-                .setChestplate(new GUIItem(Material.LEATHER_CHESTPLATE)
-                        .unbreakable(true)
-                        .build());
-        player.getInventory()
-                .setLeggings(
-                        new GUIItem(Material.LEATHER_LEGGINGS).unbreakable(true).build());
-        player.getInventory()
-                .setBoots(new GUIItem(Material.GOLDEN_BOOTS).unbreakable(true).build());
+        player.getInventory().setChestplate(new GUIItem(Material.LEATHER_CHESTPLATE).unbreakable(true).build());
+        player.getInventory().setLeggings(new GUIItem(Material.LEATHER_LEGGINGS).unbreakable(true).build());
+        player.getInventory().setBoots(new GUIItem(Material.GOLDEN_BOOTS).unbreakable(true).build());
+
     }
+
 }

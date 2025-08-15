@@ -13,18 +13,25 @@ public class VoteCompleter implements TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command cmd, String label, String[] args) {
+
         if (!(sender instanceof Player)) {
+
             return null;
+
         }
 
         GameLobby gl = LobbyManager.getInstance().getLobby((Player) sender);
         if (gl == null) {
+
             return null;
+
         }
 
         List<String> toReturn = new ArrayList<>();
         gl.getWorldManager().getVotingMaps().keySet().forEach(i -> toReturn.add(i.toString()));
 
         return toReturn;
+
     }
+
 }

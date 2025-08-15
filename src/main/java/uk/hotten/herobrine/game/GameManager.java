@@ -170,6 +170,7 @@ public class GameManager {
     private ScoreboardHandler gameScoreboardHandler;
 
     public GameManager(JavaPlugin plugin, GameLobby gameLobby, RedisManager redis, ProtocolManager protocolManager) {
+
         Console.info(gameLobby, "Loading Game Manager...");
         this.plugin = plugin;
         this.gameLobby = gameLobby;
@@ -198,155 +199,195 @@ public class GameManager {
         spectators = new ArrayList<>();
         hbLastHit = new ArrayList<>();
 
-        kits = new Kit[] {
-            new ArcherKit(this, lockClassicKits),
-            new PriestKit(this, lockClassicKits),
-            new ScoutKit(this, lockClassicKits),
-            new WizardKit(this, lockClassicKits),
-            new MageKit(this, lockUnlockableKits),
-            new PaladinKit(this, lockUnlockableKits),
-            new SorcererKit(this, lockUnlockableKits)
-        };
+        kits = new Kit[] { new ArcherKit(this, lockClassicKits), new PriestKit(this, lockClassicKits),
+                new ScoutKit(this, lockClassicKits), new WizardKit(this, lockClassicKits),
+                new MageKit(this, lockUnlockableKits), new PaladinKit(this, lockUnlockableKits),
+                new SorcererKit(this, lockUnlockableKits) };
 
         for (Kit k : kits) {
-            if (k.getInternalName().equals("archer")) defaultKit = k;
+
+            if (k.getInternalName().equals("archer"))
+                defaultKit = k;
+
         }
 
         playerKits = new HashMap<>();
 
         scoreboards = new HashMap<>();
         gameScoreboardHandler = new ScoreboardHandler() {
+
             @Override
             public String getTitle(Player player) {
+
                 return "&cThe&lHerobrine!";
+
             }
 
             @Override
             public List<Entry> getEntries(Player player) {
-                return new EntryBuilder()
-                        .blank()
-                        .next("&a✦ Shard Count")
-                        .next(shardCount + "/3")
-                        .blank()
-                        .next("&a❂ Survivors")
-                        .next("" + survivors.size())
-                        .blank()
-                        .next("&8--------------")
-                        .next("&b" + networkWeb)
-                        .build();
+
+                return new EntryBuilder().blank().next("&a✦ Shard Count").next(shardCount + "/3").blank()
+                        .next("&a❂ Survivors").next("" + survivors.size()).blank().next("&8--------------")
+                        .next("&b" + networkWeb).build();
+
             }
+
         };
 
         startWaiting();
         Console.info(gameLobby, "Game Manager is ready!");
+
     }
 
     public void setGameState(GameState newState) {
+
         new BukkitRunnable() {
+
             @Override
             public void run() {
+
                 GameState old = gameState;
-                if (old == null) old = GameState.UNKNOWN;
+                if (old == null)
+                    old = GameState.UNKNOWN;
 
                 gameState = newState;
-                Console.debug(
-                        gameLobby, "Game state updated to " + newState.toString() + "(from " + old.toString() + ")!");
-                plugin.getServer()
-                        .getPluginManager()
+                Console.debug(gameLobby,
+                        "Game state updated to " + newState.toString() + "(from " + old.toString() + ")!");
+                plugin.getServer().getPluginManager()
                         .callEvent(new GameStateUpdateEvent(old, newState, gameLobby.getLobbyId()));
+
             }
+
         }.runTask(plugin);
+
     }
 
     // Should only be used in GameLobby's shutdown to force the state to dead.
     public void setGameStateSilently(GameState newState) {
+
         GameState old = gameState;
         gameState = newState;
-        Console.debug(
-                gameLobby, "Game state silently updated to " + newState.toString() + "(from " + old.toString() + ")!");
+        Console.debug(gameLobby,
+                "Game state silently updated to " + newState.toString() + "(from " + old.toString() + ")!");
+
     }
 
     public void setShardState(ShardState newState) {
+
         new BukkitRunnable() {
 
             @Override
             public void run() {
+
                 ShardState old = shardState;
-                if (old == null) old = ShardState.UNKNOWN;
+                if (old == null)
+                    old = ShardState.UNKNOWN;
 
                 shardState = newState;
-                Console.debug(
-                        gameLobby, "Shard state updated to " + newState.toString() + "(from " + old.toString() + ")!");
-                plugin.getServer()
-                        .getPluginManager()
+                Console.debug(gameLobby,
+                        "Shard state updated to " + newState.toString() + "(from " + old.toString() + ")!");
+                plugin.getServer().getPluginManager()
                         .callEvent(new ShardStateUpdateEvent(old, newState, gameLobby.getLobbyId()));
-                if (gameState == GameState.LIVE) narrationRunnable.timer = 0;
+                if (gameState == GameState.LIVE)
+                    narrationRunnable.timer = 0;
+
             }
+
         }.runTask(plugin);
+
     }
 
     public void startWaiting() {
+
         setGameState(GameState.WAITING);
-        if (waitingRunnable != null) waitingRunnable.cancel();
+        if (waitingRunnable != null)
+            waitingRunnable.cancel();
 
         // In case the timer decreased from players leaving and a world was loaded
-        Bukkit.getServer()
-                .getScheduler()
-                .runTask(plugin, () -> gameLobby.getWorldManager().clean(false));
+        Bukkit.getServer().getScheduler().runTask(plugin, () -> gameLobby.getWorldManager().clean(false));
         startTimer = getGameLobby().getLobbyConfig().getStartTime();
 
         waitingRunnable = new WaitingRunnable(this).runTaskTimerAsynchronously(plugin, 0, 10);
+
     }
 
     public boolean canJoin(Player player) {
-        if (gameState == GameState.LIVE) return true;
+
+        if (gameState == GameState.LIVE)
+            return true;
 
         if (getSurvivors().size() >= getMaxPlayers()) {
+
             if (isAllowOverfill()) {
+
                 if (!player.hasPermission("theherobrine.overfill")) {
+
                     return false;
+
                 }
+
             } else {
+
                 return false;
+
             }
+
         }
 
         return true;
+
     }
 
     public void startCheck() {
+
         if (getSurvivors().size() >= getRequiredToStart() && !timerPaused) {
+
             if (getGameState() != GameState.STARTING) {
+
                 setGameState(GameState.STARTING);
                 new StartingRunnable(this, gameLobby.getWorldManager()).runTaskTimerAsynchronously(getPlugin(), 0, 20);
+
             } else {
+
                 if (getSurvivors().size() >= getMaxPlayers() - 3 && !stAlmost && startTimer > 30) {
-                    Message.broadcast(
-                            gameLobby,
+
+                    Message.broadcast(gameLobby,
                             Message.format("&aWe almost have a full server! Shortening timer to 30 seconds!"));
                     stAlmost = true;
                     startTimer = 30;
+
                 } else if (getSurvivors().size() >= getMaxPlayers() && !stFull && startTimer > 10) {
+
                     Message.broadcast(gameLobby, Message.format("&aWe have a full server! Starting in 10 seconds!"));
                     stFull = true;
                     startTimer = 10;
+
                 }
+
             }
+
         }
+
     }
 
     public void start() {
+
         setGameState(GameState.LIVE);
         narrationRunnable = new NarrationRunnable(this);
         narrationRunnable.runTaskTimerAsynchronously(plugin, 0, 10); // has to run before the shardstate updates
         setShardState(ShardState.WAITING);
         gameLobby.getStatManager().startTracking();
         if (passUser != null) {
+
             herobrine = passUser;
             passUser = null;
+
         } else {
+
             herobrine = PlayerUtil.randomPlayer(gameLobby);
+
         }
+
         survivors.remove(herobrine);
         setupHerobrine();
         setupSurvivors();
@@ -354,25 +395,32 @@ public class GameManager {
         new HerobrineSetup(herobrine).runTaskAsynchronously(plugin);
         setTags(herobrine, "&c&lHEROBRINE ", NamedTextColor.RED, ScoreboardUpdateAction.UPDATE);
         for (Player p : survivors) {
+
             setTags(p, null, NamedTextColor.DARK_GREEN, ScoreboardUpdateAction.UPDATE);
             new SurvivorSetup(p).runTaskAsynchronously(plugin);
+
         }
+
         shardHandler = new ShardHandler(gameLobby);
         shardHandler.runTaskTimer(plugin, 0, 20);
         new HerobrineItemHider(this).runTaskTimer(plugin, 0, 1);
         new HerobrineSmokeRunnable(this).runTaskTimer(plugin, 0, 10);
 
         for (Player p : gameLobby.getPlayers()) {
+
             scoreboards.get(p).setHandler(gameScoreboardHandler);
             p.setHealth(20);
             p.setFoodLevel(20);
             p.setGameMode(GameMode.SURVIVAL);
+
         }
 
         updateTags(ScoreboardUpdateAction.UPDATE);
+
     }
 
     public void setupHerobrine() {
+
         herobrine.teleport(worldManager.herobrineSpawn);
         herobrine.setHealth(20);
         herobrine.setFoodLevel(20);
@@ -382,14 +430,16 @@ public class GameManager {
         PlayerUtil.addEffect(herobrine, PotionEffectType.SPEED, Integer.MAX_VALUE, 1, false, false);
 
         updateHerobrine();
+
     }
 
     public void updateHerobrine() {
+
         switch (shardCount) {
+
             case 0: {
-                GUIItem item = new GUIItem(Material.STONE_AXE)
-                        .displayName("&7The Thorbringer")
-                        .unbreakable(true);
+
+                GUIItem item = new GUIItem(Material.STONE_AXE).displayName("&7The Thorbringer").unbreakable(true);
                 herobrine.getInventory().setItem(0, item.build());
 
                 hbBatBomb = new BatBombAbility(this, 1, 4);
@@ -409,12 +459,12 @@ public class GameManager {
 
                 PlayerUtil.addEffect(herobrine, PotionEffectType.DAMAGE_RESISTANCE, Integer.MAX_VALUE, 2, false, false);
                 break;
+
             }
             case 1: {
+
                 herobrine.getInventory().remove(Material.STONE_AXE);
-                GUIItem item = new GUIItem(Material.IRON_AXE)
-                        .displayName("&7Axe of &lDeceit!")
-                        .unbreakable(true);
+                GUIItem item = new GUIItem(Material.IRON_AXE).displayName("&7Axe of &lDeceit!").unbreakable(true);
                 herobrine.getInventory().addItem(item.build());
 
                 hbBlinding.apply(herobrine);
@@ -424,11 +474,12 @@ public class GameManager {
                 herobrine.removePotionEffect(PotionEffectType.DAMAGE_RESISTANCE);
                 PlayerUtil.addEffect(herobrine, PotionEffectType.DAMAGE_RESISTANCE, Integer.MAX_VALUE, 1, false, false);
                 break;
+
             }
             case 2: {
+
                 herobrine.getInventory().remove(Material.IRON_AXE);
-                GUIItem item = new GUIItem(Material.IRON_SWORD)
-                        .displayName("&7Sword of &lHELLBRINGING!")
+                GUIItem item = new GUIItem(Material.IRON_SWORD).displayName("&7Sword of &lHELLBRINGING!")
                         .unbreakable(true);
                 herobrine.getInventory().addItem(item.build());
 
@@ -445,24 +496,28 @@ public class GameManager {
                 herobrine.removePotionEffect(PotionEffectType.DAMAGE_RESISTANCE);
                 PlayerUtil.addEffect(herobrine, PotionEffectType.DAMAGE_RESISTANCE, Integer.MAX_VALUE, 0, false, false);
                 break;
+
             }
             case 3: {
+
                 herobrine.getInventory().clear();
 
                 giveVials(-1, 2);
 
-                GUIItem item = new GUIItem(Material.IRON_SWORD)
-                        .displayName("&bSword of &lChances!")
-                        .unbreakable(true);
+                GUIItem item = new GUIItem(Material.IRON_SWORD).displayName("&bSword of &lChances!").unbreakable(true);
                 herobrine.getInventory().addItem(item.build());
 
                 herobrine.removePotionEffect(PotionEffectType.DAMAGE_RESISTANCE);
                 break;
+
             }
+
         }
+
     }
 
     public void giveVials(int slot, int amount) {
+
         ItemStack potion = new ItemStack(Material.SPLASH_POTION);
         potion.setAmount(amount);
         PotionMeta pm = (PotionMeta) potion.getItemMeta();
@@ -472,30 +527,39 @@ public class GameManager {
         pm.setBasePotionData(new PotionData(PotionType.POISON, false, true));
         potion.setItemMeta(pm);
 
-        if (slot == -1) herobrine.getInventory().addItem(potion);
-        else herobrine.getInventory().setItem(slot, potion);
+        if (slot == -1)
+            herobrine.getInventory().addItem(potion);
+        else
+            herobrine.getInventory().setItem(slot, potion);
+
     }
 
     public void setupSurvivors() {
+
         for (Player p : survivors) {
+
             p.teleport(worldManager.survivorSpawn);
             p.setHealth(20);
             p.setFoodLevel(20);
             PlayerUtil.addEffect(p, PotionEffectType.BLINDNESS, 60, 1, false, false);
+
         }
 
         setupKits();
         applyKits();
+
     }
 
     public void makeSpectator(Player player) {
+
         player.teleport(worldManager.survivorSpawn);
         Message.send(player, Message.format("&7You are out of the game! Left-click to open the spectator menu."));
 
         PlayerUtil.clearInventory(player);
         PlayerUtil.clearEffects(player);
 
-        if (!spectators.contains(player)) spectators.add(player);
+        if (!spectators.contains(player))
+            spectators.add(player);
 
         PlayerUtil.addEffect(player, PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 1, false, false);
 
@@ -503,24 +567,22 @@ public class GameManager {
         Bukkit.getScheduler().runTaskLater(plugin, () -> player.setGameMode(GameMode.SPECTATOR), 20);
         player.setHealth(20);
         player.setFoodLevel(20);
-        player.getInventory()
-                .setItem(
-                        0,
-                        new GUIItem(Material.COMPASS)
-                                .displayName("&7Spectator Menu")
-                                .build());
+        player.getInventory().setItem(0, new GUIItem(Material.COMPASS).displayName("&7Spectator Menu").build());
 
         setTags(player, null, NamedTextColor.GRAY, ScoreboardUpdateAction.UPDATE);
         updateTags(ScoreboardUpdateAction.UPDATE);
         scoreboards.get(player).setHandler(gameScoreboardHandler);
+
     }
 
     public void end(WinType type) {
+
         setGameState(GameState.ENDING);
         setShardState(ShardState.INACTIVE);
         voidKits();
 
         if (type == WinType.SURVIVORS) {
+
             PlayerUtil.broadcastTitle(gameLobby, "&aSURVIVORS WIN!", "", 1000, 3000, 1000);
             Message.broadcast(gameLobby, Message.format("&a&lThe Survivors &ehave defeated &c&lThe Herobrine!"));
             Message.broadcast(gameLobby, Message.format(type.getDesc()));
@@ -530,77 +592,103 @@ public class GameManager {
 
             herobrine.getWorld().strikeLightningEffect(herobrine.getLocation().add(0, 0.5, 0));
             Bukkit.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+
                 Location loc = herobrine.getLocation();
                 for (int i = 0; i < 50; i++) {
+
                     try {
-                        Bukkit.getServer()
-                                .getScheduler()
-                                .runTask(
-                                        plugin,
-                                        () -> PlayerUtil.spawnFirework(
-                                                loc.clone()
-                                                        .add(new Vector(Math.random() - 0.5, 0, Math.random() - 0.5)
-                                                                .multiply(20)),
-                                                Color.LIME));
+
+                        Bukkit.getServer().getScheduler()
+                                .runTask(plugin,
+                                        () -> PlayerUtil
+                                                .spawnFirework(
+                                                        loc.clone()
+                                                                .add(new Vector(Math.random() - 0.5, 0,
+                                                                        Math.random() - 0.5).multiply(20)),
+                                                        Color.LIME));
                         TimeUnit.MILLISECONDS.sleep(100);
+
                     } catch (Exception e) {
+
                         e.printStackTrace();
+
                     }
+
                 }
+
             });
+
         } else {
+
             PlayerUtil.broadcastTitle(gameLobby, "&cHEROBRINE &aWINS!", "", 1000, 3000, 1000);
             Message.broadcast(gameLobby, Message.format("&c&lThe Herobrine &ehas defeated all the survivors."));
             Message.broadcast(gameLobby, Message.format(type.getDesc()));
             PlayerUtil.broadcastSound(gameLobby, Sound.ENTITY_ENDER_DRAGON_HURT, 1f, 1f);
             gameLobby.getStatManager().getPointsTracker().increment(herobrine.getUniqueId(), 10);
+
         }
 
         gameLobby.getStatManager().stopTracking();
         gameLobby.getStatManager().push();
         Message.broadcast(gameLobby, Message.format("&7The lobby will restart in 15 seconds."));
         Bukkit.getServer().getScheduler().runTaskLater(plugin, () -> gameLobby.shutdown(true, true), 300);
+
     }
 
     public void endCheck() {
-        if (gameState != GameState.LIVE) return;
+
+        if (gameState != GameState.LIVE)
+            return;
 
         Console.debug(gameLobby, "=== END CHECK ===");
         Console.debug(gameLobby, "Survivors: " + getSurvivors().size());
         Console.debug(gameLobby, "Herobrine: " + (getHerobrine().isOnline() ? "Online" : "Offline"));
         if (getHerobrine().isOnline())
-            Console.debug(
-                    gameLobby, "Herobrine World: " + getHerobrine().getWorld().getName());
+            Console.debug(gameLobby, "Herobrine World: " + getHerobrine().getWorld().getName());
         Console.debug(gameLobby, "======");
 
         if (getSurvivors().isEmpty()) {
+
             end(WinType.HEROBRINE);
+
         } else if (!getHerobrine().getWorld().getName().startsWith(gameLobby.getLobbyId())
-                || !getHerobrine().isOnline()) {
+                || !getHerobrine().isOnline())
+        {
+
             end(WinType.SURVIVORS);
+
         }
+
     }
 
     public void capture(Player player) {
+
         player.getInventory().remove(Material.NETHER_STAR);
         setTags(player, null, NamedTextColor.DARK_GREEN, ScoreboardUpdateAction.UPDATE);
         shardCarrier = null;
         shardCount++;
         if (shardCount == 3) {
+
             setShardState(ShardState.INACTIVE);
             herobrine.removePotionEffect(PotionEffectType.INVISIBILITY);
             updateTags(ScoreboardUpdateAction.UPDATE);
-        } else setShardState(ShardState.WAITING);
+
+        } else
+            setShardState(ShardState.WAITING);
+
         new CaptureSequence(player, this, gameLobby.getWorldManager()).runTaskAsynchronously(plugin);
         updateHerobrine();
         Bukkit.getServer().getPluginManager().callEvent(new ShardCaptureEvent(player, gameLobby.getLobbyId()));
+
     }
 
     // Uses 1.8 damage, the damage towards herobrine
     public double getHerobrineHitDamage(Material item, boolean strength) {
+
         double finalDamage = 0;
         boolean normal = false;
         switch (item) {
+
             case WOODEN_SWORD:
                 finalDamage = 4; // 2 hearts
                 break;
@@ -616,20 +704,26 @@ public class GameManager {
             default:
                 normal = true;
                 break;
+
         }
 
         // Any non attacking weapon
-        if (normal) return -1;
+        if (normal)
+            return -1;
 
-        if (strength) finalDamage += 3; // Actual strength increase
+        if (strength)
+            finalDamage += 3; // Actual strength increase
 
         return finalDamage;
+
     }
 
     // Using 1.8 damage, the damage towards survivors
     public double getSurvivorHitDamage(Material item) {
+
         double finalDamage = 0;
         switch (item) {
+
             case STONE_AXE:
                 finalDamage = 3; // 0 shards, 1.5 hearts
                 break;
@@ -641,100 +735,140 @@ public class GameManager {
                 break;
             default:
                 return -1;
+
         }
 
         return finalDamage;
+
     }
 
     public void hubInventory(Player player) {
+
         PlayerUtil.clearEffects(player);
         PlayerUtil.clearInventory(player);
 
         GUIItem kitItem = new GUIItem(Material.COMPASS);
         kitItem.displayName("&a&lChoose &b&lClass");
         player.getInventory().setItem(0, kitItem.build());
+
     }
 
     // Kits
     public void setupKits() {
+
         for (Kit kit : kits) {
+
             plugin.getServer().getPluginManager().registerEvents(kit, plugin);
+
         }
+
     }
 
     public void voidKits() {
+
         for (Kit kit : kits) {
+
             HandlerList.unregisterAll(kit);
 
             kit.voidAbilities();
+
         }
 
         HandlerList.unregisterAll(hbBatBomb);
         HandlerList.unregisterAll(hbDream);
         HandlerList.unregisterAll(hbBlinding);
+
     }
 
     public void applyKits() {
+
         for (Player p : survivors) {
+
             Kit k = getLocalKit(p);
             k.apply(p);
+
         }
+
     }
 
     public void setKit(Player player, Kit kit, boolean inform) {
+
         playerKits.remove(player);
         playerKits.put(player, kit);
         saveKit(player, kit);
 
-        if (inform) Message.send(player, Message.format("&eSet your class to " + kit.getDisplayName()));
+        if (inform)
+            Message.send(player, Message.format("&eSet your class to " + kit.getDisplayName()));
+
     }
 
     public void saveKit(Player player, Kit kit) {
+
         redis.setKey("hb:kit:" + player.getUniqueId().toString(), kit.getInternalName());
+
     }
 
     public Kit getSavedKit(Player player) {
+
         String key = "hb:kit:" + player.getUniqueId().toString();
-        if (!redis.exists(key)) return defaultKit;
+        if (!redis.exists(key))
+            return defaultKit;
 
         String result = redis.getKey(key);
-        for (Kit k : kits) if (k.getInternalName().equals(result)) return k;
+        for (Kit k : kits)
+            if (k.getInternalName().equals(result))
+                return k;
 
         return defaultKit;
+
     }
 
     public Kit getLocalKit(Player player) {
+
         if (!playerKits.containsKey(player)) {
+
             setKit(player, defaultKit, false);
             return defaultKit;
+
         } else {
+
             return playerKits.get(player);
+
         }
+
     }
 
     // Scoreboards
     public enum ScoreboardUpdateAction {
-        CREATE,
-        UPDATE,
-        BEGONETHOT
+        CREATE, UPDATE, BEGONETHOT
     }
 
     public void updateTags(ScoreboardUpdateAction action) {
+
         for (Player p : gameLobby.getPlayers()) {
+
             setTags(p, getTeamPrefixes().get(p), getTeamColours().get(p), action);
+
         }
+
     }
 
     public void setTags(Player player, String prefix, NamedTextColor color, ScoreboardUpdateAction action) {
-        if (prefix == null) prefix = "";
-        if (color == null) color = NamedTextColor.WHITE;
+
+        if (prefix == null)
+            prefix = "";
+        if (color == null)
+            color = NamedTextColor.WHITE;
 
         for (Scoreboard s : getScoreboards().values()) {
+
             org.bukkit.scoreboard.Scoreboard sc = s.getHolder().getScoreboard();
 
             String teamName = "APL" + player.getEntityId();
             if (sc.getTeam(teamName) == null) {
+
                 sc.registerNewTeam(teamName);
+
             }
 
             Team team = sc.getTeam(teamName);
@@ -742,10 +876,13 @@ public class GameManager {
             team.color(color);
             if (player == herobrine && shardCount == 3)
                 team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.ALWAYS);
-            else if (player == herobrine) team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
-            else team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.ALWAYS);
+            else if (player == herobrine)
+                team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
+            else
+                team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.ALWAYS);
 
             switch (action) {
+
                 case CREATE:
                     team.addEntry(player.getName());
                     break;
@@ -759,12 +896,14 @@ public class GameManager {
                         team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.ALWAYS);
                     else if (player == herobrine)
                         team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
-                    else team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.ALWAYS);
+                    else
+                        team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.ALWAYS);
                     team.addEntry(player.getName());
                     break;
                 case BEGONETHOT:
                     team.unregister();
                     break;
+
             }
 
             getTeamPrefixes().remove(player);
@@ -772,6 +911,9 @@ public class GameManager {
 
             getTeamPrefixes().put(player, prefix);
             getTeamColours().put(player, color);
+
         }
+
     }
+
 }

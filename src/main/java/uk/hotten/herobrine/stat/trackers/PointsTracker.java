@@ -6,6 +6,9 @@ import uk.hotten.herobrine.stat.StatTracker;
 public class PointsTracker extends StatTracker {
 
     public PointsTracker(StatManager sm) {
+
         super(sm, "Points", "points", "Your points!");
+
     }
+
 }

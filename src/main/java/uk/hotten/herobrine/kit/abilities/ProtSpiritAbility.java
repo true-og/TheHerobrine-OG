@@ -19,42 +19,55 @@ public class ProtSpiritAbility extends KitAbility {
     public Player player;
 
     public ProtSpiritAbility(GameManager gm, int slot, int amount) {
+
         super(gm, "Protection Spirit!");
         this.slot = slot;
         this.amount = amount;
+
     }
 
     @Override
     public void apply(Player player) {
+
         this.player = player;
-        GUIItem item = new GUIItem(Material.ENDER_PEARL)
-                .displayName("&bProtection &lSpirit!")
-                .amount(amount);
+        GUIItem item = new GUIItem(Material.ENDER_PEARL).displayName("&bProtection &lSpirit!").amount(amount);
         item.lore(Message.addLinebreaks("&7&oProtect yourself with a spirit of rapid healing for 12 seconds", "&7&o"));
 
         player.getInventory().setItem(slot, item.build());
+
     }
 
     @EventHandler
     public void use(PlayerInteractEvent event) {
-        if (!event.getPlayer().getWorld().getName().startsWith(gm.getGameLobby().getLobbyId())) return;
 
-        if (gm.getGameState() != GameState.LIVE) return;
+        if (!event.getPlayer().getWorld().getName().startsWith(gm.getGameLobby().getLobbyId()))
+            return;
+
+        if (gm.getGameState() != GameState.LIVE)
+            return;
 
         Player player = event.getPlayer();
 
-        if (this.player != player) return;
+        if (this.player != player)
+            return;
 
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_AIR) {
+
             if (player.getInventory().getItemInMainHand().getType() == Material.ENDER_PEARL) {
+
                 event.setCancelled(true);
 
-                if (isOnCooldown(player)) return;
+                if (isOnCooldown(player))
+                    return;
 
                 PlayerUtil.removeAmountOfItem(player, player.getInventory().getItemInMainHand(), 1);
                 new ProtSpiritHandler(player, gm).runTaskTimerAsynchronously(gm.getPlugin(), 0, 10);
                 startCooldown(player);
+
             }
+
         }
+
     }
+
 }

@@ -16,16 +16,23 @@ public class ShardCaptureEvent extends Event {
     private String lobbyId;
 
     public ShardCaptureEvent(Player player, String lobbyId) {
+
         this.player = player;
         this.lobbyId = lobbyId;
+
     }
 
     @Override
     public HandlerList getHandlers() {
+
         return handlers;
+
     }
 
     public static HandlerList getHandlerList() {
+
         return handlers;
+
     }
+
 }

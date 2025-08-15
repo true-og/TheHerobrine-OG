@@ -19,17 +19,24 @@ public class ShardStateUpdateEvent extends Event {
     private String lobbyId;
 
     public ShardStateUpdateEvent(ShardState prevState, ShardState newState, String lobbyId) {
+
         this.prevState = prevState;
         this.newState = newState;
         this.lobbyId = lobbyId;
+
     }
 
     @Override
     public HandlerList getHandlers() {
+
         return handlers;
+
     }
 
     public static HandlerList getHandlerList() {
+
         return handlers;
+
     }
+
 }

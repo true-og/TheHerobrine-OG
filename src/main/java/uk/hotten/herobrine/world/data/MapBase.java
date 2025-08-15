@@ -9,8 +9,13 @@ public class MapBase {
     private List<String> maps;
 
     public MapBase(List<String> maps) {
+
         this.maps = maps;
+
     }
 
-    public MapBase() {}
+    public MapBase() {
+
+    }
+
 }

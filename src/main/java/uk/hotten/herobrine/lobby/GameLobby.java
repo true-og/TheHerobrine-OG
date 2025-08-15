@@ -47,12 +47,15 @@ public class GameLobby {
     private ArrayList<Player> players;
 
     public GameLobby(JavaPlugin plugin, LobbyConfig lobbyConfig, String lobbyId) {
+
         this.plugin = plugin;
         this.lobbyConfig = lobbyConfig;
         this.lobbyId = lobbyId;
+
     }
 
     public void initialize() {
+
         Console.info("Initializing lobby " + lobbyId);
         worldManager = new WorldManager(plugin, this);
         gameManager = new GameManager(plugin, this, RedisManager.getInstance(), protocolManager);
@@ -62,16 +65,23 @@ public class GameLobby {
         // Stops the eye of ender break SFX from the Notch's Wisdom and Totem of Healing
         // abilities
         enderEyeSfxFix = new PacketAdapter(plugin, PacketType.Play.Server.NAMED_SOUND_EFFECT) {
+
             @Override
             public void onPacketSending(PacketEvent event) {
+
                 if (!gameManager.getSurvivors().contains(event.getPlayer())
-                        && gameManager.getHerobrine() != event.getPlayer()) return;
+                        && gameManager.getHerobrine() != event.getPlayer())
+                    return;
 
                 Sound effectId = event.getPacket().getSoundEffects().readSafely(0);
                 if (effectId == Sound.ENTITY_ENDER_EYE_DEATH) {
+
                     event.setCancelled(true);
+
                 }
+
             }
+
         };
 
         protocolManager.addPacketListener(enderEyeSfxFix);
@@ -80,9 +90,11 @@ public class GameLobby {
         new MapVotingRunnable(this).runTaskTimerAsynchronously(plugin, 0, 20);
 
         Console.info("Lobby " + lobbyId + " is ready.");
+
     }
 
     public void shutdown(boolean removeSelf, boolean recreate) {
+
         Console.info("Lobby " + lobbyId + " is shutting down...");
         HandlerList.unregisterAll(gameManager.getGmListener());
         HandlerList.unregisterAll(worldManager);
@@ -94,9 +106,13 @@ public class GameLobby {
         statManager.stopTracking();
         worldManager.clean();
         worldManager.cleanHub();
-        if (removeSelf) LobbyManager.getInstance().removeLobby(lobbyId);
+        if (removeSelf)
+            LobbyManager.getInstance().removeLobby(lobbyId);
         Console.info("Lobby " + lobbyId + " has shutdown.");
 
-        if (recreate) LobbyManager.getInstance().createLobby(lobbyConfig);
+        if (recreate)
+            LobbyManager.getInstance().createLobby(lobbyConfig);
+
     }
+
 }

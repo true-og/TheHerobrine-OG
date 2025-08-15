@@ -18,35 +18,28 @@ import uk.hotten.herobrine.utils.Message;
 public class WizardKit extends Kit {
 
     public WizardKit(GameManager gm, boolean requirePermission) {
-        super(
-                gm,
-                "wizard",
-                "&5Wizard",
-                "theherobrine.kit.classic.wizzard",
-                requirePermission,
-                Message.createArray(
-                        "&8- &aBlade of Heroism &8&o(weapon)",
-                        "",
-                        "&8- &aElixir: Speed &8&o(x1)",
-                        "&8- &aElixir: Strength &8&o(x1)",
-                        "",
-                        "&8- &aDreamweaver Bandage &8&o(x2)",
+
+        super(gm, "wizard", "&5Wizard", "theherobrine.kit.classic.wizzard", requirePermission,
+                Message.createArray("&8- &aBlade of Heroism &8&o(weapon)", "", "&8- &aElixir: Speed &8&o(x1)",
+                        "&8- &aElixir: Strength &8&o(x1)", "", "&8- &aDreamweaver Bandage &8&o(x2)",
                         "   &7&oBandage yourself to full health"),
                 new GUIItem(Material.SPLASH_POTION).displayName("&5Wizard"));
+
     }
 
     @Override
     public void setupAbilities(Player player) {
+
         addAbilityToPlayer(player, new LocatorAbility(gm));
         addAbilityToPlayer(player, new DreamweaverAbility(gm, 3, 2));
+
     }
 
     @Override
     public void setupPlayer(Player player) {
+
         // Items
-        GUIItem blade = new GUIItem(Material.STONE_SWORD)
-                .displayName("&aBlade of Heroism")
-                .unbreakable(true);
+        GUIItem blade = new GUIItem(Material.STONE_SWORD).displayName("&aBlade of Heroism").unbreakable(true);
 
         ItemStack swift = new ItemStack(Material.SPLASH_POTION);
         PotionMeta pmSwift = (PotionMeta) swift.getItemMeta();
@@ -72,14 +65,10 @@ public class WizardKit extends Kit {
         helmet.setItemMeta(helMeta);
         player.getInventory().setHelmet(helmet);
 
-        player.getInventory()
-                .setChestplate(new GUIItem(Material.LEATHER_CHESTPLATE)
-                        .unbreakable(true)
-                        .build());
-        player.getInventory()
-                .setLeggings(
-                        new GUIItem(Material.LEATHER_LEGGINGS).unbreakable(true).build());
-        player.getInventory()
-                .setBoots(new GUIItem(Material.LEATHER_BOOTS).unbreakable(true).build());
+        player.getInventory().setChestplate(new GUIItem(Material.LEATHER_CHESTPLATE).unbreakable(true).build());
+        player.getInventory().setLeggings(new GUIItem(Material.LEATHER_LEGGINGS).unbreakable(true).build());
+        player.getInventory().setBoots(new GUIItem(Material.LEATHER_BOOTS).unbreakable(true).build());
+
     }
+
 }

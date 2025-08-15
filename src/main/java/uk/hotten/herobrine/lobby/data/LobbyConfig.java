@@ -31,16 +31,10 @@ public class LobbyConfig {
     @Getter
     private int autoStartAmount;
 
-    public LobbyConfig(
-            String id,
-            String prefix,
-            int minPlayers,
-            int maxPlayers,
-            int startTime,
-            boolean allowOverfill,
-            int votingMaps,
-            int endVotingAt,
-            int autoStartAmount) {
+    public LobbyConfig(String id, String prefix, int minPlayers, int maxPlayers, int startTime, boolean allowOverfill,
+            int votingMaps, int endVotingAt, int autoStartAmount)
+    {
+
         this.id = id;
         this.prefix = prefix;
         this.minPlayers = minPlayers;
@@ -50,7 +44,11 @@ public class LobbyConfig {
         this.votingMaps = votingMaps;
         this.endVotingAt = endVotingAt;
         this.autoStartAmount = autoStartAmount;
+
     }
 
-    public LobbyConfig() {}
+    public LobbyConfig() {
+
+    }
+
 }

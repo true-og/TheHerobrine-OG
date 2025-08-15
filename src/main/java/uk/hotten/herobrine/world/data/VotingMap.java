@@ -17,16 +17,23 @@ public class VotingMap {
     private int votes = 0;
 
     public VotingMap(int id, MapData mapData, String internalName) {
+
         this.id = id;
         this.mapData = mapData;
         this.internalName = internalName;
+
     }
 
     public void incrementVotes() {
+
         votes++;
+
     }
 
     public void decrementVotes() {
+
         votes--;
+
     }
+
 }

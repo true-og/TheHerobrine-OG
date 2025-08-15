@@ -16,18 +16,25 @@ public class HerobrineSmokeRunnable extends BukkitRunnable {
     private Player player;
 
     public HerobrineSmokeRunnable(GameManager gm) {
+
         this.gm = gm;
         this.player = gm.getHerobrine();
+
     }
 
     @Override
     public void run() {
+
         if (gm.getGameState() != GameState.LIVE) {
+
             cancel();
             return;
+
         }
 
         Location loc = gm.getHerobrine().getLocation().clone().add(0, 2, 0);
         loc.getWorld().playEffect(loc, Effect.SMOKE, 0);
+
     }
+
 }

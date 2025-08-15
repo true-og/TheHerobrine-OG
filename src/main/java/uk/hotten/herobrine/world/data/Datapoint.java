@@ -17,11 +17,16 @@ public class Datapoint {
     private Integer z;
 
     public Datapoint(DatapointType type, int x, int y, int z) {
+
         this.type = type;
         this.x = x;
         this.y = y;
         this.z = z;
+
     }
 
-    public Datapoint() {}
+    public Datapoint() {
+
+    }
+
 }

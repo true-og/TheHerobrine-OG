@@ -16,36 +16,29 @@ import uk.hotten.herobrine.utils.PlayerUtil;
 public class ScoutKit extends Kit {
 
     public ScoutKit(GameManager gm, boolean requirePermission) {
-        super(
-                gm,
-                "scout",
-                "&eScout",
-                "theherobrine.kit.classic.scout",
-                requirePermission,
-                Message.createArray(
-                        "&8- &aBlade of Heroism &8&o(weapon)",
-                        "",
-                        "&8- &7Handcrafted Bow &8&o(bow)",
-                        "&8- &7Owl Arrows &8&o(x32)",
-                        "",
-                        "&8- &bSpeed I"),
+
+        super(gm, "scout", "&eScout", "theherobrine.kit.classic.scout", requirePermission,
+                Message.createArray("&8- &aBlade of Heroism &8&o(weapon)", "", "&8- &7Handcrafted Bow &8&o(bow)",
+                        "&8- &7Owl Arrows &8&o(x32)", "", "&8- &bSpeed I"),
                 new GUIItem(Material.FEATHER).displayName("&eScout"));
+
     }
 
     @Override
     public void setupAbilities(Player player) {
+
         addAbilityToPlayer(player, new LocatorAbility(gm));
+
     }
 
     @Override
     public void setupPlayer(Player player) {
+
         // Effects
         PlayerUtil.addEffect(player, PotionEffectType.SPEED, Integer.MAX_VALUE, 0, false, false);
 
         // Items
-        GUIItem blade = new GUIItem(Material.STONE_SWORD)
-                .displayName("&aBlade of Heroism")
-                .unbreakable(true);
+        GUIItem blade = new GUIItem(Material.STONE_SWORD).displayName("&aBlade of Heroism").unbreakable(true);
         GUIItem bow = new GUIItem(Material.BOW).displayName("&7Handcrafted Bow").unbreakable(true);
         GUIItem arrow = new GUIItem(Material.ARROW).displayName("&7Owl Arrows").amount(32);
 
@@ -61,14 +54,10 @@ public class ScoutKit extends Kit {
         helmet.setItemMeta(helMeta);
         player.getInventory().setHelmet(helmet);
 
-        player.getInventory()
-                .setChestplate(new GUIItem(Material.LEATHER_CHESTPLATE)
-                        .unbreakable(true)
-                        .build());
-        player.getInventory()
-                .setLeggings(
-                        new GUIItem(Material.LEATHER_LEGGINGS).unbreakable(true).build());
-        player.getInventory()
-                .setBoots(new GUIItem(Material.LEATHER_BOOTS).unbreakable(true).build());
+        player.getInventory().setChestplate(new GUIItem(Material.LEATHER_CHESTPLATE).unbreakable(true).build());
+        player.getInventory().setLeggings(new GUIItem(Material.LEATHER_LEGGINGS).unbreakable(true).build());
+        player.getInventory().setBoots(new GUIItem(Material.LEATHER_BOOTS).unbreakable(true).build());
+
     }
+
 }

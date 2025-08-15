@@ -17,6 +17,7 @@ public class SqlManager {
     private int port;
 
     public SqlManager(JavaPlugin plugin) {
+
         Console.info("Loading SQL Manager...");
         instance = this;
 
@@ -27,27 +28,38 @@ public class SqlManager {
 
         checkStatTable();
         Console.info("SQL Manager is ready!");
+
     }
 
     public static SqlManager get() {
+
         return instance;
+
     }
 
     public Connection createConnection() throws SQLException, ClassNotFoundException {
+
         synchronized (this) {
+
             Class.forName("org.mariadb.jdbc.Driver");
             return DriverManager.getConnection(
                     "jdbc:mariadb://" + host + ":" + port + "/" + "theherobrine?userSSL=false", username, password);
+
         }
+
     }
 
     private void checkStatTable() {
+
         try (Connection connection = createConnection()) {
+
             DatabaseMetaData meta = connection.getMetaData();
-            ResultSet resultSet = meta.getTables(null, null, "hb_stat", new String[] {"TABLE"});
+            ResultSet resultSet = meta.getTables(null, null, "hb_stat", new String[] { "TABLE" });
 
             if (resultSet.next()) {
+
                 return;
+
             }
 
             // Table does not exist
@@ -62,8 +74,12 @@ public class SqlManager {
             Console.info("Created stat table, was missing.");
 
         } catch (Exception error) {
+
             Console.error("Failed to check stat table.");
             error.printStackTrace();
+
         }
+
     }
+
 }

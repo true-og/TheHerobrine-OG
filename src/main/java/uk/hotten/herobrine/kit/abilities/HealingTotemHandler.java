@@ -18,29 +18,40 @@ public class HealingTotemHandler extends BukkitRunnable {
     private GameManager gm;
 
     public HealingTotemHandler(Block block, GameManager gm) {
+
         this.block = block;
         this.gm = gm;
         wah = new WisdomAnimationHandler(block.getLocation().add(0, 1, 0)).runTaskTimer(gm.getPlugin(), 0, 5);
+
     }
 
     @Override
     public void run() {
+
         if (time > 30) {
+
             Bukkit.getServer().getScheduler().runTask(gm.getPlugin(), () -> block.setType(Material.AIR));
             wah.cancel();
             cancel();
             return;
+
         }
 
         PlayerUtil.playSoundAt(block.getLocation(), Sound.ENTITY_CAT_PURREOW, 1f, 1f);
 
         for (Player p : gm.getSurvivors()) {
+
             if (PlayerUtil.getDistance(p, block.getLocation()) <= 6) {
+
                 PlayerUtil.increaseHealth(p, 2);
                 PlayerUtil.playSound(p, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
+
             }
+
         }
 
         time++;
+
     }
+
 }

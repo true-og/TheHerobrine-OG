@@ -19,41 +19,53 @@ public class WisdomAbility extends KitAbility {
     public Player player;
 
     public WisdomAbility(GameManager gm, int slot, int amount) {
+
         super(gm, "Notch's Wisdom");
         this.slot = slot;
         this.amount = amount;
+
     }
 
     @Override
     public void apply(Player player) {
+
         this.player = player;
-        GUIItem wiz = new GUIItem(Material.BLAZE_POWDER)
-                .displayName("&aNotch's Wisdom")
-                .amount(amount);
+        GUIItem wiz = new GUIItem(Material.BLAZE_POWDER).displayName("&aNotch's Wisdom").amount(amount);
         wiz.lore(Message.addLinebreaks("&7&oCreates an aura of health to heal survivors for 10 seconds", "&7&o"));
 
         player.getInventory().setItem(slot, wiz.build());
+
     }
 
     @EventHandler
     public void use(PlayerInteractEvent event) {
-        if (!event.getPlayer().getWorld().getName().startsWith(gm.getGameLobby().getLobbyId())) return;
 
-        if (gm.getGameState() != GameState.LIVE) return;
+        if (!event.getPlayer().getWorld().getName().startsWith(gm.getGameLobby().getLobbyId()))
+            return;
+
+        if (gm.getGameState() != GameState.LIVE)
+            return;
 
         Player player = event.getPlayer();
 
-        if (this.player != player) return;
+        if (this.player != player)
+            return;
 
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_AIR) {
+
             if (player.getInventory().getItemInMainHand().getType() == Material.BLAZE_POWDER) {
 
-                if (isOnCooldown(player)) return;
+                if (isOnCooldown(player))
+                    return;
 
                 PlayerUtil.removeAmountOfItem(player, player.getInventory().getItemInMainHand(), 1);
                 new WisdomHandler(player.getLocation(), gm).runTaskTimerAsynchronously(gm.getPlugin(), 0, 20);
                 startCooldown(player);
+
             }
+
         }
+
     }
+
 }

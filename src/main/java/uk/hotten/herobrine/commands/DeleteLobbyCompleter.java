@@ -12,9 +12,13 @@ public class DeleteLobbyCompleter implements TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command cmd, String label, String[] args) {
 
         if (args.length == 1) {
+
             return LobbyManager.getInstance().getLobbyIds();
+
         }
 
         return null;
+
     }
+
 }

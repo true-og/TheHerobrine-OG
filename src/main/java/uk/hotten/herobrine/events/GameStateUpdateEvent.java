@@ -19,17 +19,24 @@ public class GameStateUpdateEvent extends Event {
     private String lobbyId;
 
     public GameStateUpdateEvent(GameState prevState, GameState newState, String lobbyId) {
+
         this.prevState = prevState;
         this.newState = newState;
         this.lobbyId = lobbyId;
+
     }
 
     @Override
     public HandlerList getHandlers() {
+
         return handlers;
+
     }
 
     public static HandlerList getHandlerList() {
+
         return handlers;
+
     }
+
 }

@@ -6,21 +6,24 @@ import java.util.Random;
 import lombok.Getter;
 
 public enum ShardName {
-    FURY("Fury"),
-    MALCONTENT("Malcontent"),
-    REPUGNANCE("Repugnance"),
-    SPITE("Spite");
+
+    FURY("Fury"), MALCONTENT("Malcontent"), REPUGNANCE("Repugnance"), SPITE("Spite");
 
     @Getter
     private String name;
 
     private ShardName(String name) {
+
         this.name = name;
+
     }
 
     public static ShardName getRandom() {
+
         List<ShardName> vals = Arrays.asList(values());
         Random random = new Random();
         return vals.get(random.nextInt(vals.size()));
+
     }
+
 }
