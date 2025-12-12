@@ -26,7 +26,7 @@ kotlin { jvmToolchain(17) }
 /* ----------------------------- Metadata ------------------------------ */
 group = "uk.hotten.herobrine"
 
-version = "1.3.3"
+version = "1.4"
 
 val apiVersion = "1.19" // Minecraft server target version.
 
@@ -57,11 +57,9 @@ repositories {
     maven { url = uri("https://hub.spigotmc.org/nexus/content/repositories/snapshots/") }
     maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
     maven { url = uri("https://oss.sonatype.org/content/repositories/central") }
-    maven { url = uri("https://jitpack.io") } // Import the Jitpack Maven Repository.
+    maven { url = uri("https://jitpack.io") } // Import the Jitpack repository.
     maven { url = uri("https://repo.dmulloy2.net/repository/public/") }
-    maven { url = uri("https://repo.hotten.cloud/snapshots") }
-    maven { url = uri("https://repo.hotten.cloud/releases") }
-    maven("https://repo.onarandombox.com/content/groups/public/")
+    maven { url = uri("https://repo.onarandombox.com/content/groups/public/") } // Import the Multiverse 5 repository.
 }
 
 /* ---------------------- Java project deps ---------------------------- */
@@ -73,13 +71,16 @@ dependencies {
     api("com.mysql:mysql-connector-j:8.2.0")
     api("redis.clients:jedis:3.4.1")
     api("xyz.xenondevs:particle:1.8.3")
-    api("me.tigerhix.lib:scoreboard:1.0.1-SNAPSHOT")
+    compileOnlyApi(project(":libs:Utilities-OG")) // Import TrueOG Network Utilities-OG Java API (from source).
     compileOnly("org.purpurmc.purpur:purpur-api:1.19.4-R0.1-SNAPSHOT") // Declare Purpur API version to be packaged.
     compileOnly("io.github.miniplaceholders:miniplaceholders-api:2.2.3") // Import MiniPlaceholders API.
-    compileOnly("com.onarandombox.multiversecore:multiverse-core:4.3.12")
-    compileOnly(files("ProtocolLib/ProtocolLib-5.0.jar")) // Import Legacy ProtocolLib API.
-    compileOnlyApi(project(":libs:Utilities-OG")) // Import TrueOG Network Utilities-OG Java API (from source).
-    compileOnlyApi(project(":libs:GxUI-OG")) // Import TrueOG Network GxUI-OG Java API (from source).
+    compileOnly("org.mvplugins.multiverse.core:multiverse-core:5.0.0-SNAPSHOT") // Import Multiverse 5 API.
+    compileOnly(files("libs/ProtocolLib/ProtocolLib-5.0.jar")) // Import Legacy ProtocolLib API.
+    compileOnly(
+        files("libs/Multiverse-Legacy-API/Multiverse-Legacy-API-1.1.0.jar")
+    ) // Import Legacy Multiverse 4 API SHIM.
+    implementation(files("libs/ScoreboardLib/ScoreboardLib-1.1.0-SNAPSHOT.jar")) // Import ScoreboardLib API.
+    implementation(project(":libs:GxUI-OG")) // Import TrueOG Network GxUI-OG Java API (from source).
 }
 
 /* ---------------------- Utility functions ---------------------------- */

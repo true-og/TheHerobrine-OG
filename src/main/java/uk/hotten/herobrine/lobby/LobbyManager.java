@@ -1,9 +1,5 @@
 package uk.hotten.herobrine.lobby;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
-import com.onarandombox.MultiverseCore.MultiverseCore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,16 +8,26 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.Getter;
-import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.event.ClickEvent;
-import net.kyori.adventure.text.event.HoverEvent;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+import com.onarandombox.MultiverseCore.MultiverseCore;
+import com.onarandombox.MultiverseCore.api.Core;
+import com.onarandombox.MultiverseCore.api.MVWorldManager;
+
+import lombok.Getter;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import uk.hotten.herobrine.game.GameManager;
 import uk.hotten.herobrine.lobby.data.LobbyConfig;
 import uk.hotten.herobrine.utils.Console;
@@ -30,7 +36,7 @@ import uk.hotten.herobrine.utils.Message;
 
 public class LobbyManager {
 
-    private JavaPlugin plugin;
+    private final JavaPlugin plugin;
 
     @Getter
     private static LobbyManager instance;
@@ -38,18 +44,21 @@ public class LobbyManager {
     @Getter
     private MultiverseCore multiverseCore;
 
-    private HashMap<String, LobbyConfig> lobbyConfigs;
-    private HashMap<String, GameLobby> gameLobbies;
+    @Getter
+    private MVWorldManager mvWorldManager;
+
+    private final HashMap<String, LobbyConfig> lobbyConfigs;
+    private final HashMap<String, GameLobby> gameLobbies;
 
     public LobbyManager(JavaPlugin plugin) {
 
         this.plugin = plugin;
         instance = this;
 
-        multiverseCore = (MultiverseCore) Bukkit.getServer().getPluginManager().getPlugin("Multiverse-Core");
-
         lobbyConfigs = new HashMap<>();
         gameLobbies = new HashMap<>();
+
+        hookMultiverse();
 
         try {
 
@@ -64,20 +73,87 @@ public class LobbyManager {
 
     }
 
+    private void hookMultiverse() {
+
+        Plugin mvPlugin = Bukkit.getServer().getPluginManager().getPlugin("Multiverse-Core");
+        if (mvPlugin == null || !mvPlugin.isEnabled()) {
+
+            Console.error("Multiverse-Core is not installed or not enabled.");
+            mvWorldManager = null;
+            multiverseCore = null;
+            return;
+
+        }
+
+        if (mvPlugin instanceof MultiverseCore) {
+
+            multiverseCore = (MultiverseCore) mvPlugin;
+            mvWorldManager = multiverseCore.getMVWorldManager();
+            return;
+
+        }
+
+        try {
+
+            Core core = Bukkit.getServicesManager().load(Core.class);
+            if (core != null) {
+
+                mvWorldManager = core.getMVWorldManager();
+
+            }
+
+        } catch (Exception ignored) {
+
+        }
+
+        if (mvWorldManager == null) {
+
+            try {
+
+                var m = mvPlugin.getClass().getMethod("getMVWorldManager");
+                Object res = m.invoke(mvPlugin);
+                if (res instanceof MVWorldManager) {
+
+                    mvWorldManager = (MVWorldManager) res;
+
+                }
+
+            } catch (Exception ignored) {
+
+            }
+
+        }
+
+        if (mvWorldManager == null) {
+
+            Console.error("Failed to hook Multiverse MVWorldManager (unexpected Multiverse-Core implementation).");
+
+        }
+
+    }
+
     public void checkAndLoadConfigs(boolean autoStart) throws Exception {
 
         Console.info("Loading lobby configs...");
         lobbyConfigs.clear();
+
+        if (!plugin.getDataFolder().exists()) {
+
+            plugin.getDataFolder().mkdirs();
+
+        }
+
         Path path = Path.of(plugin.getDataFolder() + File.separator + "lobbies");
         if (!Files.exists(path)) {
 
             Console.error("No lobbies file found, creating...");
-            new File(path.toUri()).mkdir();
+            new File(path.toUri()).mkdirs();
 
         }
 
         Collection<File> files = FileUtils.listFiles(path.toFile(), new RegexFileFilter("\\w+\\.yaml$"),
                 DirectoryFileFilter.DIRECTORY);
+
         if (files.isEmpty()) {
 
             Console.error("No lobby config files detected. Creating the default...");

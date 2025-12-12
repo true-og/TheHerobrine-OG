@@ -1,5 +1,5 @@
-networkName: Your Network # Name of your network
-networkWeb: yournetwork.org # Website of your network
+networkName: $BRAND_NAME # Name of your network
+networkWeb: true-og.net # Website of your network
 gamePrefix: "DEFAULT" # PLEASE PUT IN SPEECH MARKS! Set as "DEFAULT" for classic HiveMC, else it will be your own.
 mapBase: "maps" # Folder where the map base and maps folder is.
 
@@ -12,10 +12,10 @@ showDebugMessages: false # Show debug messages?
 ## Redis Configuration
 redisHost: "localhost"
 redisPort: 6379
-redisPassword: "" # Leave this blank for no password
+redisPassword: "$KEYDB_PASSWORD" # Leave this blank for no password
 
-## SQL Configuration
+### MariaDB Configuration
 sqlHost: "localhost"
-sqlUsername: "username"
-sqlPassword: "password"
+sqlUsername: "$MARIADB_USER"
+sqlPassword: "$MARIADB_PASSWORD"
 sqlPort: 3306
