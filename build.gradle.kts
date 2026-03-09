@@ -79,8 +79,8 @@ dependencies {
     compileOnly(
         files("libs/Multiverse-Legacy-API/Multiverse-Legacy-API-1.1.0.jar")
     ) // Import Legacy Multiverse 4 API SHIM.
+    compileOnly(project(":libs:GxUI-OG")) // Import TrueOG Network GxUI-OG Java API (from source).
     implementation(files("libs/ScoreboardLib/ScoreboardLib-1.1.0-SNAPSHOT.jar")) // Import ScoreboardLib API.
-    implementation(project(":libs:GxUI-OG")) // Import TrueOG Network GxUI-OG Java API (from source).
 }
 
 /* ---------------------- Utility functions ---------------------------- */
