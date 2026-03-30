@@ -26,7 +26,7 @@ kotlin { jvmToolchain(17) }
 /* ----------------------------- Metadata ------------------------------ */
 group = "uk.hotten.herobrine"
 
-version = "1.4"
+version = "1.5"
 
 val apiVersion = "1.19" // Minecraft server target version.
 
@@ -60,6 +60,7 @@ repositories {
     maven { url = uri("https://jitpack.io") } // Import the Jitpack repository.
     maven { url = uri("https://repo.dmulloy2.net/repository/public/") }
     maven { url = uri("https://repo.onarandombox.com/content/groups/public/") } // Import the Multiverse 5 repository.
+    maven { url = uri("https://ci.mg-dev.eu/plugin/repository/everything") } // Import BKCommonLib repository.
 }
 
 /* ---------------------- Java project deps ---------------------------- */
@@ -74,11 +75,8 @@ dependencies {
     compileOnlyApi(project(":libs:Utilities-OG")) // Import TrueOG Network Utilities-OG Java API (from source).
     compileOnly("org.purpurmc.purpur:purpur-api:1.19.4-R0.1-SNAPSHOT") // Declare Purpur API version to be packaged.
     compileOnly("io.github.miniplaceholders:miniplaceholders-api:2.2.3") // Import MiniPlaceholders API.
-    compileOnly("org.mvplugins.multiverse.core:multiverse-core:5.0.0-SNAPSHOT") // Import Multiverse 5 API.
     compileOnly(files("libs/ProtocolLib/ProtocolLib-5.0.jar")) // Import Legacy ProtocolLib API.
-    compileOnly(
-        files("libs/Multiverse-Legacy-API/Multiverse-Legacy-API-1.1.0.jar")
-    ) // Import Legacy Multiverse 4 API SHIM.
+    compileOnly("com.github.regix1:MyWorlds:master-SNAPSHOT") // Import MyWorlds API from JitPack.
     implementation(project(":libs:GxUI-OG")) // Import TrueOG Network GxUI-OG Java API (from source).
     implementation(files("libs/ScoreboardLib/ScoreboardLib-1.1.0-SNAPSHOT.jar")) // Import ScoreboardLib API.
 }

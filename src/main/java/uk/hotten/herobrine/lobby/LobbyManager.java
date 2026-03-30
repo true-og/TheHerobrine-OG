@@ -17,12 +17,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
-import com.onarandombox.MultiverseCore.MultiverseCore;
-import com.onarandombox.MultiverseCore.api.Core;
-import com.onarandombox.MultiverseCore.api.MVWorldManager;
 
 import lombok.Getter;
 import net.kyori.adventure.text.TextComponent;
@@ -42,10 +40,7 @@ public class LobbyManager {
     private static LobbyManager instance;
 
     @Getter
-    private MultiverseCore multiverseCore;
-
-    @Getter
-    private MVWorldManager mvWorldManager;
+    private MyWorlds myWorlds;
 
     private final HashMap<String, LobbyConfig> lobbyConfigs;
     private final HashMap<String, GameLobby> gameLobbies;
@@ -58,7 +53,7 @@ public class LobbyManager {
         lobbyConfigs = new HashMap<>();
         gameLobbies = new HashMap<>();
 
-        hookMultiverse();
+        hookMyWorlds();
 
         try {
 
@@ -73,62 +68,25 @@ public class LobbyManager {
 
     }
 
-    private void hookMultiverse() {
+    private void hookMyWorlds() {
 
-        Plugin mvPlugin = Bukkit.getServer().getPluginManager().getPlugin("Multiverse-Core");
-        if (mvPlugin == null || !mvPlugin.isEnabled()) {
+        Plugin mwPlugin = Bukkit.getServer().getPluginManager().getPlugin("MyWorlds");
+        if (mwPlugin == null || !mwPlugin.isEnabled()) {
 
-            Console.error("Multiverse-Core is not installed or not enabled.");
-            mvWorldManager = null;
-            multiverseCore = null;
+            Console.error("MyWorlds is not installed or not enabled.");
+            myWorlds = null;
             return;
 
         }
 
-        if (mvPlugin instanceof MultiverseCore) {
+        if (mwPlugin instanceof MyWorlds) {
 
-            multiverseCore = (MultiverseCore) mvPlugin;
-            mvWorldManager = multiverseCore.getMVWorldManager();
+            myWorlds = (MyWorlds) mwPlugin;
             return;
 
         }
 
-        try {
-
-            Core core = Bukkit.getServicesManager().load(Core.class);
-            if (core != null) {
-
-                mvWorldManager = core.getMVWorldManager();
-
-            }
-
-        } catch (Exception ignored) {
-
-        }
-
-        if (mvWorldManager == null) {
-
-            try {
-
-                var m = mvPlugin.getClass().getMethod("getMVWorldManager");
-                Object res = m.invoke(mvPlugin);
-                if (res instanceof MVWorldManager) {
-
-                    mvWorldManager = (MVWorldManager) res;
-
-                }
-
-            } catch (Exception ignored) {
-
-            }
-
-        }
-
-        if (mvWorldManager == null) {
-
-            Console.error("Failed to hook Multiverse MVWorldManager (unexpected Multiverse-Core implementation).");
-
-        }
+        Console.error("Failed to hook MyWorlds (unexpected implementation).");
 
     }
 

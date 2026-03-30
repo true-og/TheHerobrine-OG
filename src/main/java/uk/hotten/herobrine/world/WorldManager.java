@@ -14,17 +14,15 @@ import org.bukkit.Difficulty;
 import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.WorldType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.onarandombox.MultiverseCore.api.MVWorldManager;
-import com.onarandombox.MultiverseCore.api.MultiverseWorld;
 
 import lombok.Getter;
 import net.kyori.adventure.text.TextComponent;
@@ -33,7 +31,6 @@ import net.kyori.adventure.text.event.HoverEvent;
 import uk.hotten.herobrine.events.GameStateUpdateEvent;
 import uk.hotten.herobrine.game.runnables.MapVotingRunnable;
 import uk.hotten.herobrine.lobby.GameLobby;
-import uk.hotten.herobrine.lobby.LobbyManager;
 import uk.hotten.herobrine.utils.Console;
 import uk.hotten.herobrine.utils.GameState;
 import uk.hotten.herobrine.utils.Message;
@@ -47,9 +44,6 @@ public class WorldManager implements Listener {
     private JavaPlugin plugin;
     private GameLobby gameLobby;
 
-    @Getter
-    private MVWorldManager mvWorldManager;
-
     private String fileBase;
 
     @Getter
@@ -59,10 +53,10 @@ public class WorldManager implements Listener {
     private MapData gameMapData;
 
     @Getter
-    private MultiverseWorld gameWorld;
+    private World gameWorld;
 
     @Getter
-    private MultiverseWorld hubWorld;
+    private World hubWorld;
 
     @Getter
     private HashMap<Integer, VotingMap> votingMaps;
@@ -90,7 +84,6 @@ public class WorldManager implements Listener {
         Console.info(gameLobby, "Loading World Manager...");
         this.plugin = plugin;
         this.gameLobby = gameLobby;
-        mvWorldManager = LobbyManager.getInstance().getMultiverseCore().getMVWorldManager();
 
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
 
@@ -358,35 +351,32 @@ public class WorldManager implements Listener {
         }
 
         String worldName = gameLobby.getLobbyId() + "-" + map.getInternalName();
-        boolean ok = mvWorldManager.addWorld(worldName, World.Environment.NORMAL, null, WorldType.NORMAL, false, null);
-        if (!ok) {
+        WorldConfig wc = WorldConfig.get(worldName);
+        World world = wc.loadWorld();
+        if (world == null) {
 
-            Console.error(gameLobby, "Failed to register/load MV game world: " + worldName);
+            Console.error(gameLobby, "Failed to load MyWorlds game world: " + worldName);
             return;
 
         }
 
-        gameWorld = mvWorldManager.getMVWorld(worldName);
-        if (gameWorld == null || gameWorld.getCBWorld() == null) {
+        gameWorld = world;
 
-            Console.error(gameLobby, "MV returned null world after addWorld: " + worldName);
-            return;
-
-        }
-
-        gameWorld.setAllowAnimalSpawn(false);
-        gameWorld.setAllowMonsterSpawn(false);
-        gameWorld.setDifficulty(Difficulty.NORMAL);
-        gameWorld.setTime("midnight");
-        gameWorld.getCBWorld().setGameRule(GameRule.DO_FIRE_TICK, false);
-        gameWorld.getCBWorld().setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
-        gameWorld.getCBWorld().setGameRule(GameRule.SHOW_DEATH_MESSAGES, false);
+        wc.spawnControl.setAnimals(true);
+        wc.spawnControl.setMonsters(true);
+        wc.difficulty = Difficulty.NORMAL;
+        wc.updateDifficulty(world);
+        wc.timeControl.setTime(18000);
+        wc.timeControl.setLocking(true);
+        world.setGameRule(GameRule.DO_FIRE_TICK, false);
+        world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+        world.setGameRule(GameRule.SHOW_DEATH_MESSAGES, false);
 
         gameMapData = map.getMapData();
 
         for (Datapoint dp : gameMapData.getDatapoints()) {
 
-            Location dLoc = new Location(gameWorld.getCBWorld(), dp.getX(), dp.getY(), dp.getZ());
+            Location dLoc = new Location(gameWorld, dp.getX(), dp.getY(), dp.getZ());
             switch (dp.getType()) {
 
                 case SURVIVOR_SPAWN -> {
@@ -461,26 +451,23 @@ public class WorldManager implements Listener {
         }
 
         String worldName = gameLobby.getLobbyId() + "-hub";
-        boolean ok = mvWorldManager.addWorld(worldName, World.Environment.NORMAL, null, WorldType.NORMAL, false, null);
-        if (!ok) {
+        WorldConfig wc = WorldConfig.get(worldName);
+        World world = wc.loadWorld();
+        if (world == null) {
 
-            Console.error(gameLobby, "Failed to register/load MV hub world: " + worldName);
+            Console.error(gameLobby, "Failed to load MyWorlds hub world: " + worldName);
             return;
 
         }
 
-        hubWorld = mvWorldManager.getMVWorld(worldName);
-        if (hubWorld == null || hubWorld.getCBWorld() == null) {
+        hubWorld = world;
 
-            Console.error(gameLobby, "MV returned null hub world after addWorld: " + worldName);
-            return;
-
-        }
-
-        hubWorld.setAllowAnimalSpawn(false);
-        hubWorld.setAllowMonsterSpawn(false);
-        hubWorld.setDifficulty(Difficulty.PEACEFUL);
-        hubWorld.setTime("midnight");
+        wc.spawnControl.setAnimals(true);
+        wc.spawnControl.setMonsters(true);
+        wc.difficulty = Difficulty.PEACEFUL;
+        wc.updateDifficulty(world);
+        wc.timeControl.setTime(18000);
+        wc.timeControl.setLocking(true);
         Console.info(gameLobby, "Finished loading!");
 
     }
@@ -515,9 +502,10 @@ public class WorldManager implements Listener {
 
         Console.info(gameLobby, "Cleaning the map...");
 
+        String gameWorldName = gameWorld.getName();
         for (Player p : Bukkit.getServer().getOnlinePlayers()) {
 
-            if (p.getWorld() != null && p.getWorld().getName().equals(gameWorld.getName())) {
+            if (p.getWorld() != null && p.getWorld().getName().equals(gameWorldName)) {
 
                 World main = Bukkit.getServer().getWorld("world");
                 if (main == null)
@@ -529,7 +517,7 @@ public class WorldManager implements Listener {
 
         }
 
-        mvWorldManager.deleteWorld(gameWorld.getName());
+        WorldConfig.get(gameWorldName).deleteWorld();
 
         gameWorld = null;
         gameMapData = null;
@@ -564,9 +552,10 @@ public class WorldManager implements Listener {
         if (hubWorld == null)
             return;
 
+        String hubWorldName = hubWorld.getName();
         for (Player p : Bukkit.getServer().getOnlinePlayers()) {
 
-            if (p.getWorld() != null && p.getWorld().getName().equals(hubWorld.getName())) {
+            if (p.getWorld() != null && p.getWorld().getName().equals(hubWorldName)) {
 
                 World main = Bukkit.getServer().getWorld("world");
                 if (main == null)
@@ -578,7 +567,7 @@ public class WorldManager implements Listener {
 
         }
 
-        mvWorldManager.deleteWorld(hubWorld.getName());
+        WorldConfig.get(hubWorldName).deleteWorld();
         hubWorld = null;
 
     }

@@ -1,6 +1,6 @@
 package uk.hotten.herobrine.game;
 
-import com.onarandombox.MultiverseCore.api.MVWorldManager;
+import com.bergerkiller.bukkit.mw.MyWorlds;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +43,6 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 import uk.hotten.herobrine.kit.KitGui;
 import uk.hotten.herobrine.lobby.GameLobby;
-import uk.hotten.herobrine.lobby.LobbyManager;
 import uk.hotten.herobrine.stat.GameRank;
 import uk.hotten.herobrine.stat.StatManager;
 import uk.hotten.herobrine.utils.GameState;
@@ -57,14 +56,12 @@ public class GMListener implements Listener {
 
     private GameManager gameManager;
     private GameLobby gameLobby;
-    private MVWorldManager mvWorldManager;
     private ArrayList<Player> kitCooldown = new ArrayList<>();
 
     public GMListener(GameManager gm, GameLobby gl) {
 
         this.gameManager = gm;
         this.gameLobby = gl;
-        mvWorldManager = LobbyManager.getInstance().getMultiverseCore().getMVWorldManager();
 
     }
 
@@ -96,7 +93,7 @@ public class GMListener implements Listener {
 
         if (!gameManager.canJoin(player)) {
 
-            player.teleport(mvWorldManager.getSpawnWorld().getSpawnLocation());
+            player.teleport(MyWorlds.getMainWorld().getSpawnLocation());
             Message.send(player, Message.format("&cThis lobby is full."));
             return;
 
