@@ -362,8 +362,8 @@ public class WorldManager implements Listener {
 
         gameWorld = world;
 
-        wc.spawnControl.setAnimals(true);
-        wc.spawnControl.setMonsters(true);
+        wc.spawnControl.setAnimals(false);
+        wc.spawnControl.setMonsters(false);
         wc.difficulty = Difficulty.NORMAL;
         wc.updateDifficulty(world);
         wc.timeControl.setTime(18000);
