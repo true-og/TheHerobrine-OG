@@ -6,7 +6,9 @@ author: Gxorge
 description: Remake of "The Herobrine!" v2 from HiveMC.
 depend:
   - ProtocolLib
+softdepend:
   - MyWorlds
+  - My_Worlds
 
 commands:
   hbsetherobrine:

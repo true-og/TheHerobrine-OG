@@ -34,6 +34,8 @@ import uk.hotten.herobrine.utils.Message;
 
 public class LobbyManager {
 
+    private static final String[] MY_WORLDS_PLUGIN_NAMES = { "MyWorlds", "My_Worlds" };
+
     private final JavaPlugin plugin;
 
     @Getter
@@ -70,23 +72,28 @@ public class LobbyManager {
 
     private void hookMyWorlds() {
 
-        Plugin mwPlugin = Bukkit.getServer().getPluginManager().getPlugin("MyWorlds");
-        if (mwPlugin == null || !mwPlugin.isEnabled()) {
+        for (String pluginName : MY_WORLDS_PLUGIN_NAMES) {
 
-            Console.error("MyWorlds is not installed or not enabled.");
+            Plugin mwPlugin = Bukkit.getServer().getPluginManager().getPlugin(pluginName);
+            if (mwPlugin == null || !mwPlugin.isEnabled())
+                continue;
+
+            if (mwPlugin instanceof MyWorlds) {
+
+                myWorlds = (MyWorlds) mwPlugin;
+                Console.info("Hooked world plugin: " + mwPlugin.getName());
+                return;
+
+            }
+
+            Console.error("Detected '" + pluginName + "' but it was not a MyWorlds implementation.");
             myWorlds = null;
             return;
 
         }
 
-        if (mwPlugin instanceof MyWorlds) {
-
-            myWorlds = (MyWorlds) mwPlugin;
-            return;
-
-        }
-
-        Console.error("Failed to hook MyWorlds (unexpected implementation).");
+        Console.error("Neither MyWorlds nor My_Worlds is installed or enabled.");
+        myWorlds = null;
 
     }
 

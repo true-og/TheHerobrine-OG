@@ -39,7 +39,14 @@ public class HerobrinePluginOG extends JavaPlugin {
 
         new SqlManager(this);
         new RedisManager(this);
-        new LobbyManager(this);
+        LobbyManager lobbyManager = new LobbyManager(this);
+        if (lobbyManager.getMyWorlds() == null) {
+
+            Console.error("Disabling The Herobrine! because MyWorlds/My_Worlds could not be hooked.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+
+        }
 
         getCommand("hbsetherobrine").setExecutor(new SetHerobrineCommand());
         getCommand("hbforcestart").setExecutor(new ForceStartCommand());
@@ -65,7 +72,8 @@ public class HerobrinePluginOG extends JavaPlugin {
     @Override
     public void onDisable() {
 
-        LobbyManager.getInstance().shutdown();
+        if (LobbyManager.getInstance() != null)
+            LobbyManager.getInstance().shutdown();
 
     }
 
