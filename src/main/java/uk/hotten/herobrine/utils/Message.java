@@ -1,10 +1,11 @@
 package uk.hotten.herobrine.utils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.StringTokenizer;
+import java.util.stream.Collectors;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.trueog.utilitiesog.UtilitiesOG;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import uk.hotten.herobrine.lobby.GameLobby;
@@ -77,19 +78,26 @@ public class Message {
 
     }
 
-    public static ArrayList<String> createArray(String... lines) {
+    public static ArrayList<TextComponent> createArray(String... lines) {
 
-        return new ArrayList<>(Arrays.asList(lines));
+        ArrayList<TextComponent> result = new ArrayList<>();
+        for (String line : lines) {
+
+            result.add(UtilitiesOG.trueogColorize(line));
+
+        }
+
+        return result;
 
     }
 
-    public static ArrayList<String> addLinebreaks(String input, String toAppendAfterNewline) {
+    public static ArrayList<TextComponent> addLinebreaks(String input, String toAppendAfterNewline) {
 
         return addLinebreaks(input, 20, toAppendAfterNewline);
 
     }
 
-    public static ArrayList<String> addLinebreaks(String input, int maxLineLength, String toAppendAfterNewline) {
+    public static ArrayList<TextComponent> addLinebreaks(String input, int maxLineLength, String toAppendAfterNewline) {
 
         ArrayList<String> result = new ArrayList<>();
 
@@ -117,7 +125,7 @@ public class Message {
 
         result.add(output.toString());
 
-        return result;
+        return result.stream().map(UtilitiesOG::trueogColorize).collect(Collectors.toCollection(ArrayList::new));
 
     }
 

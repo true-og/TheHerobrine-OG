@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
+import net.kyori.adventure.text.TextComponent;
 import net.trueog.gxui.GUIItem;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -29,7 +30,7 @@ public abstract class Kit implements Listener {
     private boolean requirePermission;
 
     @Getter
-    private ArrayList<String> desc;
+    private ArrayList<TextComponent> desc;
 
     @Getter
     private GUIItem displayItem;
@@ -37,7 +38,7 @@ public abstract class Kit implements Listener {
     public HashMap<Player, ArrayList<KitAbility>> abilities;
 
     public Kit(GameManager gm, String internalName, String displayName, String permission, boolean requirePermission,
-            ArrayList<String> desc, GUIItem displayItem)
+            ArrayList<TextComponent> desc, GUIItem displayItem)
     {
 
         this.gm = gm;
