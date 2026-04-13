@@ -24,6 +24,14 @@ import uk.hotten.herobrine.utils.Message;
 
 public class HerobrinePluginOG extends JavaPlugin {
 
+    private static boolean hasIllegalStack = false;
+
+    public static boolean hasIllegalStack() {
+
+        return hasIllegalStack;
+
+    }
+
     @Override
     public void onEnable() {
 
@@ -62,6 +70,13 @@ public class HerobrinePluginOG extends JavaPlugin {
         getCommand("hbdeletelobby").setTabCompleter(new DeleteLobbyCompleter());
         getCommand("hbspectate").setExecutor(new SpectateCommand());
         getCommand("hbreloadconfigs").setExecutor(new ReloadConfigsCommand());
+
+        if (getServer().getPluginManager().getPlugin("IllegalStack-OG") != null) {
+
+            hasIllegalStack = true;
+            Console.info("Hooked into IllegalStack-OG for item check exemptions.");
+
+        }
 
         ScoreboardLib.setPluginInstance(this);
 

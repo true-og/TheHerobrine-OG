@@ -26,7 +26,7 @@ kotlin { jvmToolchain(17) }
 /* ----------------------------- Metadata ------------------------------ */
 group = "uk.hotten.herobrine"
 
-version = "1.5"
+version = "1.5.1"
 
 val apiVersion = "1.19" // Minecraft server target version.
 
@@ -76,6 +76,7 @@ dependencies {
     compileOnly("org.purpurmc.purpur:purpur-api:1.19.4-R0.1-SNAPSHOT") // Declare Purpur API version to be packaged.
     compileOnly("io.github.miniplaceholders:miniplaceholders-api:2.2.3") // Import MiniPlaceholders API.
     compileOnly(files("libs/ProtocolLib/ProtocolLib-5.0.jar")) // Import Legacy ProtocolLib API.
+    compileOnly(files("libs/IllegalStack-OG/IllegalStack-OG-2.9.13.jar")) // Import IllegalStack-OG API.
     compileOnly("com.github.regix1:MyWorlds:master-SNAPSHOT") // Import MyWorlds API from JitPack.
     implementation(project(":libs:GxUI-OG")) // Import TrueOG Network GxUI-OG Java API (from source).
     implementation(files("libs/ScoreboardLib/ScoreboardLib-1.1.0-SNAPSHOT.jar")) // Import ScoreboardLib API.

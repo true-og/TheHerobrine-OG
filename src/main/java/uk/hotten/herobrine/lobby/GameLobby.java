@@ -12,6 +12,8 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
+import uk.hotten.herobrine.HerobrinePluginOG;
+import uk.hotten.herobrine.compat.IllegalStackCompat;
 import uk.hotten.herobrine.data.RedisManager;
 import uk.hotten.herobrine.game.GameManager;
 import uk.hotten.herobrine.game.runnables.MapVotingRunnable;
@@ -96,6 +98,17 @@ public class GameLobby {
     public void shutdown(boolean removeSelf, boolean recreate) {
 
         Console.info("Lobby " + lobbyId + " is shutting down...");
+
+        if (HerobrinePluginOG.hasIllegalStack() && players != null) {
+
+            for (Player p : players) {
+
+                IllegalStackCompat.unexemptPlayer(p.getUniqueId());
+
+            }
+
+        }
+
         HandlerList.unregisterAll(gameManager.getGmListener());
         HandlerList.unregisterAll(worldManager);
         gameManager.setGameStateSilently(GameState.DEAD);

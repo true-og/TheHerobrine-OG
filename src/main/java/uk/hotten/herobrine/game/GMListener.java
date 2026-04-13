@@ -41,6 +41,8 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
+import uk.hotten.herobrine.HerobrinePluginOG;
+import uk.hotten.herobrine.compat.IllegalStackCompat;
 import uk.hotten.herobrine.kit.KitGui;
 import uk.hotten.herobrine.lobby.GameLobby;
 import uk.hotten.herobrine.stat.GameRank;
@@ -112,6 +114,9 @@ public class GMListener implements Listener {
         }
 
         gameLobby.getPlayers().add(player);
+
+        if (HerobrinePluginOG.hasIllegalStack())
+            IllegalStackCompat.exemptPlayer(player.getUniqueId());
 
         gameLobby.getStatManager().check(player.getUniqueId());
 
@@ -202,6 +207,10 @@ public class GMListener implements Listener {
     private void onLeaveLogic(Player player) {
 
         gameLobby.getPlayers().remove(player);
+
+        if (HerobrinePluginOG.hasIllegalStack())
+            IllegalStackCompat.unexemptPlayer(player.getUniqueId());
+
         if (!gameManager.getSpectators().contains(player))
             Message.broadcast(gameLobby, Message.format("&b" + player.getName() + " &ehas quit."));
         gameManager.getSurvivors().remove(player);
