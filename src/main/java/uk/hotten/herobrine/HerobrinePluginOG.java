@@ -45,8 +45,24 @@ public class HerobrinePluginOG extends JavaPlugin {
         else
             Message.prefix = getConfig().getString("gamePrefix");
 
-        new SqlManager(this);
-        new RedisManager(this);
+        SqlManager sqlManager = new SqlManager(this);
+        if (!sqlManager.isReady()) {
+
+            Console.error("Disabling The Herobrine! because SQL could not be initialized.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+
+        }
+
+        RedisManager redisManager = new RedisManager(this);
+        if (!redisManager.isReady()) {
+
+            Console.error("Disabling The Herobrine! because Redis could not be initialized.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+
+        }
+
         LobbyManager lobbyManager = new LobbyManager(this);
         if (lobbyManager.getMyWorlds() == null) {
 
@@ -89,6 +105,10 @@ public class HerobrinePluginOG extends JavaPlugin {
 
         if (LobbyManager.getInstance() != null)
             LobbyManager.getInstance().shutdown();
+        if (RedisManager.getInstance() != null)
+            RedisManager.getInstance().shutdown();
+        if (SqlManager.get() != null)
+            SqlManager.get().shutdown();
 
     }
 

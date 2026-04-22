@@ -17,6 +17,9 @@ public class RedisManager {
     private String password;
     private boolean pwRequired;
 
+    @Getter
+    private boolean ready;
+
     public RedisManager(JavaPlugin plugin) {
 
         Console.info("Loading Redis Manager...");
@@ -30,7 +33,8 @@ public class RedisManager {
         readPool = new JedisPool(new JedisPoolConfig(), host, port);
         writePool = new JedisPool(new JedisPoolConfig(), host, port);
 
-        if (testConnection())
+        ready = testConnection();
+        if (ready)
             Console.info("Redis Manager is ready!");
 
     }
@@ -111,6 +115,19 @@ public class RedisManager {
             jedis.del(key);
 
         }
+
+    }
+
+    public void shutdown() {
+
+        ready = false;
+        if (readPool != null)
+            readPool.close();
+        if (writePool != null)
+            writePool.close();
+        readPool = null;
+        writePool = null;
+        instance = null;
 
     }
 

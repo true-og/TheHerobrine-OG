@@ -26,7 +26,7 @@ kotlin { jvmToolchain(17) }
 /* ----------------------------- Metadata ------------------------------ */
 group = "uk.hotten.herobrine"
 
-version = "1.5.1"
+version = "1.5.2"
 
 val apiVersion = "1.19" // Minecraft server target version.
 

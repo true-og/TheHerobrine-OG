@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -180,7 +181,13 @@ public class LobbyManager {
         }
 
         GameLobby gl = new GameLobby(plugin, lobbyConfig, lobbyId);
-        gl.initialize();
+        if (!gl.initialize()) {
+
+            Console.error("Failed to initialize lobby " + lobbyId + ".");
+            return null;
+
+        }
+
         gameLobbies.put(lobbyId, gl);
         return lobbyId;
 
@@ -253,6 +260,60 @@ public class LobbyManager {
         }
 
         gameLobbies.clear();
+
+    }
+
+    public int reloadConfigs() throws Exception {
+
+        List<GameLobby> existingLobbies = new ArrayList<>(gameLobbies.values());
+
+        checkAndLoadConfigs(false);
+
+        int recreated = 0;
+        for (GameLobby gameLobby : existingLobbies) {
+
+            String configId = gameLobby.getLobbyConfig().getId();
+            gameLobby.shutdown(true, false);
+
+            LobbyConfig refreshedConfig = getLobbyConfig(configId);
+            if (refreshedConfig == null) {
+
+                Console.error("Skipping recreation of lobby " + gameLobby.getLobbyId() + " because config '" + configId
+                        + "' no longer exists.");
+                continue;
+
+            }
+
+            if (createLobby(refreshedConfig) != null)
+                recreated++;
+
+        }
+
+        for (LobbyConfig lobbyConfig : lobbyConfigs.values()) {
+
+            int currentCount = getLobbyCount(lobbyConfig.getId());
+            while (currentCount < lobbyConfig.getAutoStartAmount()) {
+
+                if (createLobby(lobbyConfig) == null)
+                    break;
+                currentCount++;
+                recreated++;
+
+            }
+
+        }
+
+        return recreated;
+
+    }
+
+    private int getLobbyCount(String configId) {
+
+        int count = 0;
+        for (GameLobby gameLobby : gameLobbies.values())
+            if (gameLobby.getLobbyConfig().getId().equals(configId))
+                count++;
+        return count;
 
     }
 

@@ -56,10 +56,20 @@ public class GameLobby {
 
     }
 
-    public void initialize() {
+    public boolean initialize() {
 
         Console.info("Initializing lobby " + lobbyId);
         worldManager = new WorldManager(plugin, this);
+        if (!worldManager.isReady()) {
+
+            Console.error("Lobby " + lobbyId + " failed validation and will not be created.");
+            HandlerList.unregisterAll(worldManager);
+            worldManager.cleanHub();
+            worldManager = null;
+            return false;
+
+        }
+
         gameManager = new GameManager(plugin, this, RedisManager.getInstance(), protocolManager);
         statManager = new StatManager(plugin, this);
         players = new ArrayList<>();
@@ -92,6 +102,7 @@ public class GameLobby {
         new MapVotingRunnable(this).runTaskTimerAsynchronously(plugin, 0, 20);
 
         Console.info("Lobby " + lobbyId + " is ready.");
+        return true;
 
     }
 
@@ -109,16 +120,31 @@ public class GameLobby {
 
         }
 
-        HandlerList.unregisterAll(gameManager.getGmListener());
-        HandlerList.unregisterAll(worldManager);
-        gameManager.setGameStateSilently(GameState.DEAD);
-        gameManager.updateTags(GameManager.ScoreboardUpdateAction.BEGONETHOT);
-        gameManager.getScoreboards().values().forEach(Scoreboard::deactivate);
-        gameManager.getScoreboards().clear();
-        gameManager.voidKits();
-        statManager.stopTracking();
-        worldManager.clean();
-        worldManager.cleanHub();
+        if (enderEyeSfxFix != null)
+            protocolManager.removePacketListener(enderEyeSfxFix);
+
+        if (gameManager != null) {
+
+            HandlerList.unregisterAll(gameManager.getGmListener());
+            gameManager.setGameStateSilently(GameState.DEAD);
+            gameManager.updateTags(GameManager.ScoreboardUpdateAction.BEGONETHOT);
+            gameManager.getScoreboards().values().forEach(Scoreboard::deactivate);
+            gameManager.getScoreboards().clear();
+            gameManager.voidKits();
+
+        }
+
+        if (worldManager != null) {
+
+            HandlerList.unregisterAll(worldManager);
+            worldManager.clean();
+            worldManager.cleanHub();
+
+        }
+
+        if (statManager != null)
+            statManager.stopTracking();
+
         if (removeSelf)
             LobbyManager.getInstance().removeLobby(lobbyId);
         Console.info("Lobby " + lobbyId + " has shutdown.");

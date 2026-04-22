@@ -572,4 +572,10 @@ public class WorldManager implements Listener {
 
     }
 
+    public boolean isReady() {
+
+        return hubWorld != null && availableMaps != null && availableMaps.getMaps() != null && !votingMaps.isEmpty();
+
+    }
+
 }

@@ -12,14 +12,16 @@ public class ReloadConfigsCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 
-        Message.send(sender, Message.format("&eNote: This will not affect already created lobbies!"));
-        Message.send(sender, Message.format("Reloading lobby configurations..."));
+        Message.send(sender,
+                Message.format("&eNote: Active lobby instances will be rebuilt from the refreshed configs."));
+        Message.send(sender, Message.format("&eReloading lobby configurations and rebuilding active lobbies..."));
         try {
 
-            LobbyManager.getInstance().checkAndLoadConfigs(false);
+            int recreated = LobbyManager.getInstance().reloadConfigs();
 
-            Message.send(sender, Message.format("&aSuccessfully loaded "
-                    + LobbyManager.getInstance().getLobbyConfigsIds().size() + " lobby configuration(s)."));
+            Message.send(sender,
+                    Message.format("&aSuccessfully loaded " + LobbyManager.getInstance().getLobbyConfigsIds().size()
+                            + " lobby configuration(s) and rebuilt " + recreated + " lobby instance(s)."));
 
         } catch (Exception e) {
 

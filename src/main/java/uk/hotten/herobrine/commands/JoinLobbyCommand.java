@@ -1,6 +1,7 @@
 package uk.hotten.herobrine.commands;
 
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -66,7 +67,18 @@ public class JoinLobbyCommand implements CommandExecutor {
         }
 
         Message.send(player, Message.format("&aJoining " + gl.getLobbyId() + "..."));
-        player.teleport(Bukkit.getWorld(gl.getLobbyId() + "-hub").getSpawnLocation());
+        World hubWorld = gl.getWorldManager().getHubWorld();
+        if (hubWorld == null)
+            hubWorld = Bukkit.getWorld(gl.getLobbyId() + "-hub");
+
+        if (hubWorld == null) {
+
+            Message.send(player, Message.format("&cThis lobby is unavailable right now."));
+            return true;
+
+        }
+
+        player.teleport(hubWorld.getSpawnLocation());
 
         return true;
 

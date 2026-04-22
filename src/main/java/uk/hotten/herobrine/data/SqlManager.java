@@ -6,6 +6,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import lombok.Getter;
 import org.bukkit.plugin.java.JavaPlugin;
 import uk.hotten.herobrine.utils.Console;
 
@@ -15,6 +16,9 @@ public class SqlManager {
 
     private String host, username, password;
     private int port;
+
+    @Getter
+    private boolean ready;
 
     public SqlManager(JavaPlugin plugin) {
 
@@ -26,8 +30,9 @@ public class SqlManager {
         password = plugin.getConfig().getString("sqlPassword");
         port = plugin.getConfig().getInt("sqlPort");
 
-        checkStatTable();
-        Console.info("SQL Manager is ready!");
+        ready = checkStatTable();
+        if (ready)
+            Console.info("SQL Manager is ready!");
 
     }
 
@@ -49,7 +54,7 @@ public class SqlManager {
 
     }
 
-    private void checkStatTable() {
+    private boolean checkStatTable() {
 
         try (Connection connection = createConnection()) {
 
@@ -58,7 +63,7 @@ public class SqlManager {
 
             if (resultSet.next()) {
 
-                return;
+                return true;
 
             }
 
@@ -72,13 +77,22 @@ public class SqlManager {
 
             statement.executeUpdate(sql);
             Console.info("Created stat table, was missing.");
+            return true;
 
         } catch (Exception error) {
 
             Console.error("Failed to check stat table.");
             error.printStackTrace();
+            return false;
 
         }
+
+    }
+
+    public void shutdown() {
+
+        ready = false;
+        instance = null;
 
     }
 
