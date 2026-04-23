@@ -1,9 +1,9 @@
-networkName: $BRAND_NAME # Name of your network
+networkName: ^{BRAND_NAME} # Name of your network
 networkWeb: true-og.net # Website of your network
-gamePrefix: "DEFAULT" # PLEASE PUT IN SPEECH MARKS! Set as "DEFAULT" for classic HiveMC, else it will be your own.
+gamePrefix: "DEFAULT" # PLEASE PUT IN SPEECH MARKS! Set as "DEFAULT" for classic Hive Java, else it will be your own.
 mapBase: "maps" # Folder where the map base and maps folder is.
 
-lockClassicKits: false # Do you want to lock classic kits such as Archer and Scout behind their permission?
+lockClassicKits: true # Do you want to lock classic kits such as Archer and Scout behind their permission?
 lockUnlockableKits: true # Do you want to lock unlockable kits such as Mage and Sorcerer behind their permission?
 showDeathBringerAt: 100000 # How many points must the top player surpass for the Death Bringer rank to show?
 
@@ -12,10 +12,10 @@ showDebugMessages: false # Show debug messages?
 ## Redis Configuration
 redisHost: "localhost"
 redisPort: 6379
-redisPassword: "$KEYDB_PASSWORD" # Leave this blank for no password
+redisPassword: "^{KEYDB_PASSWORD}" # Leave this blank for no password
 
 ### MariaDB Configuration
 sqlHost: "localhost"
-sqlUsername: "$MARIADB_USER"
-sqlPassword: "$MARIADB_PASSWORD"
+sqlUsername: "^{MARIADB_USER}"
+sqlPassword: "^{MARIADB_PASSWORD}"
 sqlPort: 3306
