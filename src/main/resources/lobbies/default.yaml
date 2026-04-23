@@ -1,0 +1,9 @@
+id: "default"
+prefix: "HB"
+minPlayers: 8
+maxPlayers: 13
+startTime: 90
+allowOverfill: false
+votingMaps: 2
+endVotingAt: 10
+autoStartAmount: 1

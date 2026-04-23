@@ -21,7 +21,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 
 import lombok.Getter;
 import net.kyori.adventure.text.TextComponent;
@@ -122,14 +121,9 @@ public class LobbyManager {
 
         if (files.isEmpty()) {
 
-            Console.error("No lobby config files detected. Creating the default...");
+            Console.info("No lobby config files detected. Saving bundled default...");
 
-            LobbyConfig defaultConfig = new LobbyConfig("default", "HB", 8, 13, 90, false, 3, 10, 1);
-
-            ObjectMapper objectMapper = new ObjectMapper(
-                    new YAMLFactory().disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER));
-
-            objectMapper.writeValue(new File(path + File.separator + "default.yaml"), defaultConfig);
+            plugin.saveResource("lobbies/default.yaml", false);
 
             Console.info("Default config file written. Please change!!");
 

@@ -199,9 +199,9 @@ public class WorldManager implements Listener {
 
         if (maps.size() < maxVotingMaps) {
 
-            Console.error("Your config '" + gameLobby.getLobbyConfig().getId()
-                    + "' is misconfigured. Please ensure 'votingMaps' does not exceed the maximum amount of maps you have for this configuration. You have a maximum of "
-                    + maps.size() + " configured.");
+            Console.info(gameLobby,
+                    "Only " + maps.size() + " map(s) available for config '" + gameLobby.getLobbyConfig().getId()
+                            + "'. Capping votingMaps from " + maxVotingMaps + " to " + maps.size() + ".");
             maxVotingMaps = maps.size();
 
         }
