@@ -30,6 +30,13 @@ version = "1.5.2"
 
 val apiVersion = "1.19" // Minecraft server target version.
 
+val vendoredLicenseFiles =
+    fileTree("libs") {
+        include("**/LICENSE", "**/LICENSE.*", "**/License", "**/License.*", "**/COPYING", "**/COPYING.*")
+        include("**/NOTICE", "**/NOTICE.*")
+        exclude("**/build/**", "**/.git/**")
+    }
+
 /* ----------------------------- Resources ----------------------------- */
 tasks.named<ProcessResources>("processResources") {
     val props = mapOf("version" to version, "apiVersion" to apiVersion)
@@ -57,10 +64,6 @@ repositories {
     maven { url = uri("https://hub.spigotmc.org/nexus/content/repositories/snapshots/") }
     maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
     maven { url = uri("https://oss.sonatype.org/content/repositories/central") }
-    maven { url = uri("https://jitpack.io") } // Import the Jitpack repository.
-    maven { url = uri("https://repo.dmulloy2.net/repository/public/") }
-    maven { url = uri("https://repo.onarandombox.com/content/groups/public/") } // Import the Multiverse 5 repository.
-    maven { url = uri("https://ci.mg-dev.eu/plugin/repository/everything") } // Import BKCommonLib repository.
 }
 
 /* ---------------------- Java project deps ---------------------------- */
@@ -75,9 +78,10 @@ dependencies {
     compileOnlyApi(project(":libs:Utilities-OG")) // Import TrueOG Network Utilities-OG Java API (from source).
     compileOnly("org.purpurmc.purpur:purpur-api:1.19.4-R0.1-SNAPSHOT") // Declare Purpur API version to be packaged.
     compileOnly("io.github.miniplaceholders:miniplaceholders-api:2.2.3") // Import MiniPlaceholders API.
-    compileOnly(files("libs/ProtocolLib/ProtocolLib-5.0.jar")) // Import Legacy ProtocolLib API.
+    compileOnly(files("libs/ProtocolLib/ProtocolLib-5.0.0-dev.jar")) // Import Legacy ProtocolLib API.
     compileOnly(files("libs/IllegalStack-OG/IllegalStack-OG-2.9.13.jar")) // Import IllegalStack-OG API.
-    compileOnly("com.github.regix1:MyWorlds:master-SNAPSHOT") // Import MyWorlds API from JitPack.
+    compileOnly(files("libs/BKCommonLib/BKCommonLib-1.19.4-v2.jar")) // Import BKCommonLib API.
+    compileOnly(files("libs/MyWorlds/MyWorlds-1.19.4-v1.jar")) // Import MyWorlds API.
     implementation(project(":libs:GxUI-OG")) // Import TrueOG Network GxUI-OG Java API (from source).
     implementation(files("libs/ScoreboardLib/ScoreboardLib-1.1.0-SNAPSHOT.jar")) // Import ScoreboardLib API.
 }
@@ -108,6 +112,14 @@ tasks.withType<AbstractArchiveTask>().configureEach { // Ensure reproducible .ja
 /* ----------------------------- Shadow -------------------------------- */
 tasks.shadowJar {
     exclude("io.github.miniplaceholders.*") // Exclude the MiniPlaceholders package from being shadowed.
+    from("LICENSE") {
+        into("META-INF/licenses/TheHerobrine-OG")
+        includeEmptyDirs = false
+    }
+    from(vendoredLicenseFiles) {
+        into("META-INF/licenses/libs")
+        includeEmptyDirs = false
+    }
     archiveClassifier.set("") // Use empty string instead of null.
     minimize()
 }
