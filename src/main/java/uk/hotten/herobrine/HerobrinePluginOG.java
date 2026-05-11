@@ -1,6 +1,7 @@
 package uk.hotten.herobrine;
 
 import me.tigerhix.lib.scoreboard.ScoreboardLib;
+import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.java.JavaPlugin;
 import uk.hotten.herobrine.commands.CreateLobbyCommand;
 import uk.hotten.herobrine.commands.CreateLobbyCompleter;
@@ -23,6 +24,7 @@ import uk.hotten.herobrine.data.SqlManager;
 import uk.hotten.herobrine.lobby.LobbyManager;
 import uk.hotten.herobrine.utils.Console;
 import uk.hotten.herobrine.utils.Message;
+import uk.hotten.herobrine.world.VoidChunkGenerator;
 
 public class HerobrinePluginOG extends JavaPlugin {
 
@@ -101,6 +103,15 @@ public class HerobrinePluginOG extends JavaPlugin {
         ScoreboardLib.setPluginInstance(this);
 
         Console.info("The Herobrine! is ready.");
+
+    }
+
+    @Override
+    public ChunkGenerator getDefaultWorldGenerator(String worldName, String id) {
+
+        // MyWorlds passes the chunk-generator id we set on WorldConfig.
+        // Anything (or "void") yields the void generator.
+        return new VoidChunkGenerator();
 
     }
 

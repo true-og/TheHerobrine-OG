@@ -368,6 +368,112 @@ public class WorldManager implements Listener {
 
     }
 
+    // Scans the world dir's region/ folder for r.X.Z.mca files, then samples chunks
+    // (centre-out) to find the first one with non-air content. Returns a Location
+    // one block above the highest non-air block for safe teleport. Null if no saved
+    // chunks contain content (worth letting the caller leave spawn alone).
+    private Location pickSavedRegionSpawn(World world, File worldDir) {
+
+        File regionDir = new File(worldDir, "region");
+        if (!regionDir.exists() || !regionDir.isDirectory())
+            return null;
+
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile("^r\\.(-?\\d+)\\.(-?\\d+)\\.mca$");
+        int minRX = Integer.MAX_VALUE, maxRX = Integer.MIN_VALUE;
+        int minRZ = Integer.MAX_VALUE, maxRZ = Integer.MIN_VALUE;
+        java.util.List<int[]> regions = new java.util.ArrayList<>();
+        File[] files = regionDir.listFiles();
+        if (files == null)
+            return null;
+        for (File f : files) {
+
+            // Skip empty stub region files -- mca starts with an 8 KiB header.
+            if (f.length() < 8192)
+                continue;
+            java.util.regex.Matcher m = p.matcher(f.getName());
+            if (!m.matches())
+                continue;
+            int rx = Integer.parseInt(m.group(1));
+            int rz = Integer.parseInt(m.group(2));
+            regions.add(new int[] { rx, rz });
+            if (rx < minRX)
+                minRX = rx;
+            if (rx > maxRX)
+                maxRX = rx;
+            if (rz < minRZ)
+                minRZ = rz;
+            if (rz > maxRZ)
+                maxRZ = rz;
+
+        }
+
+        if (regions.isEmpty())
+            return null;
+
+        int centerRX = (minRX + maxRX) / 2;
+        int centerRZ = (minRZ + maxRZ) / 2;
+
+        // Sort regions by distance to bbox center so we sample inside-out.
+        final int crx = centerRX;
+        final int crz = centerRZ;
+        regions.sort((a, b) -> {
+
+            int da = (a[0] - crx) * (a[0] - crx) + (a[1] - crz) * (a[1] - crz);
+            int db = (b[0] - crx) * (b[0] - crx) + (b[1] - crz) * (b[1] - crz);
+            return Integer.compare(da, db);
+
+        });
+
+        int minHeight = world.getMinHeight();
+
+        // Sample a sparse 4x4 grid of chunks per region, centre-out, looking for
+        // any chunk whose top column is non-air. Limits cost per loadMap.
+        int[] sampleOffsets = { 16, 8, 24, 4, 20, 12, 28, 0 };
+        for (int[] r : regions) {
+
+            int regionBaseChunkX = r[0] * 32;
+            int regionBaseChunkZ = r[1] * 32;
+            for (int dx : sampleOffsets) {
+
+                for (int dz : sampleOffsets) {
+
+                    int cx = regionBaseChunkX + dx;
+                    int cz = regionBaseChunkZ + dz;
+                    Chunk c;
+                    try {
+
+                        c = world.getChunkAt(cx, cz);
+                        c.load(true);
+
+                    } catch (Throwable t) {
+
+                        continue;
+
+                    }
+
+                    int blockX = (cx << 4) + 8;
+                    int blockZ = (cz << 4) + 8;
+                    int y = world.getHighestBlockYAt(blockX, blockZ);
+                    if (y > minHeight) {
+
+                        Console.info(gameLobby, "Found content in chunk " + cx + "," + cz + " (region " + r[0] + ","
+                                + r[1] + ") -- top block at y=" + y);
+                        c.setForceLoaded(true);
+                        noUnload.add(c);
+                        return new Location(world, blockX + 0.5, y + 1, blockZ + 0.5);
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        return null;
+
+    }
+
     public void loadMap(VotingMap map) {
 
         String worldName = gameLobby.getLobbyId() + "-" + map.getInternalName();
@@ -417,6 +523,11 @@ public class WorldManager implements Listener {
         }
 
         WorldConfig wc = WorldConfig.get(worldName);
+        // Force void generation for any chunks not already saved in the source's
+        // region/ folder. Source maps from WorldDownloader typically have
+        // generator=minecraft:flat in level.dat, which surprises admins teleporting
+        // outside the captured area with a sea of grass+bedrock.
+        wc.setChunkGeneratorName(plugin.getName() + ":void");
         World world;
         try {
 
@@ -439,7 +550,22 @@ public class WorldManager implements Listener {
         }
 
         gameWorld = world;
-        Console.info(gameLobby, "Game world '" + worldName + "' loaded.");
+        Console.info(gameLobby, "Game world '" + worldName + "' loaded with void chunk-generator override.");
+
+        // Move world spawn into a saved chunk so /world tp lands an admin in real
+        // terrain, not at the level.dat origin (often empty).
+        Location savedSpawn = pickSavedRegionSpawn(world, currentDir);
+        if (savedSpawn != null) {
+
+            world.setSpawnLocation(savedSpawn);
+            Console.info(gameLobby, "World spawn moved into saved region at " + savedSpawn.getBlockX() + ","
+                    + savedSpawn.getBlockY() + "," + savedSpawn.getBlockZ() + " for editing convenience.");
+
+        } else {
+
+            Console.info(gameLobby, "No saved region/ data found; world spawn left unchanged.");
+
+        }
 
         wc.spawnControl.setAnimals(false);
         wc.spawnControl.setMonsters(false);
@@ -588,6 +714,7 @@ public class WorldManager implements Listener {
         }
 
         WorldConfig wc = WorldConfig.get(worldName);
+        wc.setChunkGeneratorName(plugin.getName() + ":void");
         World world;
         try {
 
@@ -611,7 +738,16 @@ public class WorldManager implements Listener {
         }
 
         hubWorld = world;
-        Console.info(gameLobby, "Hub world '" + worldName + "' loaded.");
+        Console.info(gameLobby, "Hub world '" + worldName + "' loaded with void chunk-generator override.");
+
+        Location savedHubSpawn = pickSavedRegionSpawn(world, currentDir);
+        if (savedHubSpawn != null) {
+
+            world.setSpawnLocation(savedHubSpawn);
+            Console.info(gameLobby, "Hub spawn moved into saved region at " + savedHubSpawn.getBlockX() + ","
+                    + savedHubSpawn.getBlockY() + "," + savedHubSpawn.getBlockZ() + ".");
+
+        }
 
         wc.spawnControl.setAnimals(true);
         wc.spawnControl.setMonsters(true);
