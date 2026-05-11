@@ -11,7 +11,8 @@ import org.bukkit.command.TabCompleter;
 
 public class SetSpawnCompleter implements TabCompleter {
 
-    private static final List<String> TYPES = Arrays.asList("survivor", "herobrine", "alter", "shard");
+    private static final List<String> TYPES = Arrays.asList("survivor", "herobrine", "alter", "shard", "shardmin",
+            "shardmax");
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command cmd, String label, String[] args) {

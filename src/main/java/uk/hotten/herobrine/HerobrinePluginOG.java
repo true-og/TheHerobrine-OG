@@ -81,8 +81,8 @@ public class HerobrinePluginOG extends JavaPlugin {
         getCommand("hbforcestart").setExecutor(new ForceStartCommand());
         getCommand("hbdropshard").setExecutor(new DropShardCommand());
         getCommand("hbpausetimer").setExecutor(new PauseTimerCommand());
-        getCommand("hbvote").setExecutor(new VoteCommand());
-        getCommand("hbvote").setTabCompleter(new VoteCompleter());
+        getCommand("vote").setExecutor(new VoteCommand());
+        getCommand("vote").setTabCompleter(new VoteCompleter());
         getCommand("hbjoin").setExecutor(new JoinLobbyCommand());
         getCommand("hbjoin").setTabCompleter(new JoinLobbyCompleter());
         getCommand("hbcreatelobby").setExecutor(new CreateLobbyCommand());

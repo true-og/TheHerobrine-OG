@@ -118,6 +118,20 @@ public class WorldManager implements Listener {
 
     }
 
+    // Vanilla main worlds the plugin must never load/unload/delete or modify
+    // gamerules on.
+    // Cross-world player teleport is still handled by MyWorlds; we just refuse to
+    // manage these
+    // worlds ourselves so we cannot corrupt the server's overworld dimensions.
+    public static boolean isProtectedMainWorld(String worldName) {
+
+        if (worldName == null)
+            return false;
+        return worldName.equalsIgnoreCase("world") || worldName.equalsIgnoreCase("world_nether")
+                || worldName.equalsIgnoreCase("world_the_end");
+
+    }
+
     private ObjectMapper newYamlMapper() {
 
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
@@ -153,6 +167,14 @@ public class WorldManager implements Listener {
     // instance
     // instead of the freshly copied data.
     private boolean forceUnloadIfPresent(String worldName) {
+
+        if (isProtectedMainWorld(worldName)) {
+
+            Console.error(gameLobby,
+                    "Refusing to unload protected main world '" + worldName + "' -- TheHerobrine-OG never touches it.");
+            return false;
+
+        }
 
         World existing = Bukkit.getWorld(worldName);
         if (existing == null) {
@@ -312,7 +334,7 @@ public class WorldManager implements Listener {
 
         for (Player p : toSend) {
 
-            Message.send(p, Message.format("&6Vote for a map with /hbv #."));
+            Message.send(p, Message.format("&6Vote for a map with /v #."));
             Message.send(p, Message.format("&6Map choices up for voting:"));
             int current = 1;
             for (Map.Entry<Integer, VotingMap> e : votingMaps.entrySet()) {
@@ -323,7 +345,7 @@ public class WorldManager implements Listener {
                         .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT,
                                 Message.legacySerializerAnyCase(
                                         "&6Click here to vote for &b" + e.getValue().getMapData().getName())))
-                        .clickEvent(ClickEvent.runCommand("/hbv " + current));
+                        .clickEvent(ClickEvent.runCommand("/v " + current));
                 p.sendMessage(textComponent);
                 current++;
 
@@ -478,6 +500,14 @@ public class WorldManager implements Listener {
 
         String worldName = gameLobby.getLobbyId() + "-" + map.getInternalName();
         Console.info(gameLobby, "Loading map '" + map.getMapData().getName() + "' as world '" + worldName + "'");
+
+        if (isProtectedMainWorld(worldName)) {
+
+            Console.error(gameLobby,
+                    "Refusing to load map into protected main world '" + worldName + "'. Pick a different lobby id.");
+            return;
+
+        }
 
         File baseDir = resolveBaseDir();
         File toCopy = new File(baseDir, map.getInternalName());
@@ -654,6 +684,20 @@ public class WorldManager implements Listener {
         if (shardSpawns.isEmpty())
             Console.error(gameLobby, "Map '" + map.getMapData().getName()
                     + "' has no SHARD_SPAWN datapoints -- shards will never spawn.");
+        if (Double.isNaN(gameMapData.getShardMin()))
+            Console.error(gameLobby,
+                    "Map '" + map.getMapData().getName() + "' is missing shardMin -- shards will be destroyed on spawn."
+                            + " Run /hbsetspawn shardmin during map setup.");
+        if (Double.isNaN(gameMapData.getShardMax()))
+            Console.error(gameLobby,
+                    "Map '" + map.getMapData().getName() + "' is missing shardMax -- shards will be destroyed on spawn."
+                            + " Run /hbsetspawn shardmax during map setup.");
+        if (!Double.isNaN(gameMapData.getShardMin()) && !Double.isNaN(gameMapData.getShardMax())
+                && gameMapData.getShardMin() >= gameMapData.getShardMax())
+            Console.error(gameLobby,
+                    "Map '" + map.getMapData().getName() + "' has shardMin (" + gameMapData.getShardMin()
+                            + ") >= shardMax (" + gameMapData.getShardMax()
+                            + "); shards will be destroyed on every tick.");
 
         Console.info(gameLobby, "Finished loading map '" + map.getMapData().getName() + "'.");
 
@@ -663,6 +707,14 @@ public class WorldManager implements Listener {
 
         String worldName = gameLobby.getLobbyId() + "-hub";
         Console.info(gameLobby, "Loading hub for " + gameLobby.getLobbyId() + " as world '" + worldName + "'");
+
+        if (isProtectedMainWorld(worldName)) {
+
+            Console.error(gameLobby,
+                    "Refusing to load hub into protected main world '" + worldName + "'. Pick a different lobby id.");
+            return;
+
+        }
 
         File baseDir = resolveBaseDir();
         File toCopy = new File(baseDir, "hub");
@@ -787,9 +839,24 @@ public class WorldManager implements Listener {
         if (gameWorld == null)
             return;
 
-        Console.info(gameLobby, "Cleaning the map...");
-
         String gameWorldName = gameWorld.getName();
+
+        if (isProtectedMainWorld(gameWorldName)) {
+
+            Console.error(gameLobby, "Refusing to clean protected main world '" + gameWorldName
+                    + "'. Dropping the reference without touching the world.");
+            gameWorld = null;
+            gameMapData = null;
+            survivorSpawn = null;
+            herobrineSpawn = null;
+            alter = null;
+            shardSpawns = new ArrayList<>();
+            noUnload = new ArrayList<>();
+            return;
+
+        }
+
+        Console.info(gameLobby, "Cleaning the map...");
         for (Player p : Bukkit.getServer().getOnlinePlayers()) {
 
             if (p.getWorld() != null && p.getWorld().getName().equals(gameWorldName)) {
@@ -847,6 +914,16 @@ public class WorldManager implements Listener {
             return;
 
         String hubWorldName = hubWorld.getName();
+
+        if (isProtectedMainWorld(hubWorldName)) {
+
+            Console.error(gameLobby, "Refusing to clean protected main world '" + hubWorldName
+                    + "'. Dropping the reference without touching the world.");
+            hubWorld = null;
+            return;
+
+        }
+
         for (Player p : Bukkit.getServer().getOnlinePlayers()) {
 
             if (p.getWorld() != null && p.getWorld().getName().equals(hubWorldName)) {

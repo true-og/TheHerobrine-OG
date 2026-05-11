@@ -88,6 +88,34 @@ public class MapSetupWizard implements Listener {
 
         }
 
+        if (!Double.isNaN(data.getShardMin())) {
+
+            Message.send(player,
+                    Message.format("&a[done] &f5. shard min Y &7(" + ((long) data.getShardMin())
+                            + "; the lowest Y a shard may fall to"
+                            + " before being destroyed -- run &e/hbsetspawn shardmin&7 from a new spot to update)"));
+
+        } else {
+
+            Message.send(player, Message.format("&c[missing] &f5. shard min Y &7- stand at the lowest legal shard Y"
+                    + " (e.g. the void floor) and run &e/hbsetspawn shardmin"));
+
+        }
+
+        if (!Double.isNaN(data.getShardMax())) {
+
+            Message.send(player,
+                    Message.format("&a[done] &f6. shard max Y &7(" + ((long) data.getShardMax())
+                            + "; the highest Y a shard may reach"
+                            + " before being destroyed -- run &e/hbsetspawn shardmax&7 from a new spot to update)"));
+
+        } else {
+
+            Message.send(player, Message.format("&c[missing] &f6. shard max Y &7- stand at the highest legal shard Y"
+                    + " (e.g. above the map ceiling) and run &e/hbsetspawn shardmax"));
+
+        }
+
         if (missing.isEmpty()) {
 
             Message.send(player, Message.format("&aSetup complete. Run &e/hbreloadconfigs&a, then start a test game."));
@@ -146,7 +174,7 @@ public class MapSetupWizard implements Listener {
         final File mapdataFile = new File(new File(baseDir, mapName), "mapdata.yaml");
 
         if (!mapdataFile.exists())
-            return new MapData(mapName, "Unknown", -100, 1000, new ArrayList<>());
+            return blankMapData(mapName);
 
         try {
 
@@ -156,11 +184,21 @@ public class MapSetupWizard implements Listener {
 
         } catch (Exception e) {
 
-            return new MapData(mapName, "Unknown", -100, 1000, new ArrayList<>());
+            return blankMapData(mapName);
 
         }
 
-        return new MapData(mapName, "Unknown", -100, 1000, new ArrayList<>());
+        return blankMapData(mapName);
+
+    }
+
+    private static MapData blankMapData(String mapName) {
+
+        final MapData blank = new MapData();
+        blank.setName(mapName);
+        blank.setBuilder("Unknown");
+        blank.setDatapoints(new ArrayList<>());
+        return blank;
 
     }
 
@@ -176,6 +214,10 @@ public class MapSetupWizard implements Listener {
             missing.add("stand at the shard turn-in alter and run /hbsetspawn alter");
         if (!hasDatapoint(data, DatapointType.SHARD_SPAWN))
             missing.add("stand at a shard spawn and run /hbsetspawn shard");
+        if (Double.isNaN(data.getShardMin()))
+            missing.add("stand at the lowest legal shard Y and run /hbsetspawn shardmin");
+        if (Double.isNaN(data.getShardMax()))
+            missing.add("stand at the highest legal shard Y and run /hbsetspawn shardmax");
 
         return missing;
 

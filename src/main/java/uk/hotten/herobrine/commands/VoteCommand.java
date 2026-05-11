@@ -55,7 +55,7 @@ public class VoteCommand implements CommandExecutor {
 
         } catch (Exception error) {
 
-            Message.send(player, Message.format("&cCorrect Usage: /hbvote <map number>"));
+            Message.send(player, Message.format("&cCorrect Usage: /vote <map number>"));
             wm.sendVotingMessage(player);
             return true;
 

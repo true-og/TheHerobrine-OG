@@ -21,6 +21,7 @@ import uk.hotten.herobrine.utils.Message;
 import uk.hotten.herobrine.utils.PlayerUtil;
 import uk.hotten.herobrine.utils.ShardName;
 import uk.hotten.herobrine.utils.ShardState;
+import uk.hotten.herobrine.world.MapSetupWizard;
 import uk.hotten.herobrine.world.WorldManager;
 
 public class ShardHandler extends BukkitRunnable {
@@ -56,11 +57,21 @@ public class ShardHandler extends BukkitRunnable {
 
         if (!hasShardDatapoints()) {
 
-            Console.error(gm.getGameLobby(), "ShardHandler cancelled: ALTER or SHARD_SPAWN datapoints are missing.");
-            Message.broadcast(gm.getGameLobby(),
-                    Message.format("&cShard handling stopped: arena map is missing alter or shard spawn points."));
-            gm.setShardState(ShardState.INACTIVE);
-            cancel();
+            abortRound("ALTER or SHARD_SPAWN datapoints are missing",
+                    "&6[map setup] &7Map is missing the &calter&7 or &cshard spawn&7 datapoints. Run"
+                            + " &e/hbsetspawn alter&7 and &e/hbsetspawn shard&7 in this world, then restart the lobby.");
+            return;
+
+        }
+
+        if (!hasShardBounds()) {
+
+            abortRound(
+                    "shardMin/shardMax not configured for map -- run /hbsetspawn shardmin and"
+                            + " /hbsetspawn shardmax during map setup",
+                    "&6[map setup] &7Map is missing &cshardMin&7 or &cshardMax&7 (Y bounds). Run"
+                            + " &e/hbsetspawn shardmin&7 and &e/hbsetspawn shardmax&7 in this world, then restart the"
+                            + " lobby.");
             return;
 
         }
@@ -174,9 +185,39 @@ public class ShardHandler extends BukkitRunnable {
 
     }
 
+    private void abortRound(String consoleReason, String adminDetail) {
+
+        Console.error(gm.getGameLobby(), "ShardHandler cancelled: " + consoleReason);
+
+        for (Player p : gm.getGameLobby().getPlayers()) {
+
+            if (p.hasPermission(MapSetupWizard.SETSPAWN_PERMISSION))
+                Message.send(p, Message.format(adminDetail));
+            else
+                Message.send(p, Message.format("&cThe round has been cancelled due to a map configuration error."
+                        + " Please contact an admin."));
+
+        }
+
+        gm.setShardState(ShardState.INACTIVE);
+        cancel();
+        gm.startWaiting();
+
+    }
+
     private boolean hasShardDatapoints() {
 
         return wm.alter != null && wm.alter.getWorld() != null && wm.shardSpawns != null && !wm.shardSpawns.isEmpty();
+
+    }
+
+    private boolean hasShardBounds() {
+
+        if (wm.getGameMapData() == null)
+            return false;
+        double min = wm.getGameMapData().getShardMin();
+        double max = wm.getGameMapData().getShardMax();
+        return !Double.isNaN(min) && !Double.isNaN(max) && min < max;
 
     }
 

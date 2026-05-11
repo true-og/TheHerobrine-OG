@@ -14,13 +14,16 @@ public class MapData {
     @Setter
     private String builder;
 
+    // Sentinel NaN means "unset" so the admin map setup wizard can flag it as
+    // missing
+    // instead of silently using a default that may not match the map's geometry.
     @Getter
     @Setter
-    private double shardMin;
+    private double shardMin = Double.NaN;
 
     @Getter
     @Setter
-    private double shardMax;
+    private double shardMax = Double.NaN;
 
     @Getter
     @Setter

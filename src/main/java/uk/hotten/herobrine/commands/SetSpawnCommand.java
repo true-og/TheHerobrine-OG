@@ -44,8 +44,9 @@ public class SetSpawnCommand implements CommandExecutor {
 
         }
 
-        DatapointType type = parseType(args[0]);
-        if (type == null) {
+        ShardBound shardBound = parseShardBound(args[0]);
+        DatapointType type = shardBound == null ? parseType(args[0]) : null;
+        if (type == null && shardBound == null) {
 
             sendUsage(player);
             return true;
@@ -119,7 +120,7 @@ public class SetSpawnCommand implements CommandExecutor {
 
                 data = mapper.readValue(mapdataFile, MapData.class);
                 if (data == null)
-                    data = new MapData(mapName, "Unknown", -100, 1000, new ArrayList<>());
+                    data = new MapData();
 
             } catch (Exception e) {
 
@@ -131,7 +132,7 @@ public class SetSpawnCommand implements CommandExecutor {
 
         } else {
 
-            data = new MapData(mapName, "Unknown", -100, 1000, new ArrayList<>());
+            data = new MapData();
 
         }
 
@@ -146,7 +147,34 @@ public class SetSpawnCommand implements CommandExecutor {
         int y = player.getLocation().getBlockY();
         int z = player.getLocation().getBlockZ();
 
-        if (type == DatapointType.SHARD_SPAWN) {
+        if (shardBound != null) {
+
+            if (shardBound == ShardBound.MIN) {
+
+                data.setShardMin(y);
+                Message.send(player, Message.format("&aSet &bshardMin&a for &b" + mapName + "&a to Y=&e" + y
+                        + "&a (shards that fall" + " below this Y will be destroyed)."));
+
+            } else {
+
+                data.setShardMax(y);
+                Message.send(player, Message.format("&aSet &bshardMax&a for &b" + mapName + "&a to Y=&e" + y
+                        + "&a (shards that rise" + " above this Y will be destroyed)."));
+
+            }
+
+            if (!Double.isNaN(data.getShardMin()) && !Double.isNaN(data.getShardMax())
+                    && data.getShardMin() >= data.getShardMax())
+            {
+
+                Message.send(player,
+                        Message.format("&eWarning: shardMin (&f" + ((long) data.getShardMin()) + "&e) is not below"
+                                + " shardMax (&f" + ((long) data.getShardMax()) + "&e); shards will be destroyed"
+                                + " on every check. Update one of them."));
+
+            }
+
+        } else if (type == DatapointType.SHARD_SPAWN) {
 
             // Collect current shard points so we can address them by index.
             ArrayList<Datapoint> shards = new ArrayList<>();
@@ -241,6 +269,33 @@ public class SetSpawnCommand implements CommandExecutor {
 
     }
 
+    private enum ShardBound {
+        MIN, MAX
+    }
+
+    private static ShardBound parseShardBound(String raw) {
+
+        switch (raw.toLowerCase(Locale.ROOT)) {
+
+            case "shardmin":
+            case "shard_min":
+            case "shard-min":
+            case "minshard":
+            case "min":
+                return ShardBound.MIN;
+            case "shardmax":
+            case "shard_max":
+            case "shard-max":
+            case "maxshard":
+            case "max":
+                return ShardBound.MAX;
+            default:
+                return null;
+
+        }
+
+    }
+
     private static DatapointType parseType(String raw) {
 
         switch (raw.toLowerCase(Locale.ROOT)) {
@@ -269,9 +324,11 @@ public class SetSpawnCommand implements CommandExecutor {
 
     private static void sendUsage(Player player) {
 
-        Message.send(player,
-                Message.format("&6/hbsetspawn <survivor|herobrine|alter|shard> [shardIndex|append] [mapName]"));
+        Message.send(player, Message.format(
+                "&6/hbsetspawn <survivor|herobrine|alter|shard|shardmin|shardmax>" + " [shardIndex|append] [mapName]"));
         Message.send(player, Message.format("&7Stand at the location, then run the command."));
+        Message.send(player, Message.format("&7shardmin / shardmax use your current Y as the lower / upper bound a"
+                + " shard may reach before being destroyed."));
         Message.send(player, Message.format(
                 "&7mapName is auto-derived from your world (e.g. 'HB1-Ancient_Plateau' -> 'Ancient_Plateau')."));
 
