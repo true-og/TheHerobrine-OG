@@ -145,6 +145,56 @@ public class WorldManager implements Listener {
 
     }
 
+    // Force-unload an existing MyWorlds world by name so its world folder can be
+    // safely
+    // deleted/replaced. Auto-loaded worlds from a previous server boot otherwise
+    // hold
+    // open file handles AND cause WorldConfig.loadWorld() to return the stale
+    // instance
+    // instead of the freshly copied data.
+    private boolean forceUnloadIfPresent(String worldName) {
+
+        World existing = Bukkit.getWorld(worldName);
+        if (existing == null) {
+
+            Console.debug(gameLobby, "No live world named '" + worldName + "' to unload.");
+            return true;
+
+        }
+
+        if (!existing.getPlayers().isEmpty()) {
+
+            World main = Bukkit.getWorld("world");
+            if (main == null && !Bukkit.getWorlds().isEmpty())
+                main = Bukkit.getWorlds().get(0);
+            if (main != null && main != existing) {
+
+                Console.info(gameLobby, "Evacuating " + existing.getPlayers().size() + " player(s) from '" + worldName
+                        + "' to '" + main.getName() + "' before unload.");
+                Location dest = main.getSpawnLocation();
+                for (Player p : new ArrayList<>(existing.getPlayers()))
+                    p.teleport(dest);
+
+            } else {
+
+                Console.error(gameLobby,
+                        "Cannot unload world '" + worldName + "': players present and no fallback world available.");
+                return false;
+
+            }
+
+        }
+
+        WorldConfig wc = WorldConfig.get(worldName);
+        boolean unloaded = wc.unloadWorld();
+        if (!unloaded)
+            Console.error(gameLobby, "Failed to unload world '" + worldName + "' before recreating.");
+        else
+            Console.info(gameLobby, "Unloaded existing world '" + worldName + "' before recreating.");
+        return unloaded;
+
+    }
+
     public void loadMapBase() {
 
         File baseDir = resolveBaseDir();
@@ -320,12 +370,12 @@ public class WorldManager implements Listener {
 
     public void loadMap(VotingMap map) {
 
-        Console.info(gameLobby, "Loading map " + map.getMapData().getName());
+        String worldName = gameLobby.getLobbyId() + "-" + map.getInternalName();
+        Console.info(gameLobby, "Loading map '" + map.getMapData().getName() + "' as world '" + worldName + "'");
 
         File baseDir = resolveBaseDir();
         File toCopy = new File(baseDir, map.getInternalName());
-        File currentDir = new File(plugin.getServer().getWorldContainer(),
-                gameLobby.getLobbyId() + "-" + map.getInternalName());
+        File currentDir = new File(plugin.getServer().getWorldContainer(), worldName);
 
         if (!toCopy.exists() || !toCopy.isDirectory()) {
 
@@ -334,33 +384,62 @@ public class WorldManager implements Listener {
 
         }
 
+        // Crucial: an auto-loaded leftover world from a previous server boot will hold
+        // file handles AND wc.loadWorld() will short-circuit to the stale instance.
+        if (!forceUnloadIfPresent(worldName)) {
+
+            Console.error(gameLobby, "Aborting map load: could not unload existing world '" + worldName + "'.");
+            return;
+
+        }
+
         try {
 
-            if (currentDir.exists())
+            if (currentDir.exists()) {
+
+                Console.info(gameLobby, "Removing previous world directory: " + currentDir.getPath());
                 FileUtils.deleteDirectory(currentDir);
+
+            }
+
             currentDir.mkdirs();
+            Console.info(gameLobby, "Copying map template " + toCopy.getPath() + " -> " + currentDir.getPath());
             FileUtils.copyDirectory(toCopy, currentDir);
             sanitizeWorldFolder(currentDir);
 
         } catch (Exception e) {
 
             e.printStackTrace();
-            Console.error(gameLobby, "Error copying directory!");
+            Console.error(gameLobby, "Error copying map directory '" + toCopy.getPath() + "' to '"
+                    + currentDir.getPath() + "': " + e.getMessage());
             return;
 
         }
 
-        String worldName = gameLobby.getLobbyId() + "-" + map.getInternalName();
         WorldConfig wc = WorldConfig.get(worldName);
-        World world = wc.loadWorld();
+        World world;
+        try {
+
+            world = wc.loadWorld();
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+            Console.error(gameLobby, "Exception during MyWorlds loadWorld for '" + worldName + "': " + e.getMessage());
+            return;
+
+        }
+
         if (world == null) {
 
-            Console.error(gameLobby, "Failed to load MyWorlds game world: " + worldName);
+            Console.error(gameLobby,
+                    "Failed to load MyWorlds game world: " + worldName + " (WorldConfig.loadWorld returned null).");
             return;
 
         }
 
         gameWorld = world;
+        Console.info(gameLobby, "Game world '" + worldName + "' loaded.");
 
         wc.spawnControl.setAnimals(false);
         wc.spawnControl.setMonsters(false);
@@ -373,7 +452,22 @@ public class WorldManager implements Listener {
         world.setGameRule(GameRule.SHOW_DEATH_MESSAGES, false);
 
         gameMapData = map.getMapData();
+        survivorSpawn = null;
+        herobrineSpawn = null;
+        alter = null;
+        shardSpawns.clear();
 
+        if (gameMapData.getDatapoints() == null || gameMapData.getDatapoints().isEmpty()) {
+
+            Console.error(gameLobby, "Map '" + map.getMapData().getName() + "' has no datapoints in mapdata.yaml!");
+            return;
+
+        }
+
+        int survivorCount = 0;
+        int herobrineCount = 0;
+        int shardCountDp = 0;
+        int alterCount = 0;
         for (Datapoint dp : gameMapData.getDatapoints()) {
 
             Location dLoc = new Location(gameWorld, dp.getX(), dp.getY(), dp.getZ());
@@ -382,6 +476,7 @@ public class WorldManager implements Listener {
                 case SURVIVOR_SPAWN -> {
 
                     survivorSpawn = dLoc;
+                    survivorCount++;
                     Chunk ch = dLoc.getChunk();
                     ch.load(true);
                     ch.setForceLoaded(true);
@@ -391,14 +486,25 @@ public class WorldManager implements Listener {
                 case HEROBRINE_SPAWN -> {
 
                     herobrineSpawn = dLoc;
+                    herobrineCount++;
                     Chunk ch = dLoc.getChunk();
                     ch.load(true);
                     ch.setForceLoaded(true);
                     noUnload.add(ch);
 
                 }
-                case ALTER -> alter = dLoc;
-                case SHARD_SPAWN -> shardSpawns.add(dLoc);
+                case ALTER -> {
+
+                    alter = dLoc;
+                    alterCount++;
+
+                }
+                case SHARD_SPAWN -> {
+
+                    shardSpawns.add(dLoc);
+                    shardCountDp++;
+
+                }
                 default -> {
 
                 }
@@ -407,17 +513,34 @@ public class WorldManager implements Listener {
 
         }
 
-        Console.info(gameLobby, "Finished loading!");
+        Console.info(gameLobby, "Datapoints parsed: survivor=" + survivorCount + " herobrine=" + herobrineCount
+                + " alter=" + alterCount + " shards=" + shardCountDp);
+
+        if (survivorSpawn == null)
+            Console.error(gameLobby, "Map '" + map.getMapData().getName()
+                    + "' is missing SURVIVOR_SPAWN datapoint -- survivors will not be teleported.");
+        if (herobrineSpawn == null)
+            Console.error(gameLobby, "Map '" + map.getMapData().getName()
+                    + "' is missing HEROBRINE_SPAWN datapoint -- Herobrine will not be teleported.");
+        if (alter == null)
+            Console.error(gameLobby,
+                    "Map '" + map.getMapData().getName() + "' is missing ALTER datapoint -- shard captures will fail.");
+        if (shardSpawns.isEmpty())
+            Console.error(gameLobby, "Map '" + map.getMapData().getName()
+                    + "' has no SHARD_SPAWN datapoints -- shards will never spawn.");
+
+        Console.info(gameLobby, "Finished loading map '" + map.getMapData().getName() + "'.");
 
     }
 
     public void loadHubMap() {
 
-        Console.info(gameLobby, "Loading hub for " + gameLobby.getLobbyId());
+        String worldName = gameLobby.getLobbyId() + "-hub";
+        Console.info(gameLobby, "Loading hub for " + gameLobby.getLobbyId() + " as world '" + worldName + "'");
 
         File baseDir = resolveBaseDir();
         File toCopy = new File(baseDir, "hub");
-        File currentDir = new File(plugin.getServer().getWorldContainer(), gameLobby.getLobbyId() + "-hub");
+        File currentDir = new File(plugin.getServer().getWorldContainer(), worldName);
 
         if (!toCopy.exists() || !toCopy.isDirectory()) {
 
@@ -434,33 +557,61 @@ public class WorldManager implements Listener {
 
         }
 
+        if (!forceUnloadIfPresent(worldName)) {
+
+            Console.error(gameLobby, "Aborting hub load: could not unload existing hub world '" + worldName + "'.");
+            return;
+
+        }
+
         try {
 
-            if (currentDir.exists())
+            if (currentDir.exists()) {
+
+                Console.info(gameLobby, "Removing previous hub directory: " + currentDir.getPath());
                 FileUtils.deleteDirectory(currentDir);
+
+            }
+
             currentDir.mkdirs();
+            Console.info(gameLobby, "Copying hub template " + toCopy.getPath() + " -> " + currentDir.getPath());
             FileUtils.copyDirectory(toCopy, currentDir);
             sanitizeWorldFolder(currentDir);
 
         } catch (Exception e) {
 
             e.printStackTrace();
-            Console.error(gameLobby, "Error copying hub directory!");
+            Console.error(gameLobby, "Error copying hub directory '" + toCopy.getPath() + "' to '"
+                    + currentDir.getPath() + "': " + e.getMessage());
             return;
 
         }
 
-        String worldName = gameLobby.getLobbyId() + "-hub";
         WorldConfig wc = WorldConfig.get(worldName);
-        World world = wc.loadWorld();
+        World world;
+        try {
+
+            world = wc.loadWorld();
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+            Console.error(gameLobby,
+                    "Exception during MyWorlds loadWorld for hub '" + worldName + "': " + e.getMessage());
+            return;
+
+        }
+
         if (world == null) {
 
-            Console.error(gameLobby, "Failed to load MyWorlds hub world: " + worldName);
+            Console.error(gameLobby,
+                    "Failed to load MyWorlds hub world: " + worldName + " (WorldConfig.loadWorld returned null).");
             return;
 
         }
 
         hubWorld = world;
+        Console.info(gameLobby, "Hub world '" + worldName + "' loaded.");
 
         wc.spawnControl.setAnimals(true);
         wc.spawnControl.setMonsters(true);
@@ -468,7 +619,7 @@ public class WorldManager implements Listener {
         wc.updateDifficulty(world);
         wc.timeControl.setTime(18000);
         wc.timeControl.setLocking(true);
-        Console.info(gameLobby, "Finished loading!");
+        Console.info(gameLobby, "Finished loading hub.");
 
     }
 
@@ -517,7 +668,14 @@ public class WorldManager implements Listener {
 
         }
 
-        WorldConfig.get(gameWorldName).deleteWorld();
+        // WorldConfig.deleteWorld() refuses if the world is loaded. Unload first.
+        WorldConfig wc = WorldConfig.get(gameWorldName);
+        if (wc.isLoaded() && !wc.unloadWorld())
+            Console.error(gameLobby, "Failed to unload game world '" + gameWorldName + "' before deletion.");
+        boolean deleted = wc.deleteWorld();
+        if (!deleted)
+            Console.error(gameLobby, "WorldConfig.deleteWorld() returned false for '" + gameWorldName
+                    + "' -- world directory may persist.");
 
         gameWorld = null;
         gameMapData = null;
@@ -567,7 +725,13 @@ public class WorldManager implements Listener {
 
         }
 
-        WorldConfig.get(hubWorldName).deleteWorld();
+        WorldConfig hwc = WorldConfig.get(hubWorldName);
+        if (hwc.isLoaded() && !hwc.unloadWorld())
+            Console.error(gameLobby, "Failed to unload hub world '" + hubWorldName + "' before deletion.");
+        boolean hubDeleted = hwc.deleteWorld();
+        if (!hubDeleted)
+            Console.error(gameLobby, "WorldConfig.deleteWorld() returned false for hub '" + hubWorldName
+                    + "' -- world directory may persist.");
         hubWorld = null;
 
     }

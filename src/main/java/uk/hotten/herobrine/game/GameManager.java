@@ -372,56 +372,131 @@ public class GameManager {
 
     public void start() {
 
-        setGameState(GameState.LIVE);
-        narrationRunnable = new NarrationRunnable(this);
-        narrationRunnable.runTaskTimerAsynchronously(plugin, 0, 10); // has to run before the shardstate updates
-        setShardState(ShardState.WAITING);
-        gameLobby.getStatManager().startTracking();
-        if (passUser != null) {
+        Console.info(gameLobby, "=== GAME START BEGIN === survivors=" + survivors.size() + " spectators="
+                + spectators.size() + " lobbyPlayers=" + gameLobby.getPlayers().size());
 
-            herobrine = passUser;
-            passUser = null;
+        // Pre-flight checks: if the world or spawns aren't ready, the game cannot
+        // start.
+        // Bail with a loud diagnostic instead of NPE-ing halfway through and leaving
+        // players in the hub with potion effects but no teleport.
+        if (worldManager.getGameWorld() == null) {
 
-        } else {
-
-            herobrine = PlayerUtil.randomPlayer(gameLobby);
-
-        }
-
-        survivors.remove(herobrine);
-        setupHerobrine();
-        setupSurvivors();
-        spectators.forEach(this::makeSpectator);
-        new HerobrineSetup(herobrine).runTaskAsynchronously(plugin);
-        setTags(herobrine, "&c&lHEROBRINE ", NamedTextColor.RED, ScoreboardUpdateAction.UPDATE);
-        for (Player p : survivors) {
-
-            setTags(p, null, NamedTextColor.DARK_GREEN, ScoreboardUpdateAction.UPDATE);
-            new SurvivorSetup(p).runTaskAsynchronously(plugin);
+            Console.error(gameLobby, "ABORTING start(): gameWorld is null -- WorldManager.loadMap() did not complete. "
+                    + "Check earlier console output for 'Error copying directory' or 'Failed to load MyWorlds game world'.");
+            Message.broadcast(gameLobby, Message
+                    .format("&cGame failed to start: arena world did not load. See console. Returning to waiting..."));
+            startWaiting();
+            return;
 
         }
 
-        shardHandler = new ShardHandler(gameLobby);
-        shardHandler.runTaskTimer(plugin, 0, 20);
-        new HerobrineItemHider(this).runTaskTimer(plugin, 0, 1);
-        new HerobrineSmokeRunnable(this).runTaskTimer(plugin, 0, 10);
+        if (worldManager.herobrineSpawn == null || worldManager.survivorSpawn == null) {
 
-        for (Player p : gameLobby.getPlayers()) {
-
-            scoreboards.get(p).setHandler(gameScoreboardHandler);
-            p.setHealth(20);
-            p.setFoodLevel(20);
-            p.setGameMode(GameMode.SURVIVAL);
+            Console.error(gameLobby,
+                    "ABORTING start(): missing spawn datapoint(s). herobrineSpawn=" + worldManager.herobrineSpawn
+                            + " survivorSpawn=" + worldManager.survivorSpawn
+                            + " -- check the map's mapdata.yaml for SURVIVOR_SPAWN and HEROBRINE_SPAWN entries.");
+            Message.broadcast(gameLobby, Message.format(
+                    "&cGame failed to start: arena map is missing spawn points. See console. Returning to waiting..."));
+            startWaiting();
+            return;
 
         }
 
-        updateTags(ScoreboardUpdateAction.UPDATE);
+        if (survivors.isEmpty()) {
+
+            Console.error(gameLobby, "ABORTING start(): no survivors to start with.");
+            startWaiting();
+            return;
+
+        }
+
+        try {
+
+            setGameState(GameState.LIVE);
+            narrationRunnable = new NarrationRunnable(this);
+            narrationRunnable.runTaskTimerAsynchronously(plugin, 0, 10); // has to run before the shardstate updates
+            setShardState(ShardState.WAITING);
+            gameLobby.getStatManager().startTracking();
+            if (passUser != null) {
+
+                herobrine = passUser;
+                passUser = null;
+                Console.info(gameLobby, "Herobrine assigned via passUser: " + herobrine.getName());
+
+            } else {
+
+                herobrine = PlayerUtil.randomPlayer(gameLobby);
+                Console.info(gameLobby, "Herobrine assigned at random: " + herobrine.getName());
+
+            }
+
+            survivors.remove(herobrine);
+            Console.info(gameLobby, "After herobrine pick: survivors=" + survivors.size());
+
+            Console.info(gameLobby, "Calling setupHerobrine()...");
+            setupHerobrine();
+            Console.info(gameLobby, "Calling setupSurvivors()...");
+            setupSurvivors();
+            Console.info(gameLobby, "Applying spectator state to " + spectators.size() + " spectator(s)...");
+            spectators.forEach(this::makeSpectator);
+            new HerobrineSetup(herobrine).runTaskAsynchronously(plugin);
+            setTags(herobrine, "&c&lHEROBRINE ", NamedTextColor.RED, ScoreboardUpdateAction.UPDATE);
+            for (Player p : survivors) {
+
+                setTags(p, null, NamedTextColor.DARK_GREEN, ScoreboardUpdateAction.UPDATE);
+                new SurvivorSetup(p).runTaskAsynchronously(plugin);
+
+            }
+
+            shardHandler = new ShardHandler(gameLobby);
+            shardHandler.runTaskTimer(plugin, 0, 20);
+            new HerobrineItemHider(this).runTaskTimer(plugin, 0, 1);
+            new HerobrineSmokeRunnable(this).runTaskTimer(plugin, 0, 10);
+
+            for (Player p : gameLobby.getPlayers()) {
+
+                scoreboards.get(p).setHandler(gameScoreboardHandler);
+                p.setHealth(20);
+                p.setFoodLevel(20);
+                p.setGameMode(GameMode.SURVIVAL);
+
+            }
+
+            updateTags(ScoreboardUpdateAction.UPDATE);
+            Console.info(gameLobby, "=== GAME START COMPLETE ===");
+
+        } catch (Throwable t) {
+
+            // Without this, a mid-start exception leaves the lobby in a half-initialized
+            // state -- the chat broadcast already fired but no teleports/kits ran.
+            Console.error(gameLobby, "EXCEPTION during start(): " + t.getClass().getSimpleName() + ": " + t.getMessage()
+                    + " -- see stack trace below.");
+            t.printStackTrace();
+            Message.broadcast(gameLobby,
+                    Message.format("&cGame start crashed mid-sequence. See console. Returning to waiting..."));
+            startWaiting();
+
+        }
 
     }
 
     public void setupHerobrine() {
 
-        herobrine.teleport(worldManager.herobrineSpawn);
+        if (worldManager.herobrineSpawn == null) {
+
+            Console.error(gameLobby, "setupHerobrine: herobrineSpawn is null -- cannot teleport "
+                    + (herobrine != null ? herobrine.getName() : "<null>") + ".");
+            return;
+
+        }
+
+        boolean teleported = herobrine.teleport(worldManager.herobrineSpawn);
+        Console.info(gameLobby,
+                "setupHerobrine: teleported " + herobrine.getName() + " to "
+                        + worldManager.herobrineSpawn.getWorld().getName() + " ("
+                        + worldManager.herobrineSpawn.getBlockX() + "," + worldManager.herobrineSpawn.getBlockY() + ","
+                        + worldManager.herobrineSpawn.getBlockZ() + ") -> result=" + teleported);
         herobrine.setHealth(20);
         herobrine.setFoodLevel(20);
 
@@ -536,12 +611,43 @@ public class GameManager {
 
     public void setupSurvivors() {
 
+        if (worldManager.survivorSpawn == null) {
+
+            Console.error(gameLobby, "setupSurvivors: survivorSpawn is null -- skipping teleport for "
+                    + survivors.size() + " survivor(s). Kits will still apply.");
+
+        } else {
+
+            Console.info(gameLobby,
+                    "setupSurvivors: teleporting " + survivors.size() + " survivor(s) to "
+                            + worldManager.survivorSpawn.getWorld().getName() + " ("
+                            + worldManager.survivorSpawn.getBlockX() + "," + worldManager.survivorSpawn.getBlockY()
+                            + "," + worldManager.survivorSpawn.getBlockZ() + ")");
+
+        }
+
         for (Player p : survivors) {
 
-            p.teleport(worldManager.survivorSpawn);
-            p.setHealth(20);
-            p.setFoodLevel(20);
-            PlayerUtil.addEffect(p, PotionEffectType.BLINDNESS, 60, 1, false, false);
+            try {
+
+                if (worldManager.survivorSpawn != null) {
+
+                    boolean teleported = p.teleport(worldManager.survivorSpawn);
+                    if (!teleported)
+                        Console.error(gameLobby, "Teleport returned false for survivor " + p.getName());
+
+                }
+
+                p.setHealth(20);
+                p.setFoodLevel(20);
+                PlayerUtil.addEffect(p, PotionEffectType.BLINDNESS, 60, 1, false, false);
+
+            } catch (Throwable t) {
+
+                Console.error(gameLobby, "Error setting up survivor " + p.getName() + ": " + t.getMessage());
+                t.printStackTrace();
+
+            }
 
         }
 

@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.scheduler.BukkitRunnable;
 import uk.hotten.herobrine.game.GameManager;
+import uk.hotten.herobrine.utils.Console;
 import uk.hotten.herobrine.utils.Message;
 import uk.hotten.herobrine.utils.PlayerUtil;
 import uk.hotten.herobrine.world.WorldManager;
@@ -55,11 +56,17 @@ public class StartingRunnable extends BukkitRunnable {
 
         gm.startTimer--;
 
-        if (gm.startTimer == wm.getEndVotingAt())
+        if (gm.startTimer == wm.getEndVotingAt()) {
+
+            Console.info(gm.getGameLobby(), "StartingRunnable: timer reached endVotingAt (" + wm.getEndVotingAt()
+                    + "), scheduling map selection + load.");
             Bukkit.getServer().getScheduler().runTask(gm.getPlugin(), () -> wm.selectAndLoadMapFromVote());
+
+        }
 
         if (gm.startTimer == 0) {
 
+            Console.info(gm.getGameLobby(), "StartingRunnable: timer hit 0, scheduling GameManager.start().");
             Bukkit.getServer().getScheduler().runTask(gm.getPlugin(), gm::start);
             cancel();
             return;
