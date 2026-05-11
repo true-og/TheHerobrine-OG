@@ -16,6 +16,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 
 import uk.hotten.herobrine.utils.Message;
+import uk.hotten.herobrine.world.MapSetupWizard;
 import uk.hotten.herobrine.world.data.Datapoint;
 import uk.hotten.herobrine.world.data.DatapointType;
 import uk.hotten.herobrine.world.data.MapData;
@@ -33,10 +34,12 @@ public class SetSpawnCommand implements CommandExecutor {
         }
 
         Player player = (Player) sender;
+        JavaPlugin plugin = JavaPlugin.getPlugin(uk.hotten.herobrine.HerobrinePluginOG.class);
 
         if (args == null || args.length == 0) {
 
             sendUsage(player);
+            MapSetupWizard.sendForCurrentWorld(plugin, player);
             return true;
 
         }
@@ -81,10 +84,9 @@ public class SetSpawnCommand implements CommandExecutor {
 
         }
 
-        JavaPlugin plugin = JavaPlugin.getPlugin(uk.hotten.herobrine.HerobrinePluginOG.class);
-        File baseDir = resolveBaseDir(plugin);
+        File baseDir = MapSetupWizard.resolveBaseDir(plugin);
 
-        String mapName = mapNameOverride != null ? mapNameOverride : deriveMapName(player, baseDir);
+        String mapName = mapNameOverride != null ? mapNameOverride : MapSetupWizard.deriveMapName(player, baseDir);
         if (mapName == null) {
 
             Message.send(player,
@@ -234,6 +236,7 @@ public class SetSpawnCommand implements CommandExecutor {
 
         Message.send(player, Message.format("&7Wrote &e" + mapdataFile.getPath()
                 + "&7. Restart the lobby (or /hbreloadconfigs after rebuild) for changes to take effect."));
+        MapSetupWizard.sendProgress(player, mapName, data);
         return true;
 
     }
@@ -271,44 +274,6 @@ public class SetSpawnCommand implements CommandExecutor {
         Message.send(player, Message.format("&7Stand at the location, then run the command."));
         Message.send(player, Message.format(
                 "&7mapName is auto-derived from your world (e.g. 'HB1-Ancient_Plateau' -> 'Ancient_Plateau')."));
-
-    }
-
-    private static String deriveMapName(Player player, File baseDir) {
-
-        String worldName = player.getWorld().getName();
-
-        // Direct match against a source map folder (operator manually loaded the source
-        // via MyWorlds).
-        File direct = new File(baseDir, worldName);
-        if (direct.exists() && direct.isDirectory())
-            return worldName;
-
-        // Strip <lobbyId>- prefix (e.g. HB1-Ancient_Plateau -> Ancient_Plateau).
-        int dash = worldName.indexOf('-');
-        if (dash > 0 && dash < worldName.length() - 1) {
-
-            String stripped = worldName.substring(dash + 1);
-            File guess = new File(baseDir, stripped);
-            if (guess.exists() && guess.isDirectory())
-                return stripped;
-
-        }
-
-        // No matching source dir.
-        return null;
-
-    }
-
-    private static File resolveBaseDir(JavaPlugin plugin) {
-
-        String fileBase = plugin.getConfig().getString("mapBase");
-        if (fileBase == null || fileBase.isBlank())
-            return plugin.getServer().getWorldContainer();
-        File f = new File(fileBase);
-        if (f.isAbsolute())
-            return f;
-        return new File(plugin.getServer().getWorldContainer(), fileBase);
 
     }
 

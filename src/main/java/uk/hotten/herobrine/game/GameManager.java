@@ -397,16 +397,31 @@ public class GameManager {
 
         }
 
-        if (worldManager.herobrineSpawn == null || worldManager.survivorSpawn == null) {
+        final List<String> missingDatapoints = new ArrayList<>();
+        if (worldManager.herobrineSpawn == null)
+            missingDatapoints.add("HEROBRINE_SPAWN");
+        if (worldManager.survivorSpawn == null)
+            missingDatapoints.add("SURVIVOR_SPAWN");
+        if (worldManager.alter == null)
+            missingDatapoints.add("ALTER");
+        if (worldManager.shardSpawns == null || worldManager.shardSpawns.isEmpty())
+            missingDatapoints.add("SHARD_SPAWN");
+
+        if (!missingDatapoints.isEmpty()) {
 
             Console.error(gameLobby,
-                    "ABORTING start(): missing spawn datapoint(s). herobrineSpawn=" + worldManager.herobrineSpawn
-                            + " survivorSpawn=" + worldManager.survivorSpawn
-                            + " -- check the map's mapdata.yaml for SURVIVOR_SPAWN and HEROBRINE_SPAWN entries.");
-            Message.broadcast(gameLobby, Message.format("&cGame failed to start: arena map is missing spawn points."));
-            String gw = worldManager.getGameWorld() != null ? worldManager.getGameWorld().getName() : "<none>";
+                    "ABORTING start(): missing required map datapoint(s): " + String.join(", ", missingDatapoints)
+                            + ". herobrineSpawn=" + worldManager.herobrineSpawn + " survivorSpawn="
+                            + worldManager.survivorSpawn + " alter=" + worldManager.alter + " shardSpawns="
+                            + (worldManager.shardSpawns != null ? worldManager.shardSpawns.size() : 0)
+                            + " -- check the map's mapdata.yaml.");
+            Message.broadcast(gameLobby,
+                    Message.format("&cGame failed to start: arena map is missing required points."));
+            final String gw = worldManager.getGameWorld() != null ? worldManager.getGameWorld().getName() : "<none>";
             Message.broadcast(gameLobby, Message.format("&eOperators: teleport to &b" + gw + "&e via &7/world tp " + gw
-                    + "&e and use &7/hbsetspawn <type>&e to set spawn points."));
+                    + "&e and use &7/hbsetspawn <survivor|herobrine|alter|shard>&e to set points."));
+            Message.broadcast(gameLobby,
+                    Message.format("&eA setup checklist will appear when an operator enters the arena world."));
             // Keep the game world loaded so an op can walk to spawn locations and set them.
             startWaiting(false);
             return;

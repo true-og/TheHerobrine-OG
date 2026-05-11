@@ -54,6 +54,17 @@ public class ShardHandler extends BukkitRunnable {
 
         }
 
+        if (!hasShardDatapoints()) {
+
+            Console.error(gm.getGameLobby(), "ShardHandler cancelled: ALTER or SHARD_SPAWN datapoints are missing.");
+            Message.broadcast(gm.getGameLobby(),
+                    Message.format("&cShard handling stopped: arena map is missing alter or shard spawn points."));
+            gm.setShardState(ShardState.INACTIVE);
+            cancel();
+            return;
+
+        }
+
         switch (gm.getShardState()) {
 
             case WAITING: {
@@ -100,16 +111,16 @@ public class ShardHandler extends BukkitRunnable {
     private void spawn() {
 
         Random rand = new Random();
-        spawnLoc = wm.shardSpawns.get(rand.nextInt(wm.shardSpawns.size()));
+        spawnLoc = wm.shardSpawns.get(rand.nextInt(wm.shardSpawns.size())).clone();
 
-        shard = spawnLoc.getWorld().dropItem(spawnLoc.add(0, 1, 0), createShard());
+        shard = spawnLoc.getWorld().dropItem(spawnLoc.clone().add(0, 1, 0), createShard());
         shard.setInvulnerable(true);
         spawnShardTitle();
 
         for (Player p : gm.getGameLobby().getPlayers())
             p.setCompassTarget(shard.getLocation());
 
-        spawnLoc.getWorld().strikeLightningEffect(spawnLoc.add(0, 1, 0));
+        spawnLoc.getWorld().strikeLightningEffect(spawnLoc.clone().add(0, 1, 0));
         gm.setShardState(ShardState.SPAWNED);
         timer = random.nextInt(16) + 30; // random number between 30 and 45 for the next shard spawn
         Console.debug(gm.getGameLobby(), "Next shard time to be " + timer);
@@ -122,11 +133,11 @@ public class ShardHandler extends BukkitRunnable {
 
     public void drop(Location loc) {
 
-        shard = loc.getWorld().dropItem(loc.add(0, 1, 0), createShard());
+        shard = loc.getWorld().dropItem(loc.clone().add(0, 1, 0), createShard());
         spawnLoc = shard.getLocation();
         shard.setInvulnerable(true);
         spawnShardTitle();
-        loc.getWorld().strikeLightningEffect(loc.add(0, 1, 0));
+        loc.getWorld().strikeLightningEffect(loc.clone().add(0, 1, 0));
         for (Player p : gm.getGameLobby().getPlayers())
             p.setCompassTarget(shard.getLocation());
         gm.setTags(gm.getShardCarrier(), null, NamedTextColor.DARK_GREEN, GameManager.ScoreboardUpdateAction.UPDATE);
@@ -163,9 +174,15 @@ public class ShardHandler extends BukkitRunnable {
 
     }
 
+    private boolean hasShardDatapoints() {
+
+        return wm.alter != null && wm.alter.getWorld() != null && wm.shardSpawns != null && !wm.shardSpawns.isEmpty();
+
+    }
+
     private void spawnShardTitle() {
 
-        shardTitle = (ArmorStand) shard.getWorld().spawnEntity(shard.getLocation().subtract(0, 1.5, 0),
+        shardTitle = (ArmorStand) shard.getWorld().spawnEntity(shard.getLocation().clone().subtract(0, 1.5, 0),
                 EntityType.ARMOR_STAND);
         shardTitle.setVisible(false);
         shardTitle.customName(Message.legacySerializerAnyCase("&bThe Shard"));

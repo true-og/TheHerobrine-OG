@@ -24,6 +24,7 @@ import uk.hotten.herobrine.data.SqlManager;
 import uk.hotten.herobrine.lobby.LobbyManager;
 import uk.hotten.herobrine.utils.Console;
 import uk.hotten.herobrine.utils.Message;
+import uk.hotten.herobrine.world.MapSetupWizard;
 import uk.hotten.herobrine.world.VoidChunkGenerator;
 
 public class HerobrinePluginOG extends JavaPlugin {
@@ -92,6 +93,7 @@ public class HerobrinePluginOG extends JavaPlugin {
         getCommand("hbreloadconfigs").setExecutor(new ReloadConfigsCommand());
         getCommand("hbsetspawn").setExecutor(new SetSpawnCommand());
         getCommand("hbsetspawn").setTabCompleter(new SetSpawnCompleter());
+        getServer().getPluginManager().registerEvents(new MapSetupWizard(this), this);
 
         if (getServer().getPluginManager().getPlugin("IllegalStack-OG") != null) {
 

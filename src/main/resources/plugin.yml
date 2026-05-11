@@ -62,6 +62,6 @@ commands:
     usage: /<command>
 
   hbsetspawn:
-    description: Set a spawn datapoint for the current map at your location.
+    description: Set a required map setup datapoint at your current location.
     permission: theherobrine.command.setspawn
     usage: /<command> <survivor|herobrine|alter|shard> [shardIndex|append] [mapName]
