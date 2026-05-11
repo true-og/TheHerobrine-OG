@@ -13,6 +13,8 @@ import uk.hotten.herobrine.commands.JoinLobbyCompleter;
 import uk.hotten.herobrine.commands.PauseTimerCommand;
 import uk.hotten.herobrine.commands.ReloadConfigsCommand;
 import uk.hotten.herobrine.commands.SetHerobrineCommand;
+import uk.hotten.herobrine.commands.SetSpawnCommand;
+import uk.hotten.herobrine.commands.SetSpawnCompleter;
 import uk.hotten.herobrine.commands.SpectateCommand;
 import uk.hotten.herobrine.commands.VoteCommand;
 import uk.hotten.herobrine.commands.VoteCompleter;
@@ -86,6 +88,8 @@ public class HerobrinePluginOG extends JavaPlugin {
         getCommand("hbdeletelobby").setTabCompleter(new DeleteLobbyCompleter());
         getCommand("hbspectate").setExecutor(new SpectateCommand());
         getCommand("hbreloadconfigs").setExecutor(new ReloadConfigsCommand());
+        getCommand("hbsetspawn").setExecutor(new SetSpawnCommand());
+        getCommand("hbsetspawn").setTabCompleter(new SetSpawnCompleter());
 
         if (getServer().getPluginManager().getPlugin("IllegalStack-OG") != null) {
 

@@ -60,3 +60,8 @@ commands:
     description: Reload the lobby configuration files.
     permission: theherobrine.command.reloadconfigs
     usage: /<command>
+
+  hbsetspawn:
+    description: Set a spawn datapoint for the current map at your location.
+    permission: theherobrine.command.setspawn
+    usage: /<command> <survivor|herobrine|alter|shard> [shardIndex|append] [mapName]

@@ -299,12 +299,19 @@ public class GameManager {
 
     public void startWaiting() {
 
+        startWaiting(true);
+
+    }
+
+    public void startWaiting(boolean cleanGameWorld) {
+
         setGameState(GameState.WAITING);
         if (waitingRunnable != null)
             waitingRunnable.cancel();
 
         // In case the timer decreased from players leaving and a world was loaded
-        Bukkit.getServer().getScheduler().runTask(plugin, () -> gameLobby.getWorldManager().clean(false));
+        if (cleanGameWorld)
+            Bukkit.getServer().getScheduler().runTask(plugin, () -> gameLobby.getWorldManager().clean(false));
         startTimer = getGameLobby().getLobbyConfig().getStartTime();
 
         waitingRunnable = new WaitingRunnable(this).runTaskTimerAsynchronously(plugin, 0, 10);
@@ -396,9 +403,12 @@ public class GameManager {
                     "ABORTING start(): missing spawn datapoint(s). herobrineSpawn=" + worldManager.herobrineSpawn
                             + " survivorSpawn=" + worldManager.survivorSpawn
                             + " -- check the map's mapdata.yaml for SURVIVOR_SPAWN and HEROBRINE_SPAWN entries.");
-            Message.broadcast(gameLobby, Message.format(
-                    "&cGame failed to start: arena map is missing spawn points. See console. Returning to waiting..."));
-            startWaiting();
+            Message.broadcast(gameLobby, Message.format("&cGame failed to start: arena map is missing spawn points."));
+            String gw = worldManager.getGameWorld() != null ? worldManager.getGameWorld().getName() : "<none>";
+            Message.broadcast(gameLobby, Message.format("&eOperators: teleport to &b" + gw + "&e via &7/world tp " + gw
+                    + "&e and use &7/hbsetspawn <type>&e to set spawn points."));
+            // Keep the game world loaded so an op can walk to spawn locations and set them.
+            startWaiting(false);
             return;
 
         }
