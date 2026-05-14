@@ -2,6 +2,8 @@ package uk.hotten.herobrine.world;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +22,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.bergerkiller.bukkit.mw.WorldConfig;
+import com.bergerkiller.bukkit.mw.WorldInventory;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -582,6 +585,11 @@ public class WorldManager implements Listener {
         gameWorld = world;
         Console.info(gameLobby, "Game world '" + worldName + "' loaded with void chunk-generator override.");
 
+        // Share inventory between this lobby's hub and game world so the player
+        // does not get an inventory swap when teleported hub -> game at round
+        // start. Both stay isolated from the server's main-world bundle.
+        shareInventory(gameLobby.getLobbyId() + "-hub", worldName);
+
         // Move world spawn into a saved chunk so /world tp lands an admin in real
         // terrain, not at the level.dat origin (often empty).
         Location savedSpawn = pickSavedRegionSpawn(world, currentDir);
@@ -792,6 +800,11 @@ public class WorldManager implements Listener {
         hubWorld = world;
         Console.info(gameLobby, "Hub world '" + worldName + "' loaded with void chunk-generator override.");
 
+        // Detach the hub from any pre-existing MyWorlds inventory bundle (most
+        // importantly the server's main-world bundle) so PlayerUtil.clearInventory
+        // calls inside this lobby cannot wipe a player's main-world inventory.
+        isolateInventory(worldName);
+
         Location savedHubSpawn = pickSavedRegionSpawn(world, currentDir);
         if (savedHubSpawn != null) {
 
@@ -825,6 +838,50 @@ public class WorldManager implements Listener {
                 noUnload.clear();
 
             }, 100);
+
+    }
+
+    /**
+     * Detaches the named world from any MyWorlds inventory bundle so it has its own
+     * isolated inventory storage. Used on lobby world creation to keep the
+     * main-world inventory separate, and again on deletion to avoid stale entries
+     * accumulating in MyWorlds' inventories.yml.
+     */
+    private void isolateInventory(String worldName) {
+
+        try {
+
+            WorldInventory.detach(Collections.singletonList(worldName));
+            WorldInventory.save();
+            Console.info(gameLobby, "MyWorlds inventory bundle isolated for '" + worldName + "'.");
+
+        } catch (Throwable t) {
+
+            Console.error(gameLobby, "Failed to isolate MyWorlds inventory for '" + worldName + "': " + t.getMessage());
+            t.printStackTrace();
+
+        }
+
+    }
+
+    /**
+     * Merges the given worlds into a single MyWorlds inventory bundle so a player
+     * carrying lobby inventory between them (hub -> game) does not get an inventory
+     * swap mid-match. Auto-saves.
+     */
+    private void shareInventory(String... worldNames) {
+
+        try {
+
+            WorldInventory.merge(Arrays.asList(worldNames));
+            Console.info(gameLobby, "MyWorlds inventory bundle merged: " + String.join(", ", worldNames));
+
+        } catch (Throwable t) {
+
+            Console.error(gameLobby, "Failed to merge MyWorlds inventory bundle: " + t.getMessage());
+            t.printStackTrace();
+
+        }
 
     }
 
@@ -870,6 +927,10 @@ public class WorldManager implements Listener {
             }
 
         }
+
+        // Drop the world from any shared MyWorlds inventory bundle before deleting
+        // so its entry doesn't haunt inventories.yml after the world dir is gone.
+        isolateInventory(gameWorldName);
 
         // WorldConfig.deleteWorld() refuses if the world is loaded. Unload first.
         WorldConfig wc = WorldConfig.get(gameWorldName);
@@ -937,6 +998,10 @@ public class WorldManager implements Listener {
             }
 
         }
+
+        // Drop the hub from any MyWorlds inventory bundle before deleting so its
+        // entry doesn't haunt inventories.yml after the world dir is gone.
+        isolateInventory(hubWorldName);
 
         WorldConfig hwc = WorldConfig.get(hubWorldName);
         if (hwc.isLoaded() && !hwc.unloadWorld())
