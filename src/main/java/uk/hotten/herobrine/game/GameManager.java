@@ -3,7 +3,9 @@ package uk.hotten.herobrine.game;
 import com.comphenix.protocol.ProtocolManager;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
@@ -60,6 +62,7 @@ import uk.hotten.herobrine.lobby.GameLobby;
 import uk.hotten.herobrine.stat.StatTracker;
 import uk.hotten.herobrine.utils.Console;
 import uk.hotten.herobrine.utils.GameState;
+import uk.hotten.herobrine.utils.HerobrineSkin;
 import uk.hotten.herobrine.utils.Message;
 import uk.hotten.herobrine.utils.PlayerUtil;
 import uk.hotten.herobrine.utils.ShardState;
@@ -116,6 +119,9 @@ public class GameManager {
 
     @Getter
     private ArrayList<Player> spectators;
+
+    @Getter
+    private HashSet<UUID> deadSurvivors;
 
     @Getter
     private ArrayList<Player> hbLastHit;
@@ -197,6 +203,7 @@ public class GameManager {
 
         survivors = new ArrayList<>();
         spectators = new ArrayList<>();
+        deadSurvivors = new HashSet<>();
         hbLastHit = new ArrayList<>();
 
         kits = new Kit[] { new ArcherKit(this, lockClassicKits), new PriestKit(this, lockClassicKits),
@@ -306,6 +313,7 @@ public class GameManager {
     public void startWaiting(boolean cleanGameWorld) {
 
         setGameState(GameState.WAITING);
+        deadSurvivors.clear();
         if (waitingRunnable != null)
             waitingRunnable.cancel();
 
@@ -342,6 +350,89 @@ public class GameManager {
         }
 
         return true;
+
+    }
+
+    private boolean playerListContains(List<Player> players, Player player) {
+
+        if (player == null)
+            return false;
+        UUID uuid = player.getUniqueId();
+        return players.stream().anyMatch(p -> p.getUniqueId().equals(uuid));
+
+    }
+
+    private boolean removeFromPlayerList(List<Player> players, Player player) {
+
+        if (player == null)
+            return false;
+        UUID uuid = player.getUniqueId();
+        return players.removeIf(p -> p.getUniqueId().equals(uuid));
+
+    }
+
+    public boolean isHerobrine(Player player) {
+
+        return player != null && herobrine != null && herobrine.getUniqueId().equals(player.getUniqueId());
+
+    }
+
+    public boolean isSurvivor(Player player) {
+
+        return playerListContains(survivors, player);
+
+    }
+
+    public boolean isSpectator(Player player) {
+
+        return playerListContains(spectators, player);
+
+    }
+
+    public boolean isDeadSurvivor(Player player) {
+
+        return player != null && deadSurvivors.contains(player.getUniqueId());
+
+    }
+
+    public boolean isShardCarrier(Player player) {
+
+        return player != null && shardCarrier != null && shardCarrier.getUniqueId().equals(player.getUniqueId());
+
+    }
+
+    public void addSurvivor(Player player) {
+
+        if (!isSurvivor(player))
+            survivors.add(player);
+
+    }
+
+    public void addSpectator(Player player) {
+
+        if (!isSpectator(player))
+            spectators.add(player);
+
+    }
+
+    public boolean removeSurvivor(Player player) {
+
+        return removeFromPlayerList(survivors, player);
+
+    }
+
+    public boolean removeSpectator(Player player) {
+
+        return removeFromPlayerList(spectators, player);
+
+    }
+
+    public void markSurvivorDead(Player player) {
+
+        if (player == null)
+            return;
+        deadSurvivors.add(player.getUniqueId());
+        removeSurvivor(player);
 
     }
 
@@ -456,7 +547,7 @@ public class GameManager {
 
             }
 
-            survivors.remove(herobrine);
+            removeSurvivor(herobrine);
             Console.info(gameLobby, "After herobrine pick: survivors=" + survivors.size());
 
             Console.info(gameLobby, "Calling setupHerobrine()...");
@@ -464,7 +555,7 @@ public class GameManager {
             Console.info(gameLobby, "Calling setupSurvivors()...");
             setupSurvivors();
             Console.info(gameLobby, "Applying spectator state to " + spectators.size() + " spectator(s)...");
-            spectators.forEach(this::makeSpectator);
+            new ArrayList<>(spectators).forEach(this::makeSpectator);
             new HerobrineSetup(herobrine).runTaskAsynchronously(plugin);
             setTags(herobrine, "&c&lHEROBRINE ", NamedTextColor.RED, ScoreboardUpdateAction.UPDATE);
             for (Player p : survivors) {
@@ -484,7 +575,10 @@ public class GameManager {
                 scoreboards.get(p).setHandler(gameScoreboardHandler);
                 p.setHealth(20);
                 p.setFoodLevel(20);
-                p.setGameMode(GameMode.SURVIVAL);
+                if (isSpectator(p) || isDeadSurvivor(p))
+                    makeSpectator(p);
+                else
+                    p.setGameMode(GameMode.SURVIVAL);
 
             }
 
@@ -524,6 +618,11 @@ public class GameManager {
                         + worldManager.herobrineSpawn.getBlockZ() + ") -> result=" + teleported);
         herobrine.setHealth(20);
         herobrine.setFoodLevel(20);
+
+        // Override visible skin with the configured Herobrine textures so that
+        // when invisibility drops (e.g. after the third shard capture) the
+        // player actually appears as Herobrine instead of their own skin.
+        HerobrineSkin.apply(plugin, herobrine);
 
         PlayerUtil.addEffect(herobrine, PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 1, false, false);
         PlayerUtil.addEffect(herobrine, PotionEffectType.JUMP, Integer.MAX_VALUE, 1, false, false);
@@ -683,26 +782,40 @@ public class GameManager {
 
     public void makeSpectator(Player player) {
 
-        player.teleport(worldManager.survivorSpawn);
-        Message.send(player, Message.format("&7You are out of the game! Left-click to open the spectator menu."));
+        boolean alreadyOut = isSpectator(player) && isDeadSurvivor(player);
+        markSurvivorDead(player);
+        addSpectator(player);
+
+        if (!alreadyOut)
+            Message.send(player, Message.format("&7You are out of the game! Left-click to open the spectator menu."));
+        applySpectatorState(player);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> applySpectatorState(player), 1);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> applySpectatorState(player), 20);
+
+    }
+
+    private void applySpectatorState(Player player) {
+
+        if (player == null || !player.isOnline())
+            return;
+
+        if (worldManager.survivorSpawn != null)
+            player.teleport(worldManager.survivorSpawn);
 
         PlayerUtil.clearInventory(player);
         PlayerUtil.clearEffects(player);
 
-        if (!spectators.contains(player))
-            spectators.add(player);
-
         PlayerUtil.addEffect(player, PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 1, false, false);
 
         player.setGameMode(GameMode.SPECTATOR);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> player.setGameMode(GameMode.SPECTATOR), 20);
         player.setHealth(20);
         player.setFoodLevel(20);
         player.getInventory().setItem(0, new GUIItem(Material.COMPASS).displayName("&7Spectator Menu").build());
 
         setTags(player, null, NamedTextColor.GRAY, ScoreboardUpdateAction.UPDATE);
         updateTags(ScoreboardUpdateAction.UPDATE);
-        scoreboards.get(player).setHandler(gameScoreboardHandler);
+        if (scoreboards.containsKey(player))
+            scoreboards.get(player).setHandler(gameScoreboardHandler);
 
     }
 
@@ -759,6 +872,12 @@ public class GameManager {
 
         }
 
+        // Restore the original skin we overrode in setupHerobrine() before the
+        // lobby tears down. Safe even if the override never applied (config off
+        // or apply failed silently).
+        if (herobrine != null)
+            HerobrineSkin.restore(herobrine);
+
         gameLobby.getStatManager().stopTracking();
         gameLobby.getStatManager().push();
         Message.broadcast(gameLobby, Message.format("&7The lobby will restart in 15 seconds."));
@@ -769,6 +888,9 @@ public class GameManager {
     public void endCheck() {
 
         if (gameState != GameState.LIVE)
+            return;
+
+        if (getHerobrine() == null)
             return;
 
         Console.debug(gameLobby, "=== END CHECK ===");
@@ -782,8 +904,8 @@ public class GameManager {
 
             end(WinType.HEROBRINE);
 
-        } else if (!getHerobrine().getWorld().getName().startsWith(gameLobby.getLobbyId())
-                || !getHerobrine().isOnline())
+        } else if (!getHerobrine().isOnline()
+                || !getHerobrine().getWorld().getName().startsWith(gameLobby.getLobbyId()))
         {
 
             end(WinType.SURVIVORS);

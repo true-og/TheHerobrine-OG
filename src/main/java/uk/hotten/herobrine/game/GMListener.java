@@ -48,6 +48,7 @@ import uk.hotten.herobrine.lobby.GameLobby;
 import uk.hotten.herobrine.stat.GameRank;
 import uk.hotten.herobrine.stat.StatManager;
 import uk.hotten.herobrine.utils.GameState;
+import uk.hotten.herobrine.utils.HerobrineSkin;
 import uk.hotten.herobrine.utils.Message;
 import uk.hotten.herobrine.utils.PlayerUtil;
 import uk.hotten.herobrine.utils.ShardState;
@@ -67,58 +68,69 @@ public class GMListener implements Listener {
 
     }
 
-    @EventHandler
-    public void onJoinViaWorld(PlayerChangedWorldEvent event) {
+    private boolean isLobbyWorld(String worldName) {
 
-        Player player = event.getPlayer();
-
-        if (!player.getWorld().getName().startsWith(gameLobby.getLobbyId()))
-            return;
-
-        onJoinLogic(player, player.getWorld().getName());
+        return worldName != null && worldName.startsWith(gameLobby.getLobbyId());
 
     }
 
-    @EventHandler
-    public void onJoinViaLogin(PlayerJoinEvent event) {
+    private boolean isHubWorld(String worldName) {
 
-        Player player = event.getPlayer();
-
-        if (!player.getWorld().getName().startsWith(gameLobby.getLobbyId()))
-            return;
-
-        onJoinLogic(player, player.getWorld().getName());
+        return worldName != null && worldName.equals(gameLobby.getLobbyId() + "-hub");
 
     }
 
-    private void onJoinLogic(Player player, String worldName) {
+    private boolean isGameWorld(String worldName) {
 
-        if (!gameManager.canJoin(player)) {
+        return gameLobby.getWorldManager().getGameWorld() != null
+                && gameLobby.getWorldManager().getGameWorld().getName().equals(worldName);
 
-            player.teleport(MyWorlds.getMainWorld().getSpawnLocation());
-            Message.send(player, Message.format("&cThis lobby is full."));
-            return;
+    }
 
-        }
+    private boolean hasLobbyPlayer(Player player) {
 
-        if (!worldName.contains("hub")) {
+        return gameLobby.getPlayers().stream().anyMatch(p -> p.getUniqueId().equals(player.getUniqueId()));
 
-            if (gameManager.getGameState() == GameState.LIVE) {
+    }
 
-                gameManager.makeSpectator(player);
+    private void addLobbyPlayer(Player player) {
 
-            }
-
-            return;
-
-        }
-
+        gameLobby.getPlayers().removeIf(p -> p.getUniqueId().equals(player.getUniqueId()));
         gameLobby.getPlayers().add(player);
 
-        if (HerobrinePluginOG.hasIllegalStack())
-            IllegalStackCompat.exemptPlayer(player.getUniqueId());
+    }
 
-        gameLobby.getStatManager().check(player.getUniqueId());
+    private void removeLobbyPlayer(Player player) {
+
+        gameLobby.getPlayers().removeIf(p -> p.getUniqueId().equals(player.getUniqueId()));
+
+    }
+
+    private void removeScoreboard(Player player) {
+
+        for (Player scored : new ArrayList<>(gameManager.getScoreboards().keySet())) {
+
+            if (!scored.getUniqueId().equals(player.getUniqueId()))
+                continue;
+            gameManager.getScoreboards().get(scored).deactivate();
+            gameManager.getScoreboards().remove(scored);
+
+        }
+
+    }
+
+    private void ensureScoreboard(Player player) {
+
+        for (Player scored : new ArrayList<>(gameManager.getScoreboards().keySet())) {
+
+            if (!scored.getUniqueId().equals(player.getUniqueId()))
+                continue;
+            if (scored == player)
+                return;
+            gameManager.getScoreboards().get(scored).deactivate();
+            gameManager.getScoreboards().remove(scored);
+
+        }
 
         gameManager.getScoreboards().put(player,
                 ScoreboardLib.createScoreboard(player).setHandler(new ScoreboardHandler()
@@ -147,18 +159,78 @@ public class GMListener implements Listener {
                 }).setUpdateInterval(1));
         gameManager.getScoreboards().get(player).activate();
 
+    }
+
+    private void ensureLobbyTracking(Player player) {
+
+        addLobbyPlayer(player);
+
+        if (HerobrinePluginOG.hasIllegalStack())
+            IllegalStackCompat.exemptPlayer(player.getUniqueId());
+
+        gameLobby.getStatManager().check(player.getUniqueId());
+        ensureScoreboard(player);
+
         gameManager.updateTags(GameManager.ScoreboardUpdateAction.CREATE);
         gameManager.setTags(player, null, null, GameManager.ScoreboardUpdateAction.CREATE);
 
-        if (gameManager.getGameState() == GameState.LIVE) {
+    }
 
+    @EventHandler
+    public void onJoinViaWorld(PlayerChangedWorldEvent event) {
+
+        Player player = event.getPlayer();
+
+        if (!isLobbyWorld(player.getWorld().getName()))
+            return;
+
+        if (isLobbyWorld(event.getFrom().getName()))
+            return;
+
+        onJoinLogic(player, player.getWorld().getName());
+
+    }
+
+    @EventHandler
+    public void onJoinViaLogin(PlayerJoinEvent event) {
+
+        Player player = event.getPlayer();
+
+        if (!isLobbyWorld(player.getWorld().getName()))
+            return;
+
+        onJoinLogic(player, player.getWorld().getName());
+
+    }
+
+    private void onJoinLogic(Player player, String worldName) {
+
+        if (!gameManager.canJoin(player)) {
+
+            player.teleport(MyWorlds.getMainWorld().getSpawnLocation());
+            Message.send(player, Message.format("&cThis lobby is full."));
+            return;
+
+        }
+
+        if (gameManager.getGameState() == GameState.LIVE || gameManager.getGameState() == GameState.ENDING) {
+
+            ensureLobbyTracking(player);
             gameManager.makeSpectator(player);
             return;
 
         }
 
+        if (!isHubWorld(worldName)) {
+
+            return;
+
+        }
+
+        ensureLobbyTracking(player);
+
         Message.broadcast(gameLobby, Message.format("&b" + player.getName() + " &ehas joined!"));
-        gameManager.getSurvivors().add(player);
+        gameManager.addSurvivor(player);
         gameManager.startCheck();
 
         gameLobby.getWorldManager().getPlayerVotes().put(player, 0);
@@ -177,7 +249,7 @@ public class GMListener implements Listener {
 
         Player player = event.getPlayer();
 
-        if (!gameLobby.getPlayers().contains(player))
+        if (!hasLobbyPlayer(player) && !isLobbyWorld(player.getWorld().getName()))
             return;
 
         onLeaveLogic(player);
@@ -189,36 +261,85 @@ public class GMListener implements Listener {
 
         Player player = event.getPlayer();
 
-        if (player.getWorld().getName().startsWith(gameLobby.getLobbyId())
-                && event.getFrom().getName().startsWith(gameLobby.getLobbyId()))
+        String fromWorld = event.getFrom().getName();
+        String toWorld = player.getWorld().getName();
+
+        if (!isLobbyWorld(fromWorld))
             return;
 
-        if (player.getWorld().getName().startsWith(gameLobby.getLobbyId())
-                && !event.getFrom().getName().startsWith(gameLobby.getLobbyId()))
+        if (isLobbyWorld(toWorld)) {
+
+            if (gameManager.getGameState() == GameState.LIVE && isGameWorld(fromWorld))
+                handleLiveRoundExit(player, true);
             return;
 
-        if (!event.getFrom().getName().startsWith(gameLobby.getLobbyId()))
-            return;
+        }
 
         onLeaveLogic(player);
 
     }
 
+    private void handleLiveRoundExit(Player player, boolean keepInLobby) {
+
+        if (gameManager.getGameState() != GameState.LIVE)
+            return;
+
+        if (gameManager.isHerobrine(player)) {
+
+            HerobrineSkin.restore(player);
+            gameManager.end(WinType.SURVIVORS);
+            return;
+
+        }
+
+        if (!gameManager.isSurvivor(player)) {
+
+            if (keepInLobby && (gameManager.isSpectator(player) || gameManager.isDeadSurvivor(player)))
+                gameManager.makeSpectator(player);
+            return;
+
+        }
+
+        gameManager.markSurvivorDead(player);
+
+        if (gameManager.isShardCarrier(player)) {
+
+            gameManager.getShardHandler().drop(player.getLocation());
+
+        }
+
+        if (keepInLobby)
+            gameManager.makeSpectator(player);
+
+        gameManager.endCheck();
+
+    }
+
     private void onLeaveLogic(Player player) {
 
-        gameLobby.getPlayers().remove(player);
+        boolean wasLive = gameManager.getGameState() == GameState.LIVE;
+
+        if (wasLive)
+            handleLiveRoundExit(player, false);
+
+        removeLobbyPlayer(player);
+
+        // If the leaver is the active Herobrine, restore their skin before
+        // their PlayerProfile is persisted to disk -- otherwise the override
+        // sticks across reconnects, even into worlds outside this lobby.
+        if (gameManager.isHerobrine(player))
+            HerobrineSkin.restore(player);
 
         if (HerobrinePluginOG.hasIllegalStack())
             IllegalStackCompat.unexemptPlayer(player.getUniqueId());
 
-        if (!gameManager.getSpectators().contains(player))
+        if (!gameManager.isSpectator(player))
             Message.broadcast(gameLobby, Message.format("&b" + player.getName() + " &ehas quit."));
-        gameManager.getSurvivors().remove(player);
-        gameManager.getSpectators().remove(player);
+        if (!wasLive)
+            gameManager.removeSurvivor(player);
+        gameManager.removeSpectator(player);
 
-        if (gameManager.getScoreboards().containsKey(player))
-            gameManager.getScoreboards().get(player).deactivate();
-        gameManager.getScoreboards().remove(player);
+        removeScoreboard(player);
         gameManager.getTeamPrefixes().remove(player);
         gameManager.getTeamColours().remove(player);
 
@@ -229,19 +350,13 @@ public class GMListener implements Listener {
 
         if (gameManager.getGameState() == GameState.LIVE) {
 
-            if (player == gameManager.getShardCarrier()) {
-
-                gameManager.getShardHandler().drop(player.getLocation());
-
-            }
-
             // If ran straight away, it still thinks THB is online if they were the quitter
             Bukkit.getServer().getScheduler().runTaskLater(gameManager.getPlugin(), gameManager::endCheck, 1);
             return;
 
         }
 
-        if (gameManager.getPassUser() == player) {
+        if (gameManager.getPassUser() != null && gameManager.getPassUser().getUniqueId().equals(player.getUniqueId())) {
 
             gameManager.setPassUser(null);
             Message.broadcast(gameManager.getGameLobby(),
@@ -278,7 +393,7 @@ public class GMListener implements Listener {
 
         }
 
-        if (!gameManager.getSurvivors().contains(player)) {
+        if (!gameManager.isSurvivor(player)) {
 
             event.setCancelled(true);
             return;
@@ -287,7 +402,7 @@ public class GMListener implements Listener {
 
         for (Player p : gameLobby.getPlayers()) {
 
-            if (p == gameManager.getHerobrine())
+            if (gameManager.isHerobrine(p))
                 continue;
             PlayerUtil.sendTitle(p, "&a&l" + player.getName() + "&3 has picked up the shard!", "&eHelp them return it!",
                     250, 3000, 250);
@@ -330,7 +445,7 @@ public class GMListener implements Listener {
         if (gameManager.getGameState() == GameState.LIVE) {
 
             if ((event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_AIR)
-                    && gameManager.getSpectators().contains(player))
+                    && gameManager.isSpectator(player))
             {
 
                 new SpectatorGui(gameManager.getPlugin(), player, gameManager).open(true);
@@ -347,7 +462,7 @@ public class GMListener implements Listener {
                 if (m == Material.ENCHANTING_TABLE)
                     event.setCancelled(true);
 
-                if (m == Material.ENCHANTING_TABLE && player == gameManager.getShardCarrier()) {
+                if (m == Material.ENCHANTING_TABLE && gameManager.isShardCarrier(player)) {
 
                     event.setCancelled(true);
                     player.getInventory().getItemInMainHand();
@@ -377,9 +492,7 @@ public class GMListener implements Listener {
 
                     new KitGui(gameManager.getPlugin(), player, gameManager).open(false);
 
-                } else if (gameManager.getGameState() == GameState.LIVE
-                        && gameManager.getSpectators().contains(player))
-                {
+                } else if (gameManager.getGameState() == GameState.LIVE && gameManager.isSpectator(player)) {
 
                     new SpectatorGui(gameManager.getPlugin(), player, gameManager).open(true);
 
@@ -405,7 +518,7 @@ public class GMListener implements Listener {
         if (!event.getPlayer().getWorld().getName().startsWith(gameLobby.getLobbyId()))
             return;
 
-        if (event.getPlayer() == gameManager.getShardCarrier()) {
+        if (gameManager.isShardCarrier(event.getPlayer())) {
 
             for (Player p : gameLobby.getPlayers()) {
 
@@ -482,7 +595,7 @@ public class GMListener implements Listener {
             Player player = (Player) event.getEntity();
             Player attacker = (Player) ((Arrow) event.getDamager()).getShooter();
 
-            if (!(gameManager.getSurvivors().contains(attacker) && player == gameManager.getHerobrine())) { // Evals to
+            if (!(gameManager.isSurvivor(attacker) && gameManager.isHerobrine(player))) { // Evals to
 
                 // true if
                 // either a)
@@ -510,7 +623,7 @@ public class GMListener implements Listener {
         if (event.getEntity() instanceof Player && event.getDamager() instanceof Wolf) {
 
             Player player = (Player) event.getEntity();
-            if (player == gameManager.getHerobrine())
+            if (gameManager.isHerobrine(player))
                 event.setDamage(6);
             else
                 event.setCancelled(true);
@@ -522,7 +635,7 @@ public class GMListener implements Listener {
         if (event.getEntity() instanceof Wolf && event.getDamager() instanceof Player) {
 
             Player player = (Player) event.getDamager();
-            if (player != gameManager.getHerobrine())
+            if (!gameManager.isHerobrine(player))
                 event.setCancelled(true);
             return;
 
@@ -538,9 +651,9 @@ public class GMListener implements Listener {
         Player player = (Player) event.getEntity();
         Player attacker = (Player) event.getDamager();
 
-        if (gameManager.getSurvivors().contains(attacker)) { // If attacker is a survivor
+        if (gameManager.isSurvivor(attacker)) { // If attacker is a survivor
 
-            if (gameManager.getSurvivors().contains(player)) { // If the person taking damage is also a survivor, cancel
+            if (gameManager.isSurvivor(player)) { // If the person taking damage is also a survivor, cancel
 
                 event.setCancelled(true);
                 return;
@@ -559,7 +672,7 @@ public class GMListener implements Listener {
             Bukkit.getServer().getScheduler().runTaskLater(gameManager.getPlugin(),
                     () -> player.setVelocity(new Vector(0, 0, 0)), 1);
 
-        } else if (attacker == gameManager.getHerobrine()) {
+        } else if (gameManager.isHerobrine(attacker)) {
 
             PlayerUtil.playSoundAt(attacker.getLocation(), Sound.ENTITY_GHAST_AMBIENT, 1f, 0f);
             double damage = gameManager.getSurvivorHitDamage(attacker.getInventory().getItemInMainHand().getType());
@@ -592,21 +705,21 @@ public class GMListener implements Listener {
 
         }
 
-        if (gameManager.getSpectators().contains(player)) {
+        if (gameManager.isSpectator(player)) {
 
             event.setCancelled(true);
             return;
 
         }
 
-        if (player == gameManager.getHerobrine() && event.getCause() == EntityDamageEvent.DamageCause.FALL) {
+        if (gameManager.isHerobrine(player) && event.getCause() == EntityDamageEvent.DamageCause.FALL) {
 
             event.setCancelled(true);
             return;
 
         }
 
-        if (player == gameManager.getHerobrine()
+        if (gameManager.isHerobrine(player)
                 && (event.getCause() == EntityDamageEvent.DamageCause.FIRE
                         || event.getCause() == EntityDamageEvent.DamageCause.FIRE_TICK)
                 && gameManager.getShardCount() != 3)
@@ -618,7 +731,7 @@ public class GMListener implements Listener {
 
         }
 
-        if (gameManager.getSurvivors().contains(player)) {
+        if (gameManager.isSurvivor(player)) {
 
             if (event.getCause() == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION
                     || event.getCause() == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION)
@@ -653,7 +766,7 @@ public class GMListener implements Listener {
 
         Bukkit.getServer().getScheduler().runTaskLater(gameManager.getPlugin(), () -> player.spigot().respawn(), 40);
 
-        if (player == gameManager.getHerobrine()) {
+        if (gameManager.isHerobrine(player)) {
 
             if (player.getKiller() != null) {
 
@@ -668,8 +781,8 @@ public class GMListener implements Listener {
 
         } else {
 
-            gameManager.getSurvivors().remove(player);
-            if ((player.getKiller() != null && player.getKiller() == gameManager.getHerobrine())
+            gameManager.markSurvivorDead(player);
+            if ((player.getKiller() != null && gameManager.isHerobrine(player.getKiller()))
                     || gameManager.getHbLastHit().contains(player))
             {
 
@@ -679,7 +792,7 @@ public class GMListener implements Listener {
 
             }
 
-            if (player == gameManager.getShardCarrier()) {
+            if (gameManager.isShardCarrier(player)) {
 
                 if (player.getLastDamageCause() != null
                         && player.getLastDamageCause().getCause() == EntityDamageEvent.DamageCause.VOID)
@@ -704,7 +817,7 @@ public class GMListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onRespawn(PlayerRespawnEvent event) {
 
-        if (!gameLobby.getPlayers().contains(event.getPlayer()))
+        if (!hasLobbyPlayer(event.getPlayer()))
             return;
 
         if (gameManager.getGameState() == GameState.LIVE || gameManager.getGameState() == GameState.ENDING) {
@@ -727,7 +840,7 @@ public class GMListener implements Listener {
             if (e instanceof Player) {
 
                 Player player = (Player) e;
-                if (gameManager.getHerobrine() == player || !gameManager.getSurvivors().contains(player))
+                if (gameManager.isHerobrine(player) || !gameManager.isSurvivor(player))
                     Bukkit.getServer().getScheduler().runTaskLater(gameManager.getPlugin(), () -> {
 
                         event.getPotion().getEffects().forEach(effect -> {
@@ -736,7 +849,7 @@ public class GMListener implements Listener {
 
                         });
 
-                        if (gameManager.getHerobrine() == player) {
+                        if (gameManager.isHerobrine(player)) {
 
                             if (gameManager.getShardCount() != 3)
                                 PlayerUtil.addEffect(player, PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 1, false,
@@ -790,7 +903,7 @@ public class GMListener implements Listener {
 
         } else if (gameManager.getGameState() == GameState.LIVE || gameManager.getGameState() == GameState.ENDING) {
 
-            if (player == gameManager.getHerobrine() || gameManager.getSurvivors().contains(player)) {
+            if (gameManager.isHerobrine(player) || gameManager.isSurvivor(player)) {
 
                 Message.broadcast(gameLobby, rank.getDisplay() + " " + endMessage);
 

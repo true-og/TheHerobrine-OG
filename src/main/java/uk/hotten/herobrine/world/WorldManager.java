@@ -692,6 +692,12 @@ public class WorldManager implements Listener {
         if (shardSpawns.isEmpty())
             Console.error(gameLobby, "Map '" + map.getMapData().getName()
                     + "' has no SHARD_SPAWN datapoints -- shards will never spawn.");
+        else if (shardSpawns.size() < MapSetupWizard.MIN_SHARD_SPAWNS)
+            Console.error(gameLobby,
+                    "Map '" + map.getMapData().getName() + "' has only " + shardSpawns.size()
+                            + " SHARD_SPAWN datapoint(s); a minimum of " + MapSetupWizard.MIN_SHARD_SPAWNS
+                            + " is recommended so shards do not respawn at the same location every round."
+                            + " Run /hbsetspawn shard at additional spawns to fix.");
         if (Double.isNaN(gameMapData.getShardMin()))
             Console.error(gameLobby,
                     "Map '" + map.getMapData().getName() + "' is missing shardMin -- shards will be destroyed on spawn."

@@ -35,7 +35,7 @@ public class DeathTracker extends StatTracker {
         if (gm.getGameState() != GameState.LIVE)
             return;
 
-        if (gm.getSurvivors().contains(player) || gm.getHerobrine() == player)
+        if (gm.isSurvivor(player) || gm.isHerobrine(player))
             increment(player.getUniqueId(), 1);
 
     }
@@ -52,16 +52,13 @@ public class DeathTracker extends StatTracker {
         if (gm.getGameState() != GameState.LIVE)
             return;
 
-        if (gm.getSurvivors().contains(player) || gm.getHerobrine() == player)
+        if (gm.isSurvivor(player) || gm.isHerobrine(player))
             increment(player.getUniqueId(), 1);
 
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onLeaveWorld(PlayerChangedWorldEvent event) {
-
-        if (event.getPlayer().getWorld().getName().startsWith(gameLobby.getLobbyId()))
-            return;
 
         Player player = event.getPlayer();
 
@@ -69,7 +66,13 @@ public class DeathTracker extends StatTracker {
         if (gm.getGameState() != GameState.LIVE)
             return;
 
-        if (gm.getSurvivors().contains(player) || gm.getHerobrine() == player)
+        boolean leftLobby = !player.getWorld().getName().startsWith(gameLobby.getLobbyId());
+        boolean leftGameWorld = gameLobby.getWorldManager().getGameWorld() != null
+                && event.getFrom().equals(gameLobby.getWorldManager().getGameWorld());
+        if (!leftLobby && !leftGameWorld)
+            return;
+
+        if (gm.isSurvivor(player) || gm.isHerobrine(player))
             increment(player.getUniqueId(), 1);
 
     }

@@ -21,6 +21,8 @@ public class MapSetupWizard implements Listener {
 
     public static final String SETSPAWN_PERMISSION = "theherobrine.command.setspawn";
 
+    public static final int MIN_SHARD_SPAWNS = 3;
+
     private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
 
     static {
@@ -76,15 +78,22 @@ public class MapSetupWizard implements Listener {
         sendStep(player, "3", "alter", DatapointType.ALTER, data, "/hbsetspawn alter",
                 "the enchanting-table capture point");
 
-        if (shardCount > 0) {
+        if (shardCount >= MIN_SHARD_SPAWNS) {
 
-            Message.send(player, Message.format("&a[done] &f4. shard spawns &7(" + shardCount
-                    + " set; run &e/hbsetspawn shard&7 again to add more)"));
+            Message.send(player, Message.format("&a[done] &f4. shard spawns &7(" + shardCount + " set; minimum "
+                    + MIN_SHARD_SPAWNS + " met -- run &e/hbsetspawn shard&7 again to add more)"));
+
+        } else if (shardCount > 0) {
+
+            Message.send(player,
+                    Message.format("&c[missing] &f4. shard spawns &7(" + shardCount + "/" + MIN_SHARD_SPAWNS
+                            + " set) - keep running &e/hbsetspawn shard&7 at additional spawn locations"
+                            + " until at least " + MIN_SHARD_SPAWNS + " are configured"));
 
         } else {
 
-            Message.send(player, Message.format("&c[missing] &f4. shard spawn &7- run &e/hbsetspawn shard"
-                    + " &7at every shard spawn location; at least one is required"));
+            Message.send(player, Message.format("&c[missing] &f4. shard spawns &7- run &e/hbsetspawn shard"
+                    + " &7at every shard spawn location; a minimum of " + MIN_SHARD_SPAWNS + " is required"));
 
         }
 
@@ -212,8 +221,10 @@ public class MapSetupWizard implements Listener {
             missing.add("stand at the Herobrine start and run /hbsetspawn herobrine");
         if (!hasDatapoint(data, DatapointType.ALTER))
             missing.add("stand at the shard turn-in alter and run /hbsetspawn alter");
-        if (!hasDatapoint(data, DatapointType.SHARD_SPAWN))
-            missing.add("stand at a shard spawn and run /hbsetspawn shard");
+        int shardCount = countDatapoints(data, DatapointType.SHARD_SPAWN);
+        if (shardCount < MIN_SHARD_SPAWNS)
+            missing.add("stand at a shard spawn and run /hbsetspawn shard (" + shardCount + "/" + MIN_SHARD_SPAWNS
+                    + " set; run again at each additional spawn until the minimum is reached)");
         if (Double.isNaN(data.getShardMin()))
             missing.add("stand at the lowest legal shard Y and run /hbsetspawn shardmin");
         if (Double.isNaN(data.getShardMax()))

@@ -35,7 +35,7 @@ public class KillsTracker extends StatTracker {
 
         if (player.getKiller() == null) {
 
-            if (gm.getSurvivors().contains(player) && gm.getHbLastHit().contains(player)) {
+            if (gm.isSurvivor(player) && gm.getHbLastHit().contains(player)) {
 
                 increment(gm.getHerobrine().getUniqueId(), 1);
 
@@ -47,9 +47,9 @@ public class KillsTracker extends StatTracker {
 
         Player killer = player.getKiller();
 
-        if (gm.getSurvivors().contains(player) || gm.getHerobrine() == player) {
+        if (gm.isSurvivor(player) || gm.isHerobrine(player)) {
 
-            if (gm.getSurvivors().contains(killer) || gm.getHerobrine() == killer) {
+            if (gm.isSurvivor(killer) || gm.isHerobrine(killer)) {
 
                 increment(killer.getUniqueId(), 1);
 

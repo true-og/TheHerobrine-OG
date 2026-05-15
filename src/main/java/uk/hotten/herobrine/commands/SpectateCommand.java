@@ -42,16 +42,16 @@ public class SpectateCommand implements CommandExecutor {
 
         }
 
-        if (gm.getSpectators().contains(player)) {
+        if (gm.isSpectator(player)) {
 
-            gm.getSpectators().remove(player);
-            gm.getSurvivors().add(player);
+            gm.removeSpectator(player);
+            gm.addSurvivor(player);
             Message.send(player, Message.format("You are no-longer a spectator."));
 
         } else {
 
-            gm.getSpectators().add(player);
-            gm.getSurvivors().remove(player);
+            gm.addSpectator(player);
+            gm.removeSurvivor(player);
             Message.send(player, Message.format("You are now a spectator."));
 
         }
