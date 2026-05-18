@@ -34,6 +34,10 @@ import uk.hotten.herobrine.utils.Message;
 
 public class LobbyManager {
 
+    public enum JoinResult {
+        OK, UNAVAILABLE_STATE, FULL, ALREADY_IN, NO_HUB, UNKNOWN_LOBBY
+    }
+
     private static final String[] MY_WORLDS_PLUGIN_NAMES = { "MyWorlds", "My_Worlds" };
 
     private final JavaPlugin plugin;
@@ -309,6 +313,170 @@ public class LobbyManager {
                 count++;
         return count;
 
+    }
+
+    public JoinResult attemptJoin(Player player, GameLobby gl) {
+
+        if (gl == null)
+            return JoinResult.UNKNOWN_LOBBY;
+
+        GameState currentState = gl.getGameManager().getGameState();
+        if (currentState == GameState.ENDING || currentState == GameState.DEAD || currentState == GameState.BOOTING
+                || currentState == GameState.UNKNOWN)
+            return JoinResult.UNAVAILABLE_STATE;
+
+        if (!gl.getGameManager().canJoin(player))
+            return JoinResult.FULL;
+
+        GameLobby playerLobby = getLobby(player);
+        if (playerLobby != null && playerLobby == gl)
+            return JoinResult.ALREADY_IN;
+
+        org.bukkit.World hubWorld = gl.getWorldManager().getHubWorld();
+        if (hubWorld == null)
+            hubWorld = Bukkit.getWorld(gl.getLobbyId() + "-hub");
+        if (hubWorld == null)
+            return JoinResult.NO_HUB;
+
+        player.teleport(hubWorld.getSpawnLocation());
+        return JoinResult.OK;
+
+    }
+
+    public GameLobby pickJoinableLobbyForConfig(String configId, Player player) {
+
+        GameLobby bestStarting = null;
+        GameLobby bestWaiting = null;
+        GameLobby bestLive = null;
+
+        int bestStartingFill = -1;
+        int bestWaitingFill = -1;
+
+        for (Map.Entry<String, GameLobby> entry : gameLobbies.entrySet()) {
+
+            GameLobby gl = entry.getValue();
+            if (!gl.getLobbyConfig().getId().equals(configId))
+                continue;
+
+            GameManager gm = gl.getGameManager();
+            if (gm == null)
+                continue;
+
+            GameState st = gm.getGameState();
+            if (st == GameState.STARTING || st == GameState.WAITING) {
+
+                if (!gm.canJoin(player))
+                    continue;
+                int fill = gm.getSurvivors().size();
+                if (st == GameState.STARTING) {
+
+                    if (fill > bestStartingFill) {
+
+                        bestStartingFill = fill;
+                        bestStarting = gl;
+
+                    }
+
+                } else if (fill > bestWaitingFill) {
+
+                    bestWaitingFill = fill;
+                    bestWaiting = gl;
+
+                }
+
+            } else if (st == GameState.LIVE && bestLive == null) {
+
+                bestLive = gl;
+
+            }
+
+        }
+
+        if (bestStarting != null)
+            return bestStarting;
+        if (bestWaiting != null)
+            return bestWaiting;
+        return bestLive;
+
+    }
+
+    /**
+     * Aggregate snapshot of all lobbies for a config id. Used by join-sign
+     * displays.
+     */
+    public LobbyAggregate aggregateForConfig(String configId) {
+
+        int total = 0;
+        int joinable = 0;
+        int playerCount = 0;
+        int maxPlayers = 0;
+        int liveCount = 0;
+        int startingCount = 0;
+        int waitingCount = 0;
+        int endingCount = 0;
+        String currentMap = null;
+
+        for (GameLobby gl : gameLobbies.values()) {
+
+            if (!gl.getLobbyConfig().getId().equals(configId))
+                continue;
+
+            total++;
+            GameManager gm = gl.getGameManager();
+            if (gm == null)
+                continue;
+
+            playerCount += gm.getSurvivors().size();
+            if (maxPlayers == 0)
+                maxPlayers = gm.getMaxPlayers();
+
+            GameState st = gm.getGameState();
+            switch (st) {
+
+                case WAITING -> {
+
+                    waitingCount++;
+                    if (gm.getSurvivors().size() < gm.getMaxPlayers())
+                        joinable++;
+
+                }
+                case STARTING -> {
+
+                    startingCount++;
+                    if (gm.getSurvivors().size() < gm.getMaxPlayers())
+                        joinable++;
+
+                }
+                case LIVE -> {
+
+                    liveCount++;
+                    if (currentMap == null && gl.getWorldManager() != null
+                            && gl.getWorldManager().getGameMapData() != null)
+                        currentMap = gl.getWorldManager().getGameMapData().getName();
+
+                }
+                case ENDING -> endingCount++;
+                default -> {
+
+                }
+
+            }
+
+        }
+
+        LobbyConfig cfg = lobbyConfigs.get(configId);
+        if (maxPlayers == 0 && cfg != null)
+            maxPlayers = cfg.getMaxPlayers();
+
+        return new LobbyAggregate(configId, total, joinable, playerCount, maxPlayers, liveCount, startingCount,
+                waitingCount, endingCount, currentMap);
+
+    }
+
+    public record LobbyAggregate(String configId, int totalLobbies, int joinableLobbies, int playerCount,
+            int maxPlayersPerLobby, int liveCount, int startingCount, int waitingCount, int endingCount,
+            String currentMap)
+    {
     }
 
     public void sendLobbyMessage(Player player) {

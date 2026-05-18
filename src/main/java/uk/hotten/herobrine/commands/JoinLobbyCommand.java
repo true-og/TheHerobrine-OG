@@ -1,14 +1,12 @@
 package uk.hotten.herobrine.commands;
 
-import org.bukkit.Bukkit;
-import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import uk.hotten.herobrine.lobby.GameLobby;
 import uk.hotten.herobrine.lobby.LobbyManager;
-import uk.hotten.herobrine.utils.GameState;
+import uk.hotten.herobrine.lobby.LobbyManager.JoinResult;
 import uk.hotten.herobrine.utils.Message;
 
 public class JoinLobbyCommand implements CommandExecutor {
@@ -41,44 +39,17 @@ public class JoinLobbyCommand implements CommandExecutor {
 
         }
 
-        GameState currentState = gl.getGameManager().getGameState();
-        if (currentState == GameState.ENDING || currentState == GameState.DEAD || currentState == GameState.BOOTING
-                || currentState == GameState.UNKNOWN)
-        {
+        JoinResult result = lm.attemptJoin(player, gl);
+        switch (result) {
 
-            Message.send(player, Message.format("&cThis lobby cannot be joined right now."));
-            return true;
-
-        }
-
-        if (!gl.getGameManager().canJoin(player)) {
-
-            Message.send(player, Message.format("&cThis lobby is full."));
-            return true;
+            case OK -> Message.send(player, Message.format("&aJoining " + gl.getLobbyId() + "..."));
+            case UNAVAILABLE_STATE -> Message.send(player, Message.format("&cThis lobby cannot be joined right now."));
+            case FULL -> Message.send(player, Message.format("&cThis lobby is full."));
+            case ALREADY_IN -> Message.send(player, Message.format("&cYou're already in this lobby!"));
+            case NO_HUB -> Message.send(player, Message.format("&cThis lobby is unavailable right now."));
+            case UNKNOWN_LOBBY -> Message.send(player, Message.format("&cThat lobby no longer exists."));
 
         }
-
-        GameLobby playerLobby = LobbyManager.getInstance().getLobby(player);
-        if (playerLobby != null && playerLobby == gl) {
-
-            Message.send(player, Message.format("&cYou're already in this lobby!"));
-            return true;
-
-        }
-
-        Message.send(player, Message.format("&aJoining " + gl.getLobbyId() + "..."));
-        World hubWorld = gl.getWorldManager().getHubWorld();
-        if (hubWorld == null)
-            hubWorld = Bukkit.getWorld(gl.getLobbyId() + "-hub");
-
-        if (hubWorld == null) {
-
-            Message.send(player, Message.format("&cThis lobby is unavailable right now."));
-            return true;
-
-        }
-
-        player.teleport(hubWorld.getSpawnLocation());
 
         return true;
 

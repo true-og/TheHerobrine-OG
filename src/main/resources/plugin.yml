@@ -65,3 +65,11 @@ commands:
     description: Set a required map setup datapoint at your current location.
     permission: theherobrine.command.setspawn
     usage: /<command> <survivor|herobrine|alter|shard> [shardIndex|append] [mapName]
+
+permissions:
+  theherobrine.signs.create:
+    description: Create [Herobrine] join signs.
+    default: op
+  theherobrine.signs.destroy:
+    description: Destroy [Herobrine] join signs.
+    default: op

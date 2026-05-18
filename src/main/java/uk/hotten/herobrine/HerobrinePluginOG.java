@@ -22,6 +22,9 @@ import uk.hotten.herobrine.commands.VoteCompleter;
 import uk.hotten.herobrine.data.RedisManager;
 import uk.hotten.herobrine.data.SqlManager;
 import uk.hotten.herobrine.lobby.LobbyManager;
+import uk.hotten.herobrine.sign.JoinSignListener;
+import uk.hotten.herobrine.sign.JoinSignManager;
+import uk.hotten.herobrine.sign.JoinSignUpdater;
 import uk.hotten.herobrine.utils.Console;
 import uk.hotten.herobrine.utils.Message;
 import uk.hotten.herobrine.world.MapSetupWizard;
@@ -30,6 +33,8 @@ import uk.hotten.herobrine.world.VoidChunkGenerator;
 public class HerobrinePluginOG extends JavaPlugin {
 
     private static boolean hasIllegalStack = false;
+
+    private JoinSignUpdater joinSignUpdater;
 
     public static boolean hasIllegalStack() {
 
@@ -95,6 +100,11 @@ public class HerobrinePluginOG extends JavaPlugin {
         getCommand("hbsetspawn").setTabCompleter(new SetSpawnCompleter());
         getServer().getPluginManager().registerEvents(new MapSetupWizard(this), this);
 
+        JoinSignManager joinSignManager = new JoinSignManager(this);
+        getServer().getPluginManager().registerEvents(new JoinSignListener(this, joinSignManager), this);
+        joinSignUpdater = new JoinSignUpdater(joinSignManager);
+        joinSignUpdater.runTaskTimer(this, 20L, 20L);
+
         if (getServer().getPluginManager().getPlugin("IllegalStack-OG") != null) {
 
             hasIllegalStack = true;
@@ -120,6 +130,22 @@ public class HerobrinePluginOG extends JavaPlugin {
     @Override
     public void onDisable() {
 
+        if (joinSignUpdater != null) {
+
+            try {
+
+                joinSignUpdater.cancel();
+
+            } catch (IllegalStateException ignored) {
+
+            }
+
+            joinSignUpdater = null;
+
+        }
+
+        if (JoinSignManager.getInstance() != null)
+            JoinSignManager.getInstance().save();
         if (LobbyManager.getInstance() != null)
             LobbyManager.getInstance().shutdown();
         if (RedisManager.getInstance() != null)
