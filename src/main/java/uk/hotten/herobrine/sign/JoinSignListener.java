@@ -89,9 +89,14 @@ public class JoinSignListener implements Listener {
                     "&eWarning: this world is managed by TheHerobrine and may be deleted on shutdown. Place join signs in a persistent hub world."));
         Console.info("Registered join sign at " + js.key() + " -> " + configId + " by " + player.getName());
 
+        String lobbyLabel = configId;
+        LobbyManager.LobbyAggregate aggregate = LobbyManager.getInstance().aggregateForConfig(configId);
+        if (aggregate.displayLobbyId() != null)
+            lobbyLabel = aggregate.displayLobbyId();
+
         // Provisional lines; updater task will overwrite shortly.
-        event.line(0, Component.text("§1§l" + HEADER));
-        event.line(1, Component.text("§e" + configId));
+        event.line(0, Component.text("§4The Herobrine"));
+        event.line(1, Component.text("§e" + lobbyLabel));
         event.line(2, Component.text("§7Loading..."));
         event.line(3, Component.text(""));
 

@@ -414,6 +414,8 @@ public class LobbyManager {
         int startingCount = 0;
         int waitingCount = 0;
         int endingCount = 0;
+        int displayLobbyPriority = Integer.MAX_VALUE;
+        String displayLobbyId = null;
         String currentMap = null;
 
         for (GameLobby gl : gameLobbies.values()) {
@@ -431,6 +433,16 @@ public class LobbyManager {
                 maxPlayers = gm.getMaxPlayers();
 
             GameState st = gm.getGameState();
+            int priority = displayLobbyPriority(gl, st);
+            if (displayLobbyId == null || priority < displayLobbyPriority
+                    || (priority == displayLobbyPriority && gl.getLobbyId().compareTo(displayLobbyId) < 0))
+            {
+
+                displayLobbyPriority = priority;
+                displayLobbyId = gl.getLobbyId();
+
+            }
+
             switch (st) {
 
                 case WAITING -> {
@@ -469,14 +481,34 @@ public class LobbyManager {
             maxPlayers = cfg.getMaxPlayers();
 
         return new LobbyAggregate(configId, total, joinable, playerCount, maxPlayers, liveCount, startingCount,
-                waitingCount, endingCount, currentMap);
+                waitingCount, endingCount, displayLobbyId, currentMap);
 
     }
 
     public record LobbyAggregate(String configId, int totalLobbies, int joinableLobbies, int playerCount,
             int maxPlayersPerLobby, int liveCount, int startingCount, int waitingCount, int endingCount,
-            String currentMap)
+            String displayLobbyId, String currentMap)
     {
+    }
+
+    private int displayLobbyPriority(GameLobby gl, GameState st) {
+
+        GameManager gm = gl.getGameManager();
+        if (gm == null)
+            return 5;
+
+        if (st == GameState.STARTING && gm.getSurvivors().size() < gm.getMaxPlayers())
+            return 0;
+        if (st == GameState.WAITING && gm.getSurvivors().size() < gm.getMaxPlayers())
+            return 1;
+        if (st == GameState.LIVE)
+            return 2;
+        if (st == GameState.STARTING || st == GameState.WAITING)
+            return 3;
+        if (st == GameState.ENDING)
+            return 4;
+        return 5;
+
     }
 
     public void sendLobbyMessage(Player player) {

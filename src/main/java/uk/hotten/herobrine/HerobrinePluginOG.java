@@ -9,6 +9,7 @@ import uk.hotten.herobrine.commands.DeleteLobbyCommand;
 import uk.hotten.herobrine.commands.DeleteLobbyCompleter;
 import uk.hotten.herobrine.commands.DropShardCommand;
 import uk.hotten.herobrine.commands.ForceStartCommand;
+import uk.hotten.herobrine.commands.HubCommand;
 import uk.hotten.herobrine.commands.JoinLobbyCommand;
 import uk.hotten.herobrine.commands.JoinLobbyCompleter;
 import uk.hotten.herobrine.commands.PauseTimerCommand;
@@ -90,6 +91,7 @@ public class HerobrinePluginOG extends JavaPlugin {
         getCommand("vote").setTabCompleter(new VoteCompleter());
         getCommand("hbjoin").setExecutor(new JoinLobbyCommand());
         getCommand("hbjoin").setTabCompleter(new JoinLobbyCompleter());
+        getCommand("hub").setExecutor(new HubCommand());
         getCommand("hbcreatelobby").setExecutor(new CreateLobbyCommand());
         getCommand("hbcreatelobby").setTabCompleter(new CreateLobbyCompleter());
         getCommand("hbdeletelobby").setExecutor(new DeleteLobbyCommand());

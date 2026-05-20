@@ -56,8 +56,10 @@ public class JoinSignUpdater extends BukkitRunnable {
 
     private void renderLines(Sign sign, String configId, LobbyAggregate agg) {
 
-        sign.line(0, line("&1&l[Herobrine]"));
-        sign.line(1, line("&e" + truncate(configId, 15)));
+        String lobbyLabel = agg.displayLobbyId() == null ? configId : agg.displayLobbyId();
+
+        sign.line(0, line("&4The Herobrine"));
+        sign.line(1, line("&e" + truncate(lobbyLabel, 15)));
 
         if (agg.totalLobbies() == 0) {
 

@@ -4,6 +4,9 @@ import com.bergerkiller.bukkit.mw.MyWorlds;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import me.tigerhix.lib.scoreboard.ScoreboardLib;
 import me.tigerhix.lib.scoreboard.common.EntryBuilder;
 import me.tigerhix.lib.scoreboard.type.Entry;
@@ -14,6 +17,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.World;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.LivingEntity;
@@ -60,6 +64,7 @@ public class GMListener implements Listener {
     private GameManager gameManager;
     private GameLobby gameLobby;
     private ArrayList<Player> kitCooldown = new ArrayList<>();
+    private Set<UUID> returningToMainOnLogin = ConcurrentHashMap.newKeySet();
 
     public GMListener(GameManager gm, GameLobby gl) {
 
@@ -199,7 +204,34 @@ public class GMListener implements Listener {
         if (!isLobbyWorld(player.getWorld().getName()))
             return;
 
-        onJoinLogic(player, player.getWorld().getName());
+        returningToMainOnLogin.add(player.getUniqueId());
+        if (!returnToMainWorld(player))
+            returningToMainOnLogin.remove(player.getUniqueId());
+
+    }
+
+    private boolean returnToMainWorld(Player player) {
+
+        World mainWorld = MyWorlds.getMainWorld();
+        if (mainWorld == null)
+            mainWorld = Bukkit.getWorld("world");
+        if (mainWorld == null && !Bukkit.getWorlds().isEmpty())
+            mainWorld = Bukkit.getWorlds().get(0);
+        if (mainWorld == null) {
+
+            Message.send(player, Message.format("&cNo main world is available."));
+            return false;
+
+        }
+
+        if (!player.teleport(mainWorld.getSpawnLocation())) {
+
+            Message.send(player, Message.format("&cUnable to return you to the hub."));
+            return false;
+
+        }
+
+        return true;
 
     }
 
@@ -265,6 +297,9 @@ public class GMListener implements Listener {
         String toWorld = player.getWorld().getName();
 
         if (!isLobbyWorld(fromWorld))
+            return;
+
+        if (returningToMainOnLogin.remove(player.getUniqueId()))
             return;
 
         if (isLobbyWorld(toWorld)) {

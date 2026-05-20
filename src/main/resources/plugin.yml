@@ -41,6 +41,10 @@ commands:
     description: Join a lobby.
     usage: /<command> <lobby>
 
+  hub:
+    description: Leave The Herobrine lobby or game and return to the main world.
+    usage: /<command>
+
   hbcreatelobby:
     description: Create a lobby.
     permission: theherobrine.command.createlobby
