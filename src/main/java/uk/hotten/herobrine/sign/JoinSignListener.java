@@ -96,7 +96,7 @@ public class JoinSignListener implements Listener {
 
         // Provisional lines; updater task will overwrite shortly.
         event.line(0, Component.text("§4The Herobrine"));
-        event.line(1, Component.text("§e" + lobbyLabel));
+        event.line(1, Component.text("§6" + lobbyLabel));
         event.line(2, Component.text("§7Loading..."));
         event.line(3, Component.text(""));
 

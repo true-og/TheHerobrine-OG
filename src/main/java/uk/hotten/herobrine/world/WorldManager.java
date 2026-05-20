@@ -34,6 +34,7 @@ import net.kyori.adventure.text.event.HoverEvent;
 import uk.hotten.herobrine.events.GameStateUpdateEvent;
 import uk.hotten.herobrine.game.runnables.MapVotingRunnable;
 import uk.hotten.herobrine.lobby.GameLobby;
+import uk.hotten.herobrine.lobby.LobbyManager;
 import uk.hotten.herobrine.utils.Console;
 import uk.hotten.herobrine.utils.GameState;
 import uk.hotten.herobrine.utils.Message;
@@ -196,9 +197,15 @@ public class WorldManager implements Listener {
 
                 Console.info(gameLobby, "Evacuating " + existing.getPlayers().size() + " player(s) from '" + worldName
                         + "' to '" + main.getName() + "' before unload.");
-                Location dest = main.getSpawnLocation();
-                for (Player p : new ArrayList<>(existing.getPlayers()))
-                    p.teleport(dest);
+                Location fallbackDest = main.getSpawnLocation();
+                LobbyManager evacuateLm = LobbyManager.getInstance();
+                for (Player p : new ArrayList<>(existing.getPlayers())) {
+
+                    Location savedLoc = evacuateLm != null ? evacuateLm.getAndRemovePreJoinLocation(p.getUniqueId())
+                            : null;
+                    p.teleport(savedLoc != null && savedLoc.getWorld() != null ? savedLoc : fallbackDest);
+
+                }
 
             } else {
 
@@ -920,15 +927,25 @@ public class WorldManager implements Listener {
         }
 
         Console.info(gameLobby, "Cleaning the map...");
+        LobbyManager cleanLm = LobbyManager.getInstance();
         for (Player p : Bukkit.getServer().getOnlinePlayers()) {
 
             if (p.getWorld() != null && p.getWorld().getName().equals(gameWorldName)) {
 
-                World main = Bukkit.getServer().getWorld("world");
-                if (main == null)
-                    main = Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().get(0);
-                if (main != null)
-                    p.teleport(main.getSpawnLocation());
+                Location cleanSaved = cleanLm != null ? cleanLm.getAndRemovePreJoinLocation(p.getUniqueId()) : null;
+                if (cleanSaved != null && cleanSaved.getWorld() != null) {
+
+                    p.teleport(cleanSaved);
+
+                } else {
+
+                    World main = Bukkit.getServer().getWorld("world");
+                    if (main == null)
+                        main = Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().get(0);
+                    if (main != null)
+                        p.teleport(main.getSpawnLocation());
+
+                }
 
             }
 
@@ -991,15 +1008,25 @@ public class WorldManager implements Listener {
 
         }
 
+        LobbyManager hubCleanLm = LobbyManager.getInstance();
         for (Player p : Bukkit.getServer().getOnlinePlayers()) {
 
             if (p.getWorld() != null && p.getWorld().getName().equals(hubWorldName)) {
 
-                World main = Bukkit.getServer().getWorld("world");
-                if (main == null)
-                    main = Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().get(0);
-                if (main != null)
-                    p.teleport(main.getSpawnLocation());
+                Location hubSaved = hubCleanLm != null ? hubCleanLm.getAndRemovePreJoinLocation(p.getUniqueId()) : null;
+                if (hubSaved != null && hubSaved.getWorld() != null) {
+
+                    p.teleport(hubSaved);
+
+                } else {
+
+                    World main = Bukkit.getServer().getWorld("world");
+                    if (main == null)
+                        main = Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().get(0);
+                    if (main != null)
+                        p.teleport(main.getSpawnLocation());
+
+                }
 
             }
 

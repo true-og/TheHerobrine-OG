@@ -45,10 +45,12 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
+import org.bukkit.Location;
 import uk.hotten.herobrine.HerobrinePluginOG;
 import uk.hotten.herobrine.compat.IllegalStackCompat;
 import uk.hotten.herobrine.kit.KitGui;
 import uk.hotten.herobrine.lobby.GameLobby;
+import uk.hotten.herobrine.lobby.LobbyManager;
 import uk.hotten.herobrine.stat.GameRank;
 import uk.hotten.herobrine.stat.StatManager;
 import uk.hotten.herobrine.utils.GameState;
@@ -212,6 +214,25 @@ public class GMListener implements Listener {
 
     private boolean returnToMainWorld(Player player) {
 
+        LobbyManager lm = LobbyManager.getInstance();
+        if (lm != null) {
+
+            Location saved = lm.getAndRemovePreJoinLocation(player.getUniqueId());
+            if (saved != null && saved.getWorld() != null) {
+
+                if (!player.teleport(saved)) {
+
+                    Message.send(player, Message.format("&cUnable to return you to your previous location."));
+                    return false;
+
+                }
+
+                return true;
+
+            }
+
+        }
+
         World mainWorld = MyWorlds.getMainWorld();
         if (mainWorld == null)
             mainWorld = Bukkit.getWorld("world");
@@ -239,7 +260,18 @@ public class GMListener implements Listener {
 
         if (!gameManager.canJoin(player)) {
 
-            player.teleport(MyWorlds.getMainWorld().getSpawnLocation());
+            LobbyManager lm = LobbyManager.getInstance();
+            Location savedLoc = lm != null ? lm.getAndRemovePreJoinLocation(player.getUniqueId()) : null;
+            if (savedLoc != null && savedLoc.getWorld() != null) {
+
+                player.teleport(savedLoc);
+
+            } else {
+
+                player.teleport(MyWorlds.getMainWorld().getSpawnLocation());
+
+            }
+
             Message.send(player, Message.format("&cThis lobby is full."));
             return;
 

@@ -9,10 +9,13 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
+import org.bukkit.Location;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -50,6 +53,7 @@ public class LobbyManager {
 
     private final HashMap<String, LobbyConfig> lobbyConfigs;
     private final HashMap<String, GameLobby> gameLobbies;
+    private final ConcurrentHashMap<UUID, Location> preJoinLocations = new ConcurrentHashMap<>();
 
     public LobbyManager(JavaPlugin plugin) {
 
@@ -338,6 +342,7 @@ public class LobbyManager {
         if (hubWorld == null)
             return JoinResult.NO_HUB;
 
+        preJoinLocations.put(player.getUniqueId(), player.getLocation().clone());
         player.teleport(hubWorld.getSpawnLocation());
         return JoinResult.OK;
 
@@ -508,6 +513,12 @@ public class LobbyManager {
         if (st == GameState.ENDING)
             return 4;
         return 5;
+
+    }
+
+    public Location getAndRemovePreJoinLocation(UUID playerId) {
+
+        return preJoinLocations.remove(playerId);
 
     }
 

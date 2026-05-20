@@ -59,7 +59,7 @@ public class JoinSignUpdater extends BukkitRunnable {
         String lobbyLabel = agg.displayLobbyId() == null ? configId : agg.displayLobbyId();
 
         sign.line(0, line("&4The Herobrine"));
-        sign.line(1, line("&e" + truncate(lobbyLabel, 15)));
+        sign.line(1, line("&6" + truncate(lobbyLabel, 15)));
 
         if (agg.totalLobbies() == 0) {
 
@@ -77,35 +77,35 @@ public class JoinSignUpdater extends BukkitRunnable {
             int liveStarting = agg.startingCount();
             String label;
             if (liveStarting > 0)
-                label = "&d&lSTARTING";
+                label = "&5&lSTARTING";
             else
-                label = "&a&lJOIN";
+                label = "&2&lJOIN";
 
             statusLine = label;
-            detailLine = "&f" + agg.playerCount() + "&7/&f"
+            detailLine = "&0" + agg.playerCount() + "&8/&0"
                     + (agg.maxPlayersPerLobby() * Math.max(1, agg.totalLobbies()));
 
         } else if (agg.liveCount() > 0 && agg.liveCount() == agg.totalLobbies()) {
 
-            statusLine = "&b&lLIVE";
-            detailLine = agg.currentMap() == null ? "&7in progress" : "&7" + truncate(agg.currentMap(), 15);
+            statusLine = "&3&lLIVE";
+            detailLine = agg.currentMap() == null ? "&8in progress" : "&8" + truncate(agg.currentMap(), 15);
 
         } else if (agg.endingCount() > 0 && agg.liveCount() == 0 && agg.startingCount() == 0
                 && agg.waitingCount() == 0)
         {
 
-            statusLine = "&7&lENDING";
-            detailLine = "&7please wait";
+            statusLine = "&8&lENDING";
+            detailLine = "&8please wait";
 
         } else if (agg.liveCount() > 0) {
 
-            statusLine = "&c&lFULL";
-            detailLine = "&7" + agg.liveCount() + " live";
+            statusLine = "&4&lFULL";
+            detailLine = "&8" + agg.liveCount() + " live";
 
         } else {
 
-            statusLine = "&c&lFULL";
-            detailLine = "&f" + agg.playerCount() + "&7/&f"
+            statusLine = "&4&lFULL";
+            detailLine = "&0" + agg.playerCount() + "&8/&0"
                     + (agg.maxPlayersPerLobby() * Math.max(1, agg.totalLobbies()));
 
         }

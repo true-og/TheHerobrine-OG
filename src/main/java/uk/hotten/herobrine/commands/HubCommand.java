@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.mw.MyWorlds;
 
+import uk.hotten.herobrine.lobby.LobbyManager;
 import uk.hotten.herobrine.utils.Message;
 
 public class HubCommand implements CommandExecutor {
@@ -20,6 +21,22 @@ public class HubCommand implements CommandExecutor {
         if (!(sender instanceof Player player)) {
 
             Message.send(sender, Message.format("&cYou are unable to use this command."));
+            return true;
+
+        }
+
+        LobbyManager lm = LobbyManager.getInstance();
+        Location savedLoc = lm != null ? lm.getAndRemovePreJoinLocation(player.getUniqueId()) : null;
+        if (savedLoc != null && savedLoc.getWorld() != null) {
+
+            if (!player.teleport(savedLoc)) {
+
+                Message.send(player, Message.format("&cUnable to return you to your previous location."));
+                return true;
+
+            }
+
+            Message.send(player, Message.format("&aReturned to your previous location."));
             return true;
 
         }
