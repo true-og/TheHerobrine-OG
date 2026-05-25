@@ -173,7 +173,7 @@ public class GMListener implements Listener {
 
                     }
 
-                }).setUpdateInterval(1));
+                }).setUpdateInterval(20));
         gameManager.getScoreboards().get(player).activate();
 
     }

@@ -180,6 +180,12 @@ public class GameManager {
 
     private ScoreboardHandler gameScoreboardHandler;
 
+    // Stable per-player id for nametag team names. Entity IDs change on respawn /
+    // world
+    // change, which left stale teams behind and caused nametag/visibility glitches.
+    private final HashMap<UUID, Integer> tagTeamIds = new HashMap<>();
+    private int tagTeamCounter = 0;
+
     public GameManager(JavaPlugin plugin, GameLobby gameLobby, RedisManager redis, ProtocolManager protocolManager) {
 
         Console.info(gameLobby, "Loading Game Manager...");
@@ -1193,7 +1199,7 @@ public class GameManager {
 
             org.bukkit.scoreboard.Scoreboard sc = s.getHolder().getScoreboard();
 
-            String teamName = "APL" + player.getEntityId();
+            String teamName = "APL" + tagTeamIds.computeIfAbsent(player.getUniqueId(), uuid -> tagTeamCounter++);
             if (sc.getTeam(teamName) == null) {
 
                 sc.registerNewTeam(teamName);
