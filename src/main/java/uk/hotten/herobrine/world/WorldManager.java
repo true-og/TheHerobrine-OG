@@ -16,9 +16,14 @@ import org.bukkit.Difficulty;
 import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.entity.Animals;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Wolf;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.world.EntitiesLoadEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.bergerkiller.bukkit.mw.WorldConfig;
@@ -590,6 +595,10 @@ public class WorldManager implements Listener {
         }
 
         gameWorld = world;
+        // MyWorlds' animal/monster filter also rejects custom creature spawns used
+        // by game abilities. Use the vanilla rule to stop ambient arena spawning.
+        world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+        logRemovedArenaCreatures(removeAmbientArenaCreatures(world.getEntities()));
         Console.info(gameLobby, "Game world '" + worldName + "' loaded with void chunk-generator override.");
 
         // Share inventory between this lobby's hub and game world so the player
@@ -672,7 +681,7 @@ public class WorldManager implements Listener {
                 }
                 case SHARD_SPAWN -> {
 
-                    shardSpawns.add(dLoc);
+                    shardSpawns.add(dLoc.clone().add(0.5, 0, 0.5));
                     shardCountDp++;
 
                 }
@@ -834,6 +843,42 @@ public class WorldManager implements Listener {
         wc.timeControl.setTime(18000);
         wc.timeControl.setLocking(true);
         Console.info(gameLobby, "Finished loading hub.");
+
+    }
+
+    @EventHandler
+    public void removeLoadedArenaCreatures(EntitiesLoadEvent event) {
+
+        if (gameWorld == null || event.getWorld() != gameWorld)
+            return;
+
+        logRemovedArenaCreatures(removeAmbientArenaCreatures(event.getEntities()));
+
+    }
+
+    private int removeAmbientArenaCreatures(Iterable<? extends Entity> entities) {
+
+        int removed = 0;
+        for (Entity entity : entities) {
+
+            if (!(entity instanceof Monster) && !(entity instanceof Animals))
+                continue;
+            if (entity instanceof Wolf wolf && wolf.isTamed())
+                continue;
+
+            entity.remove();
+            removed++;
+
+        }
+
+        return removed;
+
+    }
+
+    private void logRemovedArenaCreatures(int count) {
+
+        if (count > 0)
+            Console.info(gameLobby, "Removed " + count + " ambient creature(s) loaded into the arena.");
 
     }
 

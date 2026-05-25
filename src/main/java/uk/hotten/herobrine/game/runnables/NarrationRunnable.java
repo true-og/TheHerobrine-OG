@@ -28,6 +28,9 @@ public class NarrationRunnable extends BukkitRunnable {
 
         }
 
+        if (gm.isPvpProtected())
+            return;
+
         if (gm.getShardCount() == 0 && gm.getShardState() == ShardState.WAITING && !gm.isShardPreviousDestroyed()) // I
             // dunno
             // i

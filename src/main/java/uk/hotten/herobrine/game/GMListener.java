@@ -47,6 +47,8 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 import org.bukkit.Location;
 import uk.hotten.herobrine.HerobrinePluginOG;
+import uk.hotten.herobrine.chat.LocalLobbyChatDelivery;
+import uk.hotten.herobrine.chat.LobbyChatDelivery;
 import uk.hotten.herobrine.compat.IllegalStackCompat;
 import uk.hotten.herobrine.kit.KitGui;
 import uk.hotten.herobrine.lobby.GameLobby;
@@ -65,13 +67,21 @@ public class GMListener implements Listener {
 
     private GameManager gameManager;
     private GameLobby gameLobby;
+    private LobbyChatDelivery lobbyChatDelivery;
     private ArrayList<Player> kitCooldown = new ArrayList<>();
     private Set<UUID> returningToMainOnLogin = ConcurrentHashMap.newKeySet();
 
     public GMListener(GameManager gm, GameLobby gl) {
 
+        this(gm, gl, new LocalLobbyChatDelivery());
+
+    }
+
+    public GMListener(GameManager gm, GameLobby gl, LobbyChatDelivery lobbyChatDelivery) {
+
         this.gameManager = gm;
         this.gameLobby = gl;
+        this.lobbyChatDelivery = lobbyChatDelivery;
 
     }
 
@@ -655,6 +665,13 @@ public class GMListener implements Listener {
 
         }
 
+        if (gameManager.isPvpProtected()) {
+
+            event.setCancelled(true);
+            return;
+
+        }
+
         // Allows arrow damage
         if (event.getEntity() instanceof Player && event.getDamager() instanceof Arrow) { // If the damaged is a player
 
@@ -948,39 +965,46 @@ public class GMListener implements Listener {
 
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onChat(AsyncChatEvent event) {
 
         if (!event.getPlayer().getWorld().getName().startsWith(gameLobby.getLobbyId()))
             return;
 
+        // This lobby owns delivery for now; Chat-OG's normal-priority listener
+        // observes cancellation and does not also broadcast globally.
         event.setCancelled(true);
 
         StatManager sm = gameLobby.getStatManager();
         Player player = event.getPlayer();
         GameRank rank = sm.getGameRank(player.getUniqueId());
         int points = sm.getPoints().get(player.getUniqueId());
+        String rawMessage = PlainTextComponentSerializer.plainText().serialize(event.message());
 
         String endMessage = "&9" + PlainTextComponentSerializer.plainText().serialize(player.displayName()) + "&8 » &r"
-                + PlainTextComponentSerializer.plainText().serialize(event.message());
+                + rawMessage;
+        String formattedMessage = null;
 
         if (gameManager.getGameState() == GameState.WAITING || gameManager.getGameState() == GameState.STARTING) {
 
-            Message.broadcast(gameLobby, "&e" + points + "&8 ▏ " + rank.getDisplay() + " " + endMessage);
+            formattedMessage = "&e" + points + "&8 ▏ " + rank.getDisplay() + " " + endMessage;
 
         } else if (gameManager.getGameState() == GameState.LIVE || gameManager.getGameState() == GameState.ENDING) {
 
             if (gameManager.isHerobrine(player) || gameManager.isSurvivor(player)) {
 
-                Message.broadcast(gameLobby, rank.getDisplay() + " " + endMessage);
+                formattedMessage = rank.getDisplay() + " " + endMessage;
 
             } else {
 
-                Message.broadcast(gameLobby, "&e" + points + "&8 ▍ &4DEAD &8▏ " + endMessage);
+                formattedMessage = "&e" + points + "&8 ▍ &4DEAD &8▏ " + endMessage;
 
             }
 
         }
+
+        if (formattedMessage != null)
+            lobbyChatDelivery.send(gameLobby, player, rawMessage, formattedMessage);
 
     }
 

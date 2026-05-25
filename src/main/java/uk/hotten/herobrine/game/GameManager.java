@@ -21,6 +21,7 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
@@ -150,6 +151,10 @@ public class GameManager {
     public boolean timerPaused = false;
     private BukkitTask waitingRunnable;
     private NarrationRunnable narrationRunnable;
+    private BukkitTask pvpProtectionTask;
+
+    @Getter
+    private volatile boolean pvpProtected;
 
     @Getter
     private Kit[] kits;
@@ -312,6 +317,7 @@ public class GameManager {
 
     public void startWaiting(boolean cleanGameWorld) {
 
+        cancelPvpProtection();
         setGameState(GameState.WAITING);
         deadSurvivors.clear();
         if (waitingRunnable != null)
@@ -530,6 +536,7 @@ public class GameManager {
         try {
 
             setGameState(GameState.LIVE);
+            startPvpProtection();
             narrationRunnable = new NarrationRunnable(this);
             narrationRunnable.runTaskTimerAsynchronously(plugin, 0, 10); // has to run before the shardstate updates
             setShardState(ShardState.WAITING);
@@ -821,6 +828,7 @@ public class GameManager {
 
     public void end(WinType type) {
 
+        cancelPvpProtection();
         setGameState(GameState.ENDING);
         setShardState(ShardState.INACTIVE);
         voidKits();
@@ -882,6 +890,74 @@ public class GameManager {
         gameLobby.getStatManager().push();
         Message.broadcast(gameLobby, Message.format("&7The lobby will restart in 15 seconds."));
         Bukkit.getServer().getScheduler().runTaskLater(plugin, () -> gameLobby.shutdown(true, true), 300);
+
+    }
+
+    private void startPvpProtection() {
+
+        cancelPvpProtection();
+
+        final World roundWorld = worldManager.getGameWorld();
+        if (roundWorld == null)
+            return;
+
+        final int seconds = Math.max(0, plugin.getConfig().getInt("pvpProtectionSeconds", 30));
+        if (seconds == 0) {
+
+            roundWorld.setPVP(true);
+            return;
+
+        }
+
+        pvpProtected = true;
+        roundWorld.setPVP(false);
+        pvpProtectionTask = new BukkitRunnable() {
+
+            private int remaining = seconds;
+
+            @Override
+            public void run() {
+
+                if (gameState != GameState.LIVE && gameState != GameState.STARTING) {
+
+                    pvpProtected = false;
+                    pvpProtectionTask = null;
+                    cancel();
+                    return;
+
+                }
+
+                if (remaining == 0) {
+
+                    pvpProtected = false;
+                    roundWorld.setPVP(true);
+                    PlayerUtil.broadcastActionbar(gameLobby, "&aPvP is now enabled!");
+                    pvpProtectionTask = null;
+                    cancel();
+                    return;
+
+                }
+
+                String time = Message.formatTime(remaining);
+                PlayerUtil.broadcastActionbar(gameLobby, "&cPvP is disabled &7- &eEnables in &c" + time);
+                remaining--;
+
+            }
+
+        }.runTaskTimer(plugin, 0, 20);
+
+    }
+
+    private void cancelPvpProtection() {
+
+        if (pvpProtectionTask != null) {
+
+            pvpProtectionTask.cancel();
+            pvpProtectionTask = null;
+
+        }
+
+        pvpProtected = false;
 
     }
 

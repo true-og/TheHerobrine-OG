@@ -2,6 +2,7 @@ networkName: ^{BRAND_NAME} # Name of your network
 networkWeb: true-og.net # Website of your network
 gamePrefix: "DEFAULT" # PLEASE PUT IN SPEECH MARKS! Set as "DEFAULT" for classic Hive Java, else it will be your own.
 mapBase: "maps" # Folder where the map base and maps folder is.
+pvpProtectionSeconds: 30 # Seconds after a round starts before arena player combat is enabled.
 
 lockClassicKits: true # Do you want to lock classic kits such as Archer and Scout behind their permission?
 lockUnlockableKits: true # Do you want to lock unlockable kits such as Mage and Sorcerer behind their permission?
