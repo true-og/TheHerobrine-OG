@@ -827,14 +827,10 @@ public class WorldManager implements Listener {
         // calls inside this lobby cannot wipe a player's main-world inventory.
         isolateInventory(worldName);
 
-        Location savedHubSpawn = pickSavedRegionSpawn(world, currentDir);
-        if (savedHubSpawn != null) {
-
-            world.setSpawnLocation(savedHubSpawn);
-            Console.info(gameLobby, "Hub spawn moved into saved region at " + savedHubSpawn.getBlockX() + ","
-                    + savedHubSpawn.getBlockY() + "," + savedHubSpawn.getBlockZ() + ".");
-
-        }
+        // Keep the hub's designed spawn: it is the lobby spawn players are sent to.
+        Location hubSpawn = world.getSpawnLocation();
+        Console.info(gameLobby, "Hub spawn (lobby spawn) at " + hubSpawn.getBlockX() + "," + hubSpawn.getBlockY() + ","
+                + hubSpawn.getBlockZ() + ".");
 
         wc.spawnControl.setAnimals(true);
         wc.spawnControl.setMonsters(true);

@@ -13,6 +13,7 @@ import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
 import uk.hotten.herobrine.game.GameManager;
 import uk.hotten.herobrine.lobby.GameLobby;
 import uk.hotten.herobrine.utils.Console;
@@ -30,6 +31,9 @@ public class ShardHandler extends BukkitRunnable {
     private int despawnTimer = 300; // 5 minutes
     private Random random = new Random();
     private Item shard;
+
+    // Frozen on a spawn block; false once a player drops it.
+    private boolean pinned;
 
     @Getter
     private ArmorStand shardTitle;
@@ -122,10 +126,18 @@ public class ShardHandler extends BukkitRunnable {
     private void spawn() {
 
         Random rand = new Random();
-        spawnLoc = wm.shardSpawns.get(rand.nextInt(wm.shardSpawns.size())).clone();
+        Location configured = wm.shardSpawns.get(rand.nextInt(wm.shardSpawns.size()));
 
-        shard = spawnLoc.getWorld().dropItem(spawnLoc.clone().add(0, 1, 0), createShard());
+        // Snap to the centre of the block nearest the configured spawn point.
+        spawnLoc = new Location(configured.getWorld(), configured.getBlockX() + 0.5, configured.getBlockY() + 0.5,
+                configured.getBlockZ() + 0.5);
+        pinned = true;
+
+        shard = spawnLoc.getWorld().dropItem(spawnLoc.clone(), createShard());
         shard.setInvulnerable(true);
+        // No gravity + zero velocity keeps the shard perfectly still on its block.
+        shard.setGravity(false);
+        shard.setVelocity(new Vector(0, 0, 0));
         spawnShardTitle();
 
         for (Player p : gm.getGameLobby().getPlayers())
@@ -144,6 +156,8 @@ public class ShardHandler extends BukkitRunnable {
 
     public void drop(Location loc) {
 
+        // A player-dropped shard falls normally and may be destroyed by the Y bounds.
+        pinned = false;
         shard = loc.getWorld().dropItem(loc.clone().add(0, 1, 0), createShard());
         spawnLoc = shard.getLocation();
         shard.setInvulnerable(true);
@@ -233,6 +247,19 @@ public class ShardHandler extends BukkitRunnable {
     }
 
     private void checkShardLoc() {
+
+        if (pinned) {
+
+            // Hold the shard frozen at its spawn block, resetting any drift each tick.
+            Location current = shard.getLocation();
+            if (current.getX() != spawnLoc.getX() || current.getY() != spawnLoc.getY()
+                    || current.getZ() != spawnLoc.getZ())
+                shard.teleport(spawnLoc.clone());
+            shard.setVelocity(new Vector(0, 0, 0));
+            shardTitle.teleport(spawnLoc.clone().subtract(0, 1.5, 0));
+            return;
+
+        }
 
         if (shard.getLocation().getY() < wm.getGameMapData().getShardMin()
                 || shard.getLocation().getY() > wm.getGameMapData().getShardMax())

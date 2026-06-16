@@ -6,20 +6,19 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import uk.hotten.herobrine.utils.Message;
 import uk.hotten.herobrine.world.data.Datapoint;
 import uk.hotten.herobrine.world.data.DatapointType;
 import uk.hotten.herobrine.world.data.MapData;
 
-public class MapSetupWizard implements Listener {
+public class MapSetupWizard {
 
     public static final String SETSPAWN_PERMISSION = "theherobrine.command.setspawn";
+
+    // Staff-only gate for the /hbwizard map-setup walkthrough.
+    public static final String WIZARD_PERMISSION = "theherobrine.command.wizard";
 
     public static final int MIN_SHARD_SPAWNS = 3;
 
@@ -28,26 +27,6 @@ public class MapSetupWizard implements Listener {
     static {
 
         MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-    }
-
-    private final JavaPlugin plugin;
-
-    public MapSetupWizard(JavaPlugin plugin) {
-
-        this.plugin = plugin;
-
-    }
-
-    @EventHandler
-    public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
-
-        final Player player = event.getPlayer();
-
-        if (!player.hasPermission(SETSPAWN_PERMISSION))
-            return;
-
-        Bukkit.getScheduler().runTaskLater(plugin, () -> sendForCurrentWorld(plugin, player), 1L);
 
     }
 
@@ -69,70 +48,31 @@ public class MapSetupWizard implements Listener {
         final List<String> missing = getMissingSteps(data);
         final int shardCount = countDatapoints(data, DatapointType.SHARD_SPAWN);
 
-        Message.send(player, Message.format("&6Map setup wizard: &b" + mapName));
-        Message.send(player, Message.format("&7Walk to each location and run the command shown."));
-        sendStep(player, "1", "survivor spawn", DatapointType.SURVIVOR_SPAWN, data, "/hbsetspawn survivor",
-                "where survivors start");
-        sendStep(player, "2", "herobrine spawn", DatapointType.HEROBRINE_SPAWN, data, "/hbsetspawn herobrine",
-                "where Herobrine starts");
-        sendStep(player, "3", "alter", DatapointType.ALTER, data, "/hbsetspawn alter",
-                "the enchanting-table capture point");
+        Message.send(player, Message.format("&6Map setup: &b" + mapName));
+        sendStep(player, "1", "survivor spawn", DatapointType.SURVIVOR_SPAWN, data, "/hbsetspawn survivor");
+        sendStep(player, "2", "herobrine spawn", DatapointType.HEROBRINE_SPAWN, data, "/hbsetspawn herobrine");
+        sendStep(player, "3", "alter", DatapointType.ALTER, data, "/hbsetspawn alter");
 
-        if (shardCount >= MIN_SHARD_SPAWNS) {
+        if (shardCount >= MIN_SHARD_SPAWNS)
+            Message.send(player, Message.format("&a✔ &f4 shards &7(" + shardCount + ")"));
+        else
+            Message.send(player, Message
+                    .format("&c✗ &f4 shards &7(" + shardCount + "/" + MIN_SHARD_SPAWNS + ") &8» &e/hbsetspawn shard"));
 
-            Message.send(player, Message.format("&a[done] &f4. shard spawns &7(" + shardCount + " set; minimum "
-                    + MIN_SHARD_SPAWNS + " met -- run &e/hbsetspawn shard&7 again to add more)"));
+        if (!Double.isNaN(data.getShardMin()))
+            Message.send(player, Message.format("&a✔ &f5 shard min &7Y=" + ((long) data.getShardMin())));
+        else
+            Message.send(player, Message.format("&c✗ &f5 shard min &8» &e/hbsetspawn shardmin"));
 
-        } else if (shardCount > 0) {
+        if (!Double.isNaN(data.getShardMax()))
+            Message.send(player, Message.format("&a✔ &f6 shard max &7Y=" + ((long) data.getShardMax())));
+        else
+            Message.send(player, Message.format("&c✗ &f6 shard max &8» &e/hbsetspawn shardmax"));
 
-            Message.send(player,
-                    Message.format("&c[missing] &f4. shard spawns &7(" + shardCount + "/" + MIN_SHARD_SPAWNS
-                            + " set) - keep running &e/hbsetspawn shard&7 at additional spawn locations"
-                            + " until at least " + MIN_SHARD_SPAWNS + " are configured"));
-
-        } else {
-
-            Message.send(player, Message.format("&c[missing] &f4. shard spawns &7- run &e/hbsetspawn shard"
-                    + " &7at every shard spawn location; a minimum of " + MIN_SHARD_SPAWNS + " is required"));
-
-        }
-
-        if (!Double.isNaN(data.getShardMin())) {
-
-            Message.send(player,
-                    Message.format("&a[done] &f5. shard min Y &7(" + ((long) data.getShardMin())
-                            + "; the lowest Y a shard may fall to"
-                            + " before being destroyed -- run &e/hbsetspawn shardmin&7 from a new spot to update)"));
-
-        } else {
-
-            Message.send(player, Message.format("&c[missing] &f5. shard min Y &7- stand at the lowest legal shard Y"
-                    + " (e.g. the void floor) and run &e/hbsetspawn shardmin"));
-
-        }
-
-        if (!Double.isNaN(data.getShardMax())) {
-
-            Message.send(player,
-                    Message.format("&a[done] &f6. shard max Y &7(" + ((long) data.getShardMax())
-                            + "; the highest Y a shard may reach"
-                            + " before being destroyed -- run &e/hbsetspawn shardmax&7 from a new spot to update)"));
-
-        } else {
-
-            Message.send(player, Message.format("&c[missing] &f6. shard max Y &7- stand at the highest legal shard Y"
-                    + " (e.g. above the map ceiling) and run &e/hbsetspawn shardmax"));
-
-        }
-
-        if (missing.isEmpty()) {
-
-            Message.send(player, Message.format("&aSetup complete. Run &e/hbreloadconfigs&a, then start a test game."));
-            return;
-
-        }
-
-        Message.send(player, Message.format("&eNext step: &f" + missing.get(0)));
+        if (missing.isEmpty())
+            Message.send(player, Message.format("&aDone. &e/hbreloadconfigs &ato apply."));
+        else
+            Message.send(player, Message.format("&eNext: &e" + missing.get(0)));
 
     }
 
@@ -216,37 +156,34 @@ public class MapSetupWizard implements Listener {
         final List<String> missing = new ArrayList<>();
 
         if (!hasDatapoint(data, DatapointType.SURVIVOR_SPAWN))
-            missing.add("stand at the survivor start and run /hbsetspawn survivor");
+            missing.add("/hbsetspawn survivor");
         if (!hasDatapoint(data, DatapointType.HEROBRINE_SPAWN))
-            missing.add("stand at the Herobrine start and run /hbsetspawn herobrine");
+            missing.add("/hbsetspawn herobrine");
         if (!hasDatapoint(data, DatapointType.ALTER))
-            missing.add("stand at the shard turn-in alter and run /hbsetspawn alter");
-        int shardCount = countDatapoints(data, DatapointType.SHARD_SPAWN);
-        if (shardCount < MIN_SHARD_SPAWNS)
-            missing.add("stand at a shard spawn and run /hbsetspawn shard (" + shardCount + "/" + MIN_SHARD_SPAWNS
-                    + " set; run again at each additional spawn until the minimum is reached)");
+            missing.add("/hbsetspawn alter");
+        if (countDatapoints(data, DatapointType.SHARD_SPAWN) < MIN_SHARD_SPAWNS)
+            missing.add("/hbsetspawn shard");
         if (Double.isNaN(data.getShardMin()))
-            missing.add("stand at the lowest legal shard Y and run /hbsetspawn shardmin");
+            missing.add("/hbsetspawn shardmin");
         if (Double.isNaN(data.getShardMax()))
-            missing.add("stand at the highest legal shard Y and run /hbsetspawn shardmax");
+            missing.add("/hbsetspawn shardmax");
 
         return missing;
 
     }
 
     private static void sendStep(Player player, String number, String label, DatapointType type, MapData data,
-            String command, String description)
+            String command)
     {
 
         if (hasDatapoint(data, type)) {
 
-            Message.send(player, Message.format("&a[done] &f" + number + ". " + label + " &7- " + description));
+            Message.send(player, Message.format("&a✔ &f" + number + " " + label));
             return;
 
         }
 
-        Message.send(player, Message.format(
-                "&c[missing] &f" + number + ". " + label + " &7- run &e" + command + " &7(" + description + ")"));
+        Message.send(player, Message.format("&c✗ &f" + number + " " + label + " &8» &e" + command));
 
     }
 

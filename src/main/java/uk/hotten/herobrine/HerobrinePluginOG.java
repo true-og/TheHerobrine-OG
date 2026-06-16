@@ -9,6 +9,7 @@ import uk.hotten.herobrine.commands.DeleteLobbyCommand;
 import uk.hotten.herobrine.commands.DeleteLobbyCompleter;
 import uk.hotten.herobrine.commands.DropShardCommand;
 import uk.hotten.herobrine.commands.ForceStartCommand;
+import uk.hotten.herobrine.commands.HbWizardCommand;
 import uk.hotten.herobrine.commands.HubCommand;
 import uk.hotten.herobrine.commands.JoinLobbyCommand;
 import uk.hotten.herobrine.commands.JoinLobbyCompleter;
@@ -19,6 +20,7 @@ import uk.hotten.herobrine.commands.SetSpawnCommand;
 import uk.hotten.herobrine.commands.SetSpawnCompleter;
 import uk.hotten.herobrine.commands.SpectateCommand;
 import uk.hotten.herobrine.commands.VoteCommand;
+import uk.hotten.herobrine.commands.VoteCommandListener;
 import uk.hotten.herobrine.commands.VoteCompleter;
 import uk.hotten.herobrine.data.RedisManager;
 import uk.hotten.herobrine.data.SqlManager;
@@ -28,7 +30,6 @@ import uk.hotten.herobrine.sign.JoinSignManager;
 import uk.hotten.herobrine.sign.JoinSignUpdater;
 import uk.hotten.herobrine.utils.Console;
 import uk.hotten.herobrine.utils.Message;
-import uk.hotten.herobrine.world.MapSetupWizard;
 import uk.hotten.herobrine.world.VoidChunkGenerator;
 
 public class HerobrinePluginOG extends JavaPlugin {
@@ -89,6 +90,7 @@ public class HerobrinePluginOG extends JavaPlugin {
         getCommand("hbpausetimer").setExecutor(new PauseTimerCommand());
         getCommand("vote").setExecutor(new VoteCommand());
         getCommand("vote").setTabCompleter(new VoteCompleter());
+        getServer().getPluginManager().registerEvents(new VoteCommandListener(), this);
         getCommand("hbjoin").setExecutor(new JoinLobbyCommand());
         getCommand("hbjoin").setTabCompleter(new JoinLobbyCompleter());
         getCommand("hub").setExecutor(new HubCommand());
@@ -100,7 +102,7 @@ public class HerobrinePluginOG extends JavaPlugin {
         getCommand("hbreloadconfigs").setExecutor(new ReloadConfigsCommand());
         getCommand("hbsetspawn").setExecutor(new SetSpawnCommand());
         getCommand("hbsetspawn").setTabCompleter(new SetSpawnCompleter());
-        getServer().getPluginManager().registerEvents(new MapSetupWizard(this), this);
+        getCommand("hbwizard").setExecutor(new HbWizardCommand());
 
         JoinSignManager joinSignManager = new JoinSignManager(this);
         getServer().getPluginManager().registerEvents(new JoinSignListener(this, joinSignManager), this);

@@ -314,7 +314,9 @@ public class GMListener implements Listener {
         player.setHealth(20);
         player.setFoodLevel(20);
         player.setGameMode(GameMode.SURVIVAL);
-        player.teleport(player.getWorld().getSpawnLocation());
+        // Always drop joining players on the lobby (hub) spawn.
+        World hubWorld = gameLobby.getWorldManager().getHubWorld();
+        player.teleport(hubWorld != null ? hubWorld.getSpawnLocation() : player.getWorld().getSpawnLocation());
 
     }
 

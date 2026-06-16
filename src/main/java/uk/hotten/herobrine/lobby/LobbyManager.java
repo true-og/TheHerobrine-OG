@@ -216,6 +216,50 @@ public class LobbyManager {
 
     }
 
+    // Resolves HB1, hb1 (any case), or a bare number like 1 to a lobby.
+    public GameLobby resolveLobby(String input) {
+
+        if (input == null)
+            return null;
+
+        String query = input.trim();
+        if (query.isEmpty())
+            return null;
+
+        // Match the full id (HB1) case-insensitively.
+        for (Map.Entry<String, GameLobby> entry : gameLobbies.entrySet())
+            if (entry.getKey().equalsIgnoreCase(query))
+                return entry.getValue();
+
+        // Bare number: try each config prefix so "1" resolves to HB1.
+        if (query.chars().allMatch(Character::isDigit))
+            for (LobbyConfig config : lobbyConfigs.values()) {
+
+                String candidate = config.getPrefix() + query;
+                for (Map.Entry<String, GameLobby> entry : gameLobbies.entrySet())
+                    if (entry.getKey().equalsIgnoreCase(candidate))
+                        return entry.getValue();
+
+            }
+
+        return null;
+
+    }
+
+    // True for any world owned by an active lobby (its hub or its game world).
+    public boolean isManagedWorld(String worldName) {
+
+        if (worldName == null)
+            return false;
+
+        for (String lobbyId : gameLobbies.keySet())
+            if (worldName.equals(lobbyId) || worldName.startsWith(lobbyId + "-"))
+                return true;
+
+        return false;
+
+    }
+
     public GameLobby getLobby(Player player) {
 
         for (Map.Entry<String, GameLobby> entry : gameLobbies.entrySet()) {
@@ -342,7 +386,10 @@ public class LobbyManager {
         if (hubWorld == null)
             return JoinResult.NO_HUB;
 
-        preJoinLocations.put(player.getUniqueId(), player.getLocation().clone());
+        // Save only a real (non-lobby) world so lobby-switching keeps the return spot.
+        Location current = player.getLocation();
+        if (current != null && current.getWorld() != null && !isManagedWorld(current.getWorld().getName()))
+            preJoinLocations.put(player.getUniqueId(), current.clone());
         player.teleport(hubWorld.getSpawnLocation());
         return JoinResult.OK;
 

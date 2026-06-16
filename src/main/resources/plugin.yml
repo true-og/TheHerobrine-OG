@@ -35,7 +35,7 @@ commands:
   vote:
     description: Vote for a map.
     usage: /<command> <map number>
-    aliases: [v]
+    # /v is handled by VoteCommandListener inside lobby worlds; left to other plugins elsewhere.
 
   hbjoin:
     description: Join a lobby.
@@ -70,7 +70,15 @@ commands:
     permission: theherobrine.command.setspawn
     usage: /<command> <survivor|herobrine|alter|shard> [shardIndex|append] [mapName]
 
+  hbwizard:
+    description: Show the map setup wizard for your current world.
+    permission: theherobrine.command.wizard
+    usage: /<command>
+
 permissions:
+  theherobrine.command.wizard:
+    description: Use the /hbwizard map setup walkthrough.
+    default: op
   theherobrine.signs.create:
     description: Create [Herobrine] join signs.
     default: op

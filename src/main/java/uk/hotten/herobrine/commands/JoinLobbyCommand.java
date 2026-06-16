@@ -31,10 +31,10 @@ public class JoinLobbyCommand implements CommandExecutor {
 
         }
 
-        GameLobby gl = lm.getLobby(args[0]);
+        GameLobby gl = lm.resolveLobby(args[0]);
         if (gl == null) {
 
-            Message.send(player, Message.format("&a" + args[0] + " does not exist."));
+            Message.send(player, Message.format("&c" + args[0] + " does not exist."));
             return true;
 
         }
