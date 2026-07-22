@@ -4,6 +4,6 @@ minPlayers: 8
 maxPlayers: 13
 startTime: 90
 allowOverfill: false
-votingMaps: 2
+votingMaps: 1
 endVotingAt: 10
 autoStartAmount: 1
