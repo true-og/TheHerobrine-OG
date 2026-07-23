@@ -31,6 +31,8 @@ public class JoinSignManager {
         this.file = new File(plugin.getDataFolder(), "joinsigns.yaml");
         this.signs = new HashMap<>();
         instance = this;
+        if (!file.exists())
+            plugin.saveResource("joinsigns.yaml", false);
         load();
 
     }
