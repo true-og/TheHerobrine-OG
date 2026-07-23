@@ -1,0 +1,7 @@
+signs:
+  sign0:
+    world: world
+    x: 124
+    y: 80
+    z: -121
+    config: default
