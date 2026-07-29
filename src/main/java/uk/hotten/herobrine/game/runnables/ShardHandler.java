@@ -191,15 +191,15 @@ public class ShardHandler extends BukkitRunnable {
 
             if (gm.isHerobrine(p))
                 continue;
-            PlayerUtil.sendTitle(p, "&d&lA Shard has spawned!", "&bUse your compass to find it!", 500, 3000, 500);
+            PlayerUtil.sendTitle(p, "&d&lShard spawned!", "&bUse your compass to find it!", 500, 3000, 500);
 
         }
 
         if (gm.getHerobrine() != null)
-            PlayerUtil.sendTitle(gm.getHerobrine(), "&d&lA Shard has spawned!", "&cGuard it from the Survivors!", 500,
-                    3000, 500);
+            PlayerUtil.sendTitle(gm.getHerobrine(), "&d&lShard spawned!", "&cGuard it from the Survivors!", 500, 3000,
+                    500);
 
-        Message.broadcast(gm.getGameLobby(), Message.format("&dA new shard has &b&lbeen SUMMONED!"));
+        Message.broadcast(gm.getGameLobby(), Message.format("&dA new shard has been &b&lSUMMONED!"));
 
     }
 

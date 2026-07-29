@@ -488,12 +488,12 @@ public class GMListener implements Listener {
 
             if (gameManager.isHerobrine(p))
                 continue;
-            PlayerUtil.sendTitle(p, "&a&l" + player.getName() + "&3 has picked up the shard!", "&eHelp them return it!",
-                    250, 3000, 250);
+            PlayerUtil.sendTitle(p, "&a&l" + player.getName() + "&3 has the shard!", "&eHelp them return it!", 250,
+                    3000, 250);
 
         }
 
-        PlayerUtil.sendTitle(gameManager.getHerobrine(), "&a&l" + player.getName() + "&3 has picked up the shard!",
+        PlayerUtil.sendTitle(gameManager.getHerobrine(), "&a&l" + player.getName() + "&3 has the shard!",
                 "&eMaybe target them first", 250, 3000, 250);
         gameManager.getShardHandler().getShardTitle().remove();
         gameManager.setShardState(ShardState.CARRYING);
