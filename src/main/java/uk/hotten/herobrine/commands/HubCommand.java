@@ -26,10 +26,9 @@ public class HubCommand implements CommandExecutor {
         }
 
         LobbyManager lm = LobbyManager.getInstance();
-        Location savedLoc = lm != null ? lm.getAndRemovePreJoinLocation(player.getUniqueId()) : null;
-        if (savedLoc != null && savedLoc.getWorld() != null) {
+        if (lm != null && lm.hasPreJoinLocation(player.getUniqueId())) {
 
-            if (!player.teleport(savedLoc)) {
+            if (!lm.returnPlayer(player, null)) {
 
                 Message.send(player, Message.format("&cUnable to return you to your previous location."));
                 return true;

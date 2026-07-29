@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
@@ -53,12 +52,13 @@ public class LobbyManager {
 
     private final HashMap<String, LobbyConfig> lobbyConfigs;
     private final HashMap<String, GameLobby> gameLobbies;
-    private final ConcurrentHashMap<UUID, Location> preJoinLocations = new ConcurrentHashMap<>();
+    private final PreJoinLocationStore preJoinLocations;
 
     public LobbyManager(JavaPlugin plugin) {
 
         this.plugin = plugin;
         instance = this;
+        preJoinLocations = new PreJoinLocationStore(plugin);
 
         lobbyConfigs = new HashMap<>();
         gameLobbies = new HashMap<>();
@@ -307,6 +307,10 @@ public class LobbyManager {
 
         gameLobbies.clear();
 
+        // Last write wins: anyone the teardown could not move keeps their spot on
+        // disk so the next boot can still return them.
+        preJoinLocations.shutdown();
+
     }
 
     public int reloadConfigs() throws Exception {
@@ -386,10 +390,7 @@ public class LobbyManager {
         if (hubWorld == null)
             return JoinResult.NO_HUB;
 
-        // Save only a real (non-lobby) world so lobby-switching keeps the return spot.
-        Location current = player.getLocation();
-        if (current != null && current.getWorld() != null && !isManagedWorld(current.getWorld().getName()))
-            preJoinLocations.put(player.getUniqueId(), current.clone());
+        savePreJoinLocation(player.getUniqueId(), player.getLocation());
         player.teleport(hubWorld.getSpawnLocation());
         return JoinResult.OK;
 
@@ -563,9 +564,68 @@ public class LobbyManager {
 
     }
 
-    public Location getAndRemovePreJoinLocation(UUID playerId) {
+    // True whenever a return spot is on record, even while its world is unloaded.
+    public boolean hasPreJoinLocation(UUID playerId) {
 
-        return preJoinLocations.remove(playerId);
+        return preJoinLocations.has(playerId) && !isManagedWorld(preJoinLocations.getWorldName(playerId));
+
+    }
+
+    // Resolves the stored spot to a live Location, loading its world if that world
+    // is currently unloaded. Check hasPreJoinLocation() first -- this can pull a
+    // world back in, so it is not a cheap probe.
+    public Location resolvePreJoinLocation(UUID playerId) {
+
+        if (!hasPreJoinLocation(playerId))
+            return null;
+        return preJoinLocations.getOrLoadWorld(playerId);
+
+    }
+
+    public void removePreJoinLocation(UUID playerId) {
+
+        preJoinLocations.remove(playerId);
+
+    }
+
+    // Records where a player was before entering a lobby world. Only a real
+    // (non-lobby) world is stored so lobby-to-lobby hops keep the return spot.
+    // The world is kept by name, so a return into the Nether or the End lands in
+    // that dimension rather than at overworld spawn.
+    public void savePreJoinLocation(UUID playerId, Location location) {
+
+        if (location == null || location.getWorld() == null)
+            return;
+        if (isManagedWorld(location.getWorld().getName()))
+            return;
+        preJoinLocations.put(playerId, location);
+
+    }
+
+    // Sends a player back to their pre-join spot, or to fallback when none is
+    // recorded. The saved spot is only dropped once a teleport actually lands:
+    // Bukkit refuses to teleport a player sitting on the death screen, and other
+    // plugins can cancel the event, so consuming it up front loses it for good.
+    public boolean returnPlayer(Player player, Location fallback) {
+
+        if (player == null || !player.isOnline())
+            return false;
+
+        // A dead player cannot be teleported at all, so force the respawn first.
+        if (player.isDead())
+            player.spigot().respawn();
+
+        Location saved = resolvePreJoinLocation(player.getUniqueId());
+        Location destination = saved != null ? saved : fallback;
+        if (destination == null || destination.getWorld() == null)
+            return false;
+
+        if (!player.teleport(destination))
+            return false;
+
+        if (saved != null)
+            removePreJoinLocation(player.getUniqueId());
+        return true;
 
     }
 

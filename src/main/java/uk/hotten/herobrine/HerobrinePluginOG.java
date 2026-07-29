@@ -25,6 +25,7 @@ import uk.hotten.herobrine.commands.VoteCompleter;
 import uk.hotten.herobrine.data.RedisManager;
 import uk.hotten.herobrine.data.SqlManager;
 import uk.hotten.herobrine.lobby.LobbyManager;
+import uk.hotten.herobrine.lobby.PreJoinLocationListener;
 import uk.hotten.herobrine.sign.JoinSignListener;
 import uk.hotten.herobrine.sign.JoinSignManager;
 import uk.hotten.herobrine.sign.JoinSignUpdater;
@@ -83,6 +84,8 @@ public class HerobrinePluginOG extends JavaPlugin {
             return;
 
         }
+
+        getServer().getPluginManager().registerEvents(new PreJoinLocationListener(this), this);
 
         getCommand("hbsetherobrine").setExecutor(new SetHerobrineCommand());
         getCommand("hbforcestart").setExecutor(new ForceStartCommand());

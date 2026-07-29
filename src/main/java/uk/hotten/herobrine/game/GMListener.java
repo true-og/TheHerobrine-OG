@@ -48,7 +48,6 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerVelocityEvent;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.Location;
 import org.bukkit.projectiles.ProjectileSource;
 import uk.hotten.herobrine.HerobrinePluginOG;
 import uk.hotten.herobrine.chat.LocalLobbyChatDelivery;
@@ -230,21 +229,16 @@ public class GMListener implements Listener {
     private boolean returnToMainWorld(Player player) {
 
         LobbyManager lm = LobbyManager.getInstance();
-        if (lm != null) {
+        if (lm != null && lm.hasPreJoinLocation(player.getUniqueId())) {
 
-            Location saved = lm.getAndRemovePreJoinLocation(player.getUniqueId());
-            if (saved != null && saved.getWorld() != null) {
+            if (!lm.returnPlayer(player, null)) {
 
-                if (!player.teleport(saved)) {
-
-                    Message.send(player, Message.format("&cUnable to return you to your previous location."));
-                    return false;
-
-                }
-
-                return true;
+                Message.send(player, Message.format("&cUnable to return you to your previous location."));
+                return false;
 
             }
+
+            return true;
 
         }
 
@@ -276,16 +270,11 @@ public class GMListener implements Listener {
         if (!gameManager.canJoin(player)) {
 
             LobbyManager lm = LobbyManager.getInstance();
-            Location savedLoc = lm != null ? lm.getAndRemovePreJoinLocation(player.getUniqueId()) : null;
-            if (savedLoc != null && savedLoc.getWorld() != null) {
-
-                player.teleport(savedLoc);
-
-            } else {
-
-                player.teleport(MyWorlds.getMainWorld().getSpawnLocation());
-
-            }
+            World fullFallback = MyWorlds.getMainWorld();
+            if (lm != null)
+                lm.returnPlayer(player, fullFallback != null ? fullFallback.getSpawnLocation() : null);
+            else if (fullFallback != null)
+                player.teleport(fullFallback.getSpawnLocation());
 
             Message.send(player, Message.format("&cThis lobby is full."));
             return;
@@ -920,14 +909,27 @@ public class GMListener implements Listener {
         event.deathMessage(Message.legacySerializerAnyCase(""));
         event.getDrops().clear();
 
+        // Deaths outside the live round (the ending celebration, the hub) still have
+        // to force a respawn -- a player left on the death screen cannot be
+        // teleported out when the lobby tears its worlds down.
         if (gameManager.getGameState() != GameState.LIVE) {
 
-            player.setHealth(20);
+            Bukkit.getServer().getScheduler().runTaskLater(gameManager.getPlugin(), () -> {
+
+                if (player.isOnline() && player.isDead())
+                    player.spigot().respawn();
+
+            }, 20);
             return;
 
         }
 
-        Bukkit.getServer().getScheduler().runTaskLater(gameManager.getPlugin(), () -> player.spigot().respawn(), 40);
+        Bukkit.getServer().getScheduler().runTaskLater(gameManager.getPlugin(), () -> {
+
+            if (player.isOnline() && player.isDead())
+                player.spigot().respawn();
+
+        }, 40);
 
         if (gameManager.isHerobrine(player)) {
 

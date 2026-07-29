@@ -813,6 +813,14 @@ public class GameManager {
         if (player == null || !player.isOnline())
             return;
 
+        // The delayed re-applies can land after the lobby returned the player to a
+        // real world -- stripping their inventory there is not this lobby's call.
+        World spectatorWorld = player.getWorld();
+        World roundWorld = worldManager.getGameWorld();
+        World lobbyHub = worldManager.getHubWorld();
+        if (spectatorWorld == null || (!spectatorWorld.equals(roundWorld) && !spectatorWorld.equals(lobbyHub)))
+            return;
+
         if (worldManager.survivorSpawn != null)
             player.teleport(worldManager.survivorSpawn);
 

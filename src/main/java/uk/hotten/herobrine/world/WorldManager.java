@@ -206,9 +206,10 @@ public class WorldManager implements Listener {
                 LobbyManager evacuateLm = LobbyManager.getInstance();
                 for (Player p : new ArrayList<>(existing.getPlayers())) {
 
-                    Location savedLoc = evacuateLm != null ? evacuateLm.getAndRemovePreJoinLocation(p.getUniqueId())
-                            : null;
-                    p.teleport(savedLoc != null && savedLoc.getWorld() != null ? savedLoc : fallbackDest);
+                    if (evacuateLm != null)
+                        evacuateLm.returnPlayer(p, fallbackDest);
+                    else
+                        p.teleport(fallbackDest);
 
                 }
 
@@ -973,20 +974,15 @@ public class WorldManager implements Listener {
 
             if (p.getWorld() != null && p.getWorld().getName().equals(gameWorldName)) {
 
-                Location cleanSaved = cleanLm != null ? cleanLm.getAndRemovePreJoinLocation(p.getUniqueId()) : null;
-                if (cleanSaved != null && cleanSaved.getWorld() != null) {
-
-                    p.teleport(cleanSaved);
-
-                } else {
-
-                    World main = Bukkit.getServer().getWorld("world");
-                    if (main == null)
-                        main = Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().get(0);
-                    if (main != null)
-                        p.teleport(main.getSpawnLocation());
-
-                }
+                World main = Bukkit.getServer().getWorld("world");
+                if (main == null)
+                    main = Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().get(0);
+                Location cleanFallback = main != null ? main.getSpawnLocation() : null;
+                boolean returned = cleanLm != null ? cleanLm.returnPlayer(p, cleanFallback)
+                        : cleanFallback != null && p.teleport(cleanFallback);
+                if (!returned)
+                    Console.error(gameLobby, "Failed to move " + p.getName() + " out of '" + gameWorldName
+                            + "' before deletion -- their return location is kept for a retry.");
 
             }
 
@@ -1054,20 +1050,15 @@ public class WorldManager implements Listener {
 
             if (p.getWorld() != null && p.getWorld().getName().equals(hubWorldName)) {
 
-                Location hubSaved = hubCleanLm != null ? hubCleanLm.getAndRemovePreJoinLocation(p.getUniqueId()) : null;
-                if (hubSaved != null && hubSaved.getWorld() != null) {
-
-                    p.teleport(hubSaved);
-
-                } else {
-
-                    World main = Bukkit.getServer().getWorld("world");
-                    if (main == null)
-                        main = Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().get(0);
-                    if (main != null)
-                        p.teleport(main.getSpawnLocation());
-
-                }
+                World main = Bukkit.getServer().getWorld("world");
+                if (main == null)
+                    main = Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().get(0);
+                Location hubFallback = main != null ? main.getSpawnLocation() : null;
+                boolean hubReturned = hubCleanLm != null ? hubCleanLm.returnPlayer(p, hubFallback)
+                        : hubFallback != null && p.teleport(hubFallback);
+                if (!hubReturned)
+                    Console.error(gameLobby, "Failed to move " + p.getName() + " out of hub '" + hubWorldName
+                            + "' before deletion -- their return location is kept for a retry.");
 
             }
 
