@@ -29,10 +29,9 @@ public class HerobrineSetup extends BukkitRunnable {
             PlayerUtil.sendTitle(player, "&bBe careful of the Survivors!", "&eThey want to take you down", 500, 4000,
                     500);
             TimeUnit.SECONDS.sleep(3);
-            PlayerUtil.sendTitle(player, "&bTheir aim is to capture shards", "&eand make the you weaker", 500, 4000,
-                    500);
+            PlayerUtil.sendTitle(player, "&bTheir aim is to capture shards", "&eand make you weaker", 500, 4000, 500);
             TimeUnit.SECONDS.sleep(3);
-            PlayerUtil.sendTitle(player, "&bShards spawn randomly", "&eUse your compass to find them", 500, 4000, 500);
+            PlayerUtil.sendTitle(player, "&bShards spawn randomly", "&eUse your compass to guard them", 500, 4000, 500);
             TimeUnit.SECONDS.sleep(3);
             PlayerUtil.sendTitle(player, "&bStop them from capturing to win", "&eUse your special items to help", 500,
                     4000, 500);

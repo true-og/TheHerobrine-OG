@@ -1,17 +1,20 @@
 package uk.hotten.herobrine.game.runnables;
 
+import java.util.Objects;
 import java.util.Random;
 import lombok.Getter;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.trueog.gxui.GUIItem;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 import uk.hotten.herobrine.game.GameManager;
@@ -26,6 +29,12 @@ import uk.hotten.herobrine.world.MapSetupWizard;
 import uk.hotten.herobrine.world.WorldManager;
 
 public class ShardHandler extends BukkitRunnable {
+
+    // NoDespawn-OG skips items tagged with this key in its periodic cleanup and in
+    // /clearentities, and never despawns them. Without it the shard is swept up as
+    // an ordinary dropped item, leaving its floating name tag behind.
+    private static final NamespacedKey CLEANUP_PROTECT_KEY = Objects
+            .requireNonNull(NamespacedKey.fromString("nodespawn-og:protect"));
 
     private int timer = 30;
     private int despawnTimer = 300; // 5 minutes
@@ -95,6 +104,23 @@ public class ShardHandler extends BukkitRunnable {
             }
             case SPAWNED: {
 
+                // The shard is a plain dropped Item, so anything that sweeps item
+                // entities (cleanup plugins, /kill @e[type=item], another plugin) can
+                // delete it out from under us. The floating name tag is an ArmorStand,
+                // so it survives and leaves a "ghost shard": text with no shard to
+                // pick up. Treat a missing entity as a destroyed shard so the round
+                // recovers instead of stalling for the rest of the despawn timer.
+                if (shard == null || !shard.isValid()) {
+
+                    Console.error(gm.getGameLobby(),
+                            "Shard entity disappeared while SPAWNED -- it was removed by"
+                                    + " something outside this plugin (item cleanup task, /kill, or similar)."
+                                    + " Destroying the leftover name tag and summoning a replacement.");
+                    destroy();
+                    break;
+
+                }
+
                 despawnTimer -= 1;
                 Random r = new Random();
                 int n = r.nextInt(10 - 1 + 1) + 1;
@@ -108,8 +134,18 @@ public class ShardHandler extends BukkitRunnable {
                     shard.remove();
                     shardTitle.remove();
                     gm.setShardState(ShardState.WAITING);
-                    Message.broadcast(gm.getGameLobby(),
-                            Message.format("&7The shard has been DESTROYED! Work faster next time..."));
+                    // "Work faster" is aimed at the survivors who let it despawn.
+                    for (Player p : gm.getGameLobby().getPlayers()) {
+
+                        if (gm.isHerobrine(p))
+                            continue;
+                        Message.send(p, Message.format("&7The shard has been DESTROYED! Work faster next time..."));
+
+                    }
+
+                    if (gm.getHerobrine() != null)
+                        Message.send(gm.getHerobrine(),
+                                Message.format("&7The shard has been DESTROYED! The Survivors were too slow."));
 
                 }
 
@@ -134,6 +170,7 @@ public class ShardHandler extends BukkitRunnable {
         pinned = true;
 
         shard = spawnLoc.getWorld().dropItem(spawnLoc.clone(), createShard());
+        protectFromCleanup(shard);
         shard.setInvulnerable(true);
         // No gravity + zero velocity keeps the shard perfectly still on its block.
         shard.setGravity(false);
@@ -148,8 +185,20 @@ public class ShardHandler extends BukkitRunnable {
         timer = random.nextInt(16) + 30; // random number between 30 and 45 for the next shard spawn
         Console.debug(gm.getGameLobby(), "Next shard time to be " + timer);
 
-        PlayerUtil.broadcastTitle(gm.getGameLobby(), "&d&lA Shard has spawned!", "&bUse your compass to find it!", 500,
-                3000, 500);
+        // Herobrine defends the shard, so he gets his own subtitle instead of the
+        // survivor call to capture it.
+        for (Player p : gm.getGameLobby().getPlayers()) {
+
+            if (gm.isHerobrine(p))
+                continue;
+            PlayerUtil.sendTitle(p, "&d&lA Shard has spawned!", "&bUse your compass to find it!", 500, 3000, 500);
+
+        }
+
+        if (gm.getHerobrine() != null)
+            PlayerUtil.sendTitle(gm.getHerobrine(), "&d&lA Shard has spawned!", "&cGuard it from the Survivors!", 500,
+                    3000, 500);
+
         Message.broadcast(gm.getGameLobby(), Message.format("&dA new shard has &b&lbeen SUMMONED!"));
 
     }
@@ -159,6 +208,7 @@ public class ShardHandler extends BukkitRunnable {
         // A player-dropped shard falls normally and may be destroyed by the Y bounds.
         pinned = false;
         shard = loc.getWorld().dropItem(loc.clone().add(0, 1, 0), createShard());
+        protectFromCleanup(shard);
         spawnLoc = shard.getLocation();
         shard.setInvulnerable(true);
         spawnShardTitle();
@@ -188,6 +238,12 @@ public class ShardHandler extends BukkitRunnable {
         PlayerUtil.broadcastTitle(gm.getGameLobby(), "", "&bThe shard has been &c&ldestroyed!", 500, 3000, 500);
         Message.broadcast(gm.getGameLobby(),
                 Message.format("&7The shard has been DESTROYED! A new one shall be summoned soon..."));
+
+    }
+
+    private static void protectFromCleanup(Item item) {
+
+        item.getPersistentDataContainer().set(CLEANUP_PROTECT_KEY, PersistentDataType.BYTE, (byte) 1);
 
     }
 
@@ -236,6 +292,10 @@ public class ShardHandler extends BukkitRunnable {
     }
 
     private void spawnShardTitle() {
+
+        // Never leave the previous tag floating; the reference is about to be lost.
+        if (shardTitle != null)
+            shardTitle.remove();
 
         shardTitle = (ArmorStand) shard.getWorld().spawnEntity(shard.getLocation().clone().subtract(0, 1.5, 0),
                 EntityType.ARMOR_STAND);

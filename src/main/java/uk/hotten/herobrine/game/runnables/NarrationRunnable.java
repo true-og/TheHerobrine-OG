@@ -65,7 +65,8 @@ public class NarrationRunnable extends BukkitRunnable {
             }
             case SPAWNED: {
 
-                all("&bUse your compass to find the shard!");
+                separate("&bUse your compass to find the shard!", "&cGuard the shard from the Survivors!",
+                        "&eYou're out of the game! Left-click to spectate.");
                 break;
 
             }
