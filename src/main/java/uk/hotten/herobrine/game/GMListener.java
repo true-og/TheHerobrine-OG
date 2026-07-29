@@ -1,9 +1,12 @@
 package uk.hotten.herobrine.game;
 
 import com.bergerkiller.bukkit.mw.MyWorlds;
+import io.papermc.paper.event.entity.EntityPushedByEntityAttackEvent;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,9 +46,10 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerVelocityEvent;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.util.Vector;
 import org.bukkit.Location;
+import org.bukkit.projectiles.ProjectileSource;
 import uk.hotten.herobrine.HerobrinePluginOG;
 import uk.hotten.herobrine.chat.LocalLobbyChatDelivery;
 import uk.hotten.herobrine.chat.LobbyChatDelivery;
@@ -70,6 +74,7 @@ public class GMListener implements Listener {
     private LobbyChatDelivery lobbyChatDelivery;
     private ArrayList<Player> kitCooldown = new ArrayList<>();
     private Set<UUID> returningToMainOnLogin = ConcurrentHashMap.newKeySet();
+    private Map<UUID, Integer> suppressedHerobrineKnockback = new HashMap<>();
 
     public GMListener(GameManager gm, GameLobby gl) {
 
@@ -655,7 +660,7 @@ public class GMListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onDamage(EntityDamageByEntityEvent event) {
+    public void onCombatAuthorization(EntityDamageByEntityEvent event) {
 
         if (!event.getEntity().getWorld().getName().startsWith(gameLobby.getLobbyId()))
             return;
@@ -674,33 +679,12 @@ public class GMListener implements Listener {
 
         }
 
-        // Allows arrow damage
-        if (event.getEntity() instanceof Player && event.getDamager() instanceof Arrow) { // If the damaged is a player
+        if (event.getEntity() instanceof Player && event.getDamager() instanceof Arrow) {
 
-            // and damager is an arrow
             Player player = (Player) event.getEntity();
-            Player attacker = (Player) ((Arrow) event.getDamager()).getShooter();
-
-            if (!(gameManager.isSurvivor(attacker) && gameManager.isHerobrine(player))) { // Evals to
-
-                // true if
-                // either a)
-                // the
-                // attacker
-                // isnt a
-                // survivor
-                // b)
-                // the damaged isnt herobrine
+            Player attacker = getPlayerAttacker(event);
+            if (attacker == null || !(gameManager.isSurvivor(attacker) && gameManager.isHerobrine(player)))
                 event.setCancelled(true);
-
-            } else {
-
-                event.setCancelled(true);
-                event.getDamager().remove();
-                player.damage(4.5, attacker);
-
-            }
-
             return;
 
         }
@@ -709,9 +693,7 @@ public class GMListener implements Listener {
         if (event.getEntity() instanceof Player && event.getDamager() instanceof Wolf) {
 
             Player player = (Player) event.getEntity();
-            if (gameManager.isHerobrine(player))
-                event.setDamage(6);
-            else
+            if (!gameManager.isHerobrine(player))
                 event.setCancelled(true);
             return;
 
@@ -737,39 +719,134 @@ public class GMListener implements Listener {
         Player player = (Player) event.getEntity();
         Player attacker = (Player) event.getDamager();
 
-        if (gameManager.isSurvivor(attacker)) { // If attacker is a survivor
+        if (gameManager.isSurvivor(attacker)) {
 
-            if (gameManager.isSurvivor(player)) { // If the person taking damage is also a survivor, cancel
-
+            if (gameManager.isSurvivor(player))
                 event.setCancelled(true);
-                return;
 
-            }
+        } else if (!gameManager.isHerobrine(attacker)) {
 
-            // Attacking THB
+            event.setCancelled(true);
+
+        }
+
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onCombatDamage(EntityDamageByEntityEvent event) {
+
+        if (!event.getEntity().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+            return;
+
+        if (event.getEntity() instanceof Player && event.getDamager() instanceof Arrow) {
+
+            event.setDamage(4.5);
+            return;
+
+        }
+
+        if (event.getEntity() instanceof Player && event.getDamager() instanceof Wolf) {
+
+            event.setDamage(6);
+            return;
+
+        }
+
+        if (!(event.getEntity() instanceof Player) || !(event.getDamager() instanceof Player))
+            return;
+
+        Player attacker = (Player) event.getDamager();
+        if (gameManager.isSurvivor(attacker)) {
+
             double damage = gameManager.getHerobrineHitDamage(attacker.getInventory().getItemInMainHand().getType(),
                     attacker.hasPotionEffect(PotionEffectType.INCREASE_DAMAGE));
             if (damage != -1)
                 event.setDamage(damage);
 
-            PlayerUtil.animateHbHit(gameLobby, player.getLocation());
-
-            // Delay the velocity change by a tick so it actually works
-            Bukkit.getServer().getScheduler().runTaskLater(gameManager.getPlugin(),
-                    () -> player.setVelocity(new Vector(0, 0, 0)), 1);
-
         } else if (gameManager.isHerobrine(attacker)) {
 
-            PlayerUtil.playSoundAt(attacker.getLocation(), Sound.ENTITY_GHAST_AMBIENT, 1f, 0f);
             double damage = gameManager.getSurvivorHitDamage(attacker.getInventory().getItemInMainHand().getType());
             if (damage != -1)
                 event.setDamage(damage);
 
-        } else {
+        }
 
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onAcceptedCombatDamage(EntityDamageByEntityEvent event) {
+
+        if (!event.getEntity().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+            return;
+
+        if (!(event.getEntity() instanceof Player) || event.getFinalDamage() <= 0)
+            return;
+
+        Player player = (Player) event.getEntity();
+        Player attacker = getPlayerAttacker(event);
+        if (attacker == null)
+            return;
+
+        if (gameManager.isSurvivor(attacker) && gameManager.isHerobrine(player))
+            PlayerUtil.animateHbHit(gameLobby, player.getLocation());
+        else if (gameManager.isHerobrine(attacker) && gameManager.isSurvivor(player))
+            PlayerUtil.playSoundAt(attacker.getLocation(), Sound.ENTITY_GHAST_AMBIENT, 1f, 0f);
+
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onHerobrineKnockback(EntityPushedByEntityAttackEvent event) {
+
+        if (!event.getEntity().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+            return;
+
+        if (!(event.getEntity() instanceof Player))
+            return;
+
+        Player player = (Player) event.getEntity();
+        if (!gameManager.isHerobrine(player) || gameManager.getShardCount() == 3)
+            return;
+
+        // Purpur owns the server-side acceleration here. KnockbackSync can still supply
+        // a legacy
+        // velocity packet, so retain this marker until the matching velocity event is
+        // handled.
+        event.setCancelled(true);
+
+        UUID playerId = player.getUniqueId();
+        int suppressionVersion = suppressedHerobrineKnockback.merge(playerId, 1, Integer::sum);
+        Bukkit.getServer().getScheduler().runTaskLater(gameManager.getPlugin(), () -> {
+
+            Integer activeVersion = suppressedHerobrineKnockback.get(playerId);
+            if (activeVersion != null && activeVersion == suppressionVersion)
+                suppressedHerobrineKnockback.remove(playerId);
+
+        }, 2);
+
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onHerobrineVelocity(PlayerVelocityEvent event) {
+
+        if (suppressedHerobrineKnockback.containsKey(event.getPlayer().getUniqueId()))
             event.setCancelled(true);
 
+    }
+
+    private Player getPlayerAttacker(EntityDamageByEntityEvent event) {
+
+        if (event.getDamager() instanceof Player)
+            return (Player) event.getDamager();
+
+        if (event.getDamager() instanceof Arrow) {
+
+            ProjectileSource shooter = ((Arrow) event.getDamager()).getShooter();
+            if (shooter instanceof Player)
+                return (Player) shooter;
+
         }
+
+        return null;
 
     }
 
@@ -993,7 +1070,11 @@ public class GMListener implements Listener {
 
         } else if (gameManager.getGameState() == GameState.LIVE || gameManager.getGameState() == GameState.ENDING) {
 
-            if (gameManager.isHerobrine(player) || gameManager.isSurvivor(player)) {
+            if (gameManager.isHerobrine(player)) {
+
+                formattedMessage = "&4THE HEROBRINE &8| &r&l" + rawMessage;
+
+            } else if (gameManager.isSurvivor(player)) {
 
                 formattedMessage = rank.getDisplay() + " " + endMessage;
 

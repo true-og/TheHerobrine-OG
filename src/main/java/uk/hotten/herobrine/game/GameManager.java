@@ -714,10 +714,11 @@ public class GameManager {
 
                 herobrine.getInventory().clear();
 
-                giveVials(-1, 2);
-
                 GUIItem item = new GUIItem(Material.IRON_SWORD).displayName("&bSword of &lChances!").unbreakable(true);
-                herobrine.getInventory().addItem(item.build());
+                herobrine.getInventory().setItem(0, item.build());
+                giveVials(1, 2);
+                herobrine.getInventory().setItem(2, new ItemStack(Material.GOLDEN_APPLE, 1));
+                herobrine.getInventory().setHeldItemSlot(0);
 
                 herobrine.removePotionEffect(PotionEffectType.DAMAGE_RESISTANCE);
                 break;

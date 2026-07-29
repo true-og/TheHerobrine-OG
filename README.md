@@ -2,6 +2,8 @@
 
 Remake of HiveMC's "The Herobrine!" v2 for Purpur `1.19.4`, using `MyWorlds` for world management.
 
+Current version: `1.5.8` ([changelog](CHANGELOG.md)).
+
 ## Requirements
 - Purpur `1.19.4`
 - `ProtocolLib`
