@@ -748,7 +748,7 @@ public class WorldManager implements Listener {
         }
 
         File baseDir = resolveBaseDir();
-        File toCopy = new File(baseDir, "hub");
+        File toCopy = new File(baseDir, gameLobby.getHubTemplate());
         File currentDir = new File(plugin.getServer().getWorldContainer(), worldName);
 
         if (!toCopy.exists() || !toCopy.isDirectory()) {

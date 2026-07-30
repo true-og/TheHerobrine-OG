@@ -48,11 +48,15 @@ public class GameLobby {
     @Getter
     private ArrayList<Player> players;
 
-    public GameLobby(JavaPlugin plugin, LobbyConfig lobbyConfig, String lobbyId) {
+    @Getter
+    private String hubTemplate;
+
+    public GameLobby(JavaPlugin plugin, LobbyConfig lobbyConfig, String lobbyId, String hubTemplate) {
 
         this.plugin = plugin;
         this.lobbyConfig = lobbyConfig;
         this.lobbyId = lobbyId;
+        this.hubTemplate = hubTemplate != null ? hubTemplate : "hub";
 
     }
 

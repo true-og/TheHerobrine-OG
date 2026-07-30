@@ -14,23 +14,30 @@ public class CreateLobbyCommand implements CommandExecutor {
 
         if (args == null || args.length == 0) {
 
-            Message.send(sender, Message.format("&cCorrect Usage: /hbcreatelobby <configuration id>"));
-            sendAvailable(sender);
+            Message.send(sender, Message.format("&cCorrect Usage: /hbcreatelobby <hub>"));
             return true;
 
         }
 
-        LobbyConfig lobbyConfig = LobbyManager.getInstance().getLobbyConfig(args[0]);
+        LobbyConfig lobbyConfig = LobbyManager.getInstance().getLobbyConfig("default");
+        if (lobbyConfig == null && !LobbyManager.getInstance().getLobbyConfigsIds().isEmpty()) {
+
+            lobbyConfig = LobbyManager.getInstance()
+                    .getLobbyConfig(LobbyManager.getInstance().getLobbyConfigsIds().get(0));
+
+        }
+
         if (lobbyConfig == null) {
 
-            Message.send(sender, Message.format("&c" + args[0] + " is not a valid configuration."));
-            sendAvailable(sender);
+            Message.send(sender, Message.format("&cNo lobby configurations are available."));
             return true;
 
         }
 
-        Message.send(sender, "Creating lobby from config '" + lobbyConfig.getId() + "'...");
-        String lobby = LobbyManager.getInstance().createLobby(lobbyConfig);
+        String hub = args[0];
+
+        Message.send(sender, "Creating lobby from config '" + lobbyConfig.getId() + "' with hub '" + hub + "'...");
+        String lobby = LobbyManager.getInstance().createLobby(lobbyConfig, hub);
         if (lobby == null) {
 
             Message.send(sender, Message.format("&cFailed to create lobby, please contact your administrator."));
@@ -40,14 +47,6 @@ public class CreateLobbyCommand implements CommandExecutor {
 
         Message.send(sender, Message.format("&aLobby " + lobby + " created successfully."));
         return true;
-
-    }
-
-    private void sendAvailable(CommandSender sender) {
-
-        Message.send(sender, Message.format("&cThe following types are available:"));
-        LobbyManager.getInstance().getLobbyConfigsIds()
-                .forEach(id -> Message.send(sender, Message.format("&c - " + id)));
 
     }
 

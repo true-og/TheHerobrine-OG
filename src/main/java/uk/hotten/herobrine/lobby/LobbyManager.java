@@ -174,6 +174,12 @@ public class LobbyManager {
 
     public String createLobby(LobbyConfig lobbyConfig) {
 
+        return createLobby(lobbyConfig, "hub");
+
+    }
+
+    public String createLobby(LobbyConfig lobbyConfig, String hubTemplate) {
+
         String lobbyId = generateLobbyId(lobbyConfig);
         if (lobbyId == null) {
 
@@ -182,7 +188,7 @@ public class LobbyManager {
 
         }
 
-        GameLobby gl = new GameLobby(plugin, lobbyConfig, lobbyId);
+        GameLobby gl = new GameLobby(plugin, lobbyConfig, lobbyId, hubTemplate);
         if (!gl.initialize()) {
 
             Console.error("Failed to initialize lobby " + lobbyId + ".");

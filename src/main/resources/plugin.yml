@@ -49,7 +49,7 @@ commands:
   hbcreatelobby:
     description: Create a lobby.
     permission: theherobrine.command.createlobby
-    usage: /<command> <configuration id>
+    usage: /<command> <hub>
 
   hbdeletelobby:
     description: Delete a lobby.
