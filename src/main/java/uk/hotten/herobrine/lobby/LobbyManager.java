@@ -124,6 +124,9 @@ public class LobbyManager {
         Collection<File> files = FileUtils.listFiles(path.toFile(), new RegexFileFilter(".*\\.yaml$"),
                 DirectoryFileFilter.DIRECTORY);
 
+        // Exclude the active-lobbies persistence file (an array) from being treated as a LobbyConfig
+        files.removeIf(f -> f.getName().equalsIgnoreCase("active-lobbies.yaml"));
+
         if (files.isEmpty()) {
 
             Console.info("No lobby config files detected. Saving bundled default...");
