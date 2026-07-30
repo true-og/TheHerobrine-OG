@@ -52,8 +52,10 @@ public class CreateLobbyCommand implements CommandExecutor {
         boolean activePersisted = LobbyManager.getInstance().persistActiveLobby(lobbyConfig.getId(), hub);
         boolean countPersisted = LobbyManager.getInstance().incrementAutoStartForConfig(lobbyConfig.getId(), 1);
         if (!activePersisted || !countPersisted) {
+
             Message.send(sender,
                     Message.format("&eLobby created but failed to persist; it may not survive a restart."));
+
         }
 
         Message.send(sender, Message.format("&aLobby " + lobby + " created successfully."));
