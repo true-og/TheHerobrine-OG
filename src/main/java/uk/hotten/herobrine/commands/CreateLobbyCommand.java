@@ -45,6 +45,13 @@ public class CreateLobbyCommand implements CommandExecutor {
 
         }
 
+        // Persist this manual lobby creation by incrementing the autoStartAmount in
+        // the lobby config file so the lobby is recreated after server restarts.
+        boolean persisted = LobbyManager.getInstance().incrementAutoStartForConfig(lobbyConfig.getId(), 1);
+        if (!persisted) {
+            Message.send(sender, Message.format("&eLobby created but failed to persist; it will not survive a restart."));
+        }
+
         Message.send(sender, Message.format("&aLobby " + lobby + " created successfully."));
         return true;
 

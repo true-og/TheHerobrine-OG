@@ -303,6 +303,46 @@ public class LobbyManager {
 
     }
 
+    /**
+     * Increment the autoStartAmount value in the config YAML for the given config id
+     * and update the in-memory LobbyConfig. Returns true on success.
+     */
+    public boolean incrementAutoStartForConfig(String configId, int delta) {
+
+        LobbyConfig cfg = lobbyConfigs.get(configId);
+        if (cfg == null)
+            return false;
+
+        Path path = Path.of(plugin.getDataFolder() + File.separator + "lobbies" + File.separator + configId + ".yaml");
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = mapper.readValue(path.toFile(), Map.class);
+            int current = cfg.getAutoStartAmount();
+            if (map.containsKey("autoStartAmount")) {
+                Object v = map.get("autoStartAmount");
+                if (v instanceof Number)
+                    current = ((Number) v).intValue();
+                else
+                    current = Integer.parseInt(v.toString());
+            }
+            int updated = current + delta;
+            map.put("autoStartAmount", updated);
+            mapper.writeValue(path.toFile(), map);
+
+            // Update in-memory config
+            LobbyConfig newCfg = new LobbyConfig(cfg.getId(), cfg.getPrefix(), cfg.getMinPlayers(), cfg.getMaxPlayers(),
+                    cfg.getStartTime(), cfg.isAllowOverfill(), cfg.getVotingMaps(), cfg.getEndVotingAt(), updated);
+            lobbyConfigs.put(configId, newCfg);
+            return true;
+        } catch (Exception e) {
+            Console.error("Failed to persist updated autoStartAmount for config " + configId);
+            e.printStackTrace();
+            return false;
+        }
+
+    }
+
     public void shutdown() {
 
         for (Map.Entry<String, GameLobby> entry : gameLobbies.entrySet()) {
