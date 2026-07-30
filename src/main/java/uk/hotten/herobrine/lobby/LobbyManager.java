@@ -313,9 +313,37 @@ public class LobbyManager {
         if (cfg == null)
             return false;
 
-        Path path = Path.of(plugin.getDataFolder() + File.separator + "lobbies" + File.separator + configId + ".yaml");
+        Path dir = Path.of(plugin.getDataFolder() + File.separator + "lobbies");
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         try {
+            Path path = dir.resolve(configId + ".yaml");
+
+            // If the obvious filename doesn't exist, search all YAML files for one whose
+            // 'id' field matches the configId.
+            if (!Files.exists(path)) {
+                if (Files.exists(dir)) {
+                    try (var stream = Files.list(dir)) {
+                        Path found = stream.filter(p -> p.toString().toLowerCase().endsWith(".yaml")).filter(p -> {
+                            try {
+                                @SuppressWarnings("unchecked")
+                                Map<String, Object> m = mapper.readValue(p.toFile(), Map.class);
+                                Object idv = m.get("id");
+                                return idv != null && idv.toString().equals(configId);
+                            } catch (Exception ex) {
+                                return false;
+                            }
+                        }).findFirst().orElse(null);
+                        if (found != null)
+                            path = found;
+                    }
+                }
+            }
+
+            if (!Files.exists(path)) {
+                Console.error("Could not find YAML file for lobby config '" + configId + "' to persist autoStartAmount.");
+                return false;
+            }
+
             @SuppressWarnings("unchecked")
             Map<String, Object> map = mapper.readValue(path.toFile(), Map.class);
             int current = cfg.getAutoStartAmount();
@@ -334,6 +362,8 @@ public class LobbyManager {
             LobbyConfig newCfg = new LobbyConfig(cfg.getId(), cfg.getPrefix(), cfg.getMinPlayers(), cfg.getMaxPlayers(),
                     cfg.getStartTime(), cfg.isAllowOverfill(), cfg.getVotingMaps(), cfg.getEndVotingAt(), updated);
             lobbyConfigs.put(configId, newCfg);
+
+            Console.info("Persisted autoStartAmount=" + updated + " to " + path.toString());
             return true;
         } catch (Exception e) {
             Console.error("Failed to persist updated autoStartAmount for config " + configId);
