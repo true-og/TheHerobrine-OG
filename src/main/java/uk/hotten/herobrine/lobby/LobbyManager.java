@@ -151,7 +151,24 @@ public class LobbyManager {
 
                 if (autoStart) {
 
-                    for (int i = 0; i < lobbyConfig.getAutoStartAmount(); i++) {
+                    // First, attempt to recreate any manually-persisted active lobbies for
+                    // this config (so they keep the hub template they were created with).
+                    int recreatedFromActive = 0;
+                    List<Map<String, String>> active = readActiveLobbies();
+                    for (Map<String, String> entry : active) {
+                        try {
+                            String cfg = entry.get("configId");
+                            String hub = entry.get("hub");
+                            if (cfg != null && cfg.equals(lobbyConfig.getId())) {
+                                if (createLobby(lobbyConfig, hub) != null)
+                                    recreatedFromActive++;
+                            }
+                        } catch (Exception ignored) {
+                        }
+                    }
+
+                    // Then auto-start additional lobbies up to autoStartAmount.
+                    for (int i = recreatedFromActive; i < lobbyConfig.getAutoStartAmount(); i++) {
 
                         createLobby(lobbyConfig);
 
@@ -169,6 +186,30 @@ public class LobbyManager {
             }
 
         });
+
+    }
+
+    /**
+     * Read the active-lobbies persistence file which stores manual lobby creations
+     * so they can be recreated with their hub templates on restart.
+     */
+    private List<Map<String, String>> readActiveLobbies() {
+
+        Path dir = Path.of(plugin.getDataFolder() + File.separator + "lobbies");
+        Path active = dir.resolve("active-lobbies.yaml");
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        if (!Files.exists(active))
+            return new ArrayList<>();
+        try {
+            @SuppressWarnings("unchecked")
+            List<Map<String, String>> list = mapper.readValue(active.toFile(), List.class);
+            return list != null ? list : new ArrayList<>();
+        } catch (Exception e) {
+            Console.error("Failed to read active-lobbies.yaml: " + e.getMessage());
+            return new ArrayList<>();
+        }
+
+    }
 
     }
 
@@ -368,6 +409,31 @@ public class LobbyManager {
         } catch (Exception e) {
             Console.error("Failed to persist updated autoStartAmount for config " + configId);
             e.printStackTrace();
+            return false;
+        }
+
+    }
+
+    /**
+     * Persist an active lobby entry so manual creations survive restarts. Multiple
+     * entries may exist for the same configId (each represents one lobby instance).
+     */
+    public boolean persistActiveLobby(String configId, String hubTemplate) {
+
+        Path dir = Path.of(plugin.getDataFolder() + File.separator + "lobbies");
+        Path active = dir.resolve("active-lobbies.yaml");
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        List<Map<String, String>> list = readActiveLobbies();
+        Map<String, String> entry = new HashMap<>();
+        entry.put("configId", configId);
+        entry.put("hub", hubTemplate != null ? hubTemplate : "hub");
+        list.add(entry);
+        try {
+            mapper.writeValue(active.toFile(), list);
+            Console.info("Persisted active-lobby for config " + configId + " hub=" + entry.get("hub"));
+            return true;
+        } catch (Exception e) {
+            Console.error("Failed to persist active-lobbies.yaml: " + e.getMessage());
             return false;
         }
 
