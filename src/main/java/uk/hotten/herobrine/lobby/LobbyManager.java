@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
@@ -19,11 +18,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
-
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
 import lombok.Getter;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -156,15 +153,22 @@ public class LobbyManager {
                     int recreatedFromActive = 0;
                     List<Map<String, String>> active = readActiveLobbies();
                     for (Map<String, String> entry : active) {
+
                         try {
+
                             String cfg = entry.get("configId");
                             String hub = entry.get("hub");
                             if (cfg != null && cfg.equals(lobbyConfig.getId())) {
+
                                 if (createLobby(lobbyConfig, hub) != null)
                                     recreatedFromActive++;
+
                             }
+
                         } catch (Exception ignored) {
+
                         }
+
                     }
 
                     // Then auto-start additional lobbies up to autoStartAmount.
@@ -201,15 +205,17 @@ public class LobbyManager {
         if (!Files.exists(active))
             return new ArrayList<>();
         try {
+
             @SuppressWarnings("unchecked")
             List<Map<String, String>> list = mapper.readValue(active.toFile(), List.class);
             return list != null ? list : new ArrayList<>();
+
         } catch (Exception e) {
+
             Console.error("Failed to read active-lobbies.yaml: " + e.getMessage());
             return new ArrayList<>();
-        }
 
-    }
+        }
 
     }
 
@@ -345,8 +351,8 @@ public class LobbyManager {
     }
 
     /**
-     * Increment the autoStartAmount value in the config YAML for the given config id
-     * and update the in-memory LobbyConfig. Returns true on success.
+     * Increment the autoStartAmount value in the config YAML for the given config
+     * id and update the in-memory LobbyConfig. Returns true on success.
      */
     public boolean incrementAutoStartForConfig(String configId, int delta) {
 
@@ -357,44 +363,63 @@ public class LobbyManager {
         Path dir = Path.of(plugin.getDataFolder() + File.separator + "lobbies");
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         try {
+
             Path path = dir.resolve(configId + ".yaml");
 
             // If the obvious filename doesn't exist, search all YAML files for one whose
             // 'id' field matches the configId.
             if (!Files.exists(path)) {
+
                 if (Files.exists(dir)) {
+
                     try (var stream = Files.list(dir)) {
+
                         Path found = stream.filter(p -> p.toString().toLowerCase().endsWith(".yaml")).filter(p -> {
+
                             try {
+
                                 @SuppressWarnings("unchecked")
                                 Map<String, Object> m = mapper.readValue(p.toFile(), Map.class);
                                 Object idv = m.get("id");
                                 return idv != null && idv.toString().equals(configId);
+
                             } catch (Exception ex) {
+
                                 return false;
+
                             }
+
                         }).findFirst().orElse(null);
                         if (found != null)
                             path = found;
+
                     }
+
                 }
+
             }
 
             if (!Files.exists(path)) {
-                Console.error("Could not find YAML file for lobby config '" + configId + "' to persist autoStartAmount.");
+
+                Console.error(
+                        "Could not find YAML file for lobby config '" + configId + "' to persist autoStartAmount.");
                 return false;
+
             }
 
             @SuppressWarnings("unchecked")
             Map<String, Object> map = mapper.readValue(path.toFile(), Map.class);
             int current = cfg.getAutoStartAmount();
             if (map.containsKey("autoStartAmount")) {
+
                 Object v = map.get("autoStartAmount");
                 if (v instanceof Number)
                     current = ((Number) v).intValue();
                 else
                     current = Integer.parseInt(v.toString());
+
             }
+
             int updated = current + delta;
             map.put("autoStartAmount", updated);
             mapper.writeValue(path.toFile(), map);
@@ -406,10 +431,13 @@ public class LobbyManager {
 
             Console.info("Persisted autoStartAmount=" + updated + " to " + path.toString());
             return true;
+
         } catch (Exception e) {
+
             Console.error("Failed to persist updated autoStartAmount for config " + configId);
             e.printStackTrace();
             return false;
+
         }
 
     }
@@ -429,12 +457,16 @@ public class LobbyManager {
         entry.put("hub", hubTemplate != null ? hubTemplate : "hub");
         list.add(entry);
         try {
+
             mapper.writeValue(active.toFile(), list);
             Console.info("Persisted active-lobby for config " + configId + " hub=" + entry.get("hub"));
             return true;
+
         } catch (Exception e) {
+
             Console.error("Failed to persist active-lobbies.yaml: " + e.getMessage());
             return false;
+
         }
 
     }
