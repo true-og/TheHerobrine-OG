@@ -124,7 +124,7 @@ public class LobbyManager {
 
         }
 
-        Collection<File> files = FileUtils.listFiles(path.toFile(), new RegexFileFilter("\\w+\\.yaml$"),
+        Collection<File> files = FileUtils.listFiles(path.toFile(), new RegexFileFilter(".*\\.yaml$"),
                 DirectoryFileFilter.DIRECTORY);
 
         if (files.isEmpty()) {
