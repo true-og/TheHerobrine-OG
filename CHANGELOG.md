@@ -24,6 +24,8 @@ All notable changes to TheHerobrine-OG are documented here.
 - List the templates that do exist when a hub template cannot be found.
 - Load lobby worlds a tick after startup rather than during it, so world creation
   no longer fires chunk events at plugins that are still starting.
+- Delete lobby worlds left behind by a previous run before starting lobbies, so a
+  crashed server no longer leaves arena world folders piling up on disk.
 
 ## 1.5.8 - 2026-07-29
 

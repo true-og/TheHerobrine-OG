@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
@@ -19,6 +20,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import com.bergerkiller.bukkit.mw.MyWorlds;
+import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import lombok.Getter;
@@ -30,6 +32,7 @@ import uk.hotten.herobrine.lobby.data.LobbyConfig;
 import uk.hotten.herobrine.utils.Console;
 import uk.hotten.herobrine.utils.GameState;
 import uk.hotten.herobrine.utils.Message;
+import uk.hotten.herobrine.world.WorldManager;
 
 public class LobbyManager {
 
@@ -80,8 +83,112 @@ public class LobbyManager {
     // ChunkLoadEvent into plugins that have not finished their own startup yet.
     public void startConfiguredLobbies() {
 
+        purgeOrphanedLobbyWorlds();
+
         for (LobbyConfig lobbyConfig : lobbyConfigs.values())
             startLobbiesForConfig(lobbyConfig);
+
+    }
+
+    // Deletes lobby worlds nobody owns any more. A crash (or a lobby that never
+    // came back) leaves <lobbyId>-hub and <lobbyId>-<map> directories behind; the
+    // hub name gets reused and overwritten on the next boot, but arena worlds keep
+    // piling up until a disk fills. Runs before any lobby is created, so every
+    // world matching a config's lobby-id shape is by definition unowned.
+    // Returns how many worlds were removed.
+    public int purgeOrphanedLobbyWorlds() {
+
+        List<Pattern> owned = new ArrayList<>();
+        for (LobbyConfig lobbyConfig : lobbyConfigs.values()) {
+
+            String prefix = lobbyConfig.getPrefix();
+            if (prefix == null || prefix.isBlank())
+                continue;
+
+            owned.add(Pattern.compile("^" + Pattern.quote(prefix) + "\\d+-.+$", Pattern.CASE_INSENSITIVE));
+
+        }
+
+        if (owned.isEmpty())
+            return 0;
+
+        File container = plugin.getServer().getWorldContainer();
+        File[] children = container.listFiles(File::isDirectory);
+        if (children == null)
+            return 0;
+
+        int purged = 0;
+        for (File child : children) {
+
+            String worldName = child.getName();
+            if (WorldManager.isProtectedMainWorld(worldName) || isManagedWorld(worldName))
+                continue;
+
+            boolean matches = false;
+            for (Pattern pattern : owned)
+                if (pattern.matcher(worldName).matches()) {
+
+                    matches = true;
+                    break;
+
+                }
+
+            if (!matches)
+                continue;
+
+            if (deleteOrphanedWorld(worldName, child))
+                purged++;
+
+        }
+
+        if (purged > 0)
+            Console.info("Purged " + purged + " orphaned lobby world(s) from a previous run.");
+
+        return purged;
+
+    }
+
+    // MyWorlds owns the world registration, so ask it to drop the world first and
+    // only fall back to deleting the directory when it cannot.
+    private boolean deleteOrphanedWorld(String worldName, File worldDir) {
+
+        // A reload can leave players standing in a world no lobby claims yet.
+        // Pulling it out from under them is worse than keeping the directory.
+        org.bukkit.World live = Bukkit.getWorld(worldName);
+        if (live != null && !live.getPlayers().isEmpty()) {
+
+            Console.error("Not purging orphaned lobby world '" + worldName + "': it still has players in it.");
+            return false;
+
+        }
+
+        WorldConfig worldConfig = WorldConfig.getIfExists(worldName);
+        if (worldConfig != null) {
+
+            if (worldConfig.isLoaded() && !worldConfig.unloadWorld()) {
+
+                Console.error("Could not unload orphaned lobby world '" + worldName + "'; leaving it in place.");
+                return false;
+
+            }
+
+            if (worldConfig.deleteWorld())
+                return true;
+
+        }
+
+        try {
+
+            FileUtils.deleteDirectory(worldDir);
+            return true;
+
+        } catch (Exception e) {
+
+            Console.error(
+                    "Could not delete orphaned lobby world directory '" + worldDir.getPath() + "': " + e.getMessage());
+            return false;
+
+        }
 
     }
 
