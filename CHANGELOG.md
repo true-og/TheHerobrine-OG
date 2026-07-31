@@ -2,6 +2,29 @@
 
 All notable changes to TheHerobrine-OG are documented here.
 
+## 1.5.9 - 2026-07-31
+
+### Changes
+
+- Keep a lobby alive across games: the post-game rebuild reused the default hub
+  template instead of the one the lobby was created with, so the lobby failed to
+  come back and no lobbies were left to join.
+- Recreate lobbies with their own hub template when reloading configs too, and
+  report on the console when a rebuild fails.
+- Record manual lobby creations only in `lobbies/active-lobbies.yaml`; the extra
+  `autoStartAmount` increment spawned a second lobby from a template that does
+  not exist.
+- Remove the persisted entry when a lobby is deleted so it stays deleted after a
+  restart.
+- Add a `hub` key to lobby configs naming the hub template auto-started lobbies
+  copy, defaulting to `hub`.
+- Accept a hub template by number: `/hbcreatelobby 1` resolves to `HB1_Hub`, hub
+  names now match regardless of case, and the command tab-completes templates and
+  rejects an unknown one instead of failing lobby creation.
+- List the templates that do exist when a hub template cannot be found.
+- Load lobby worlds a tick after startup rather than during it, so world creation
+  no longer fires chunk events at plugins that are still starting.
+
 ## 1.5.8 - 2026-07-29
 
 ### Changes

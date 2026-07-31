@@ -64,12 +64,50 @@ public class LobbyManager {
 
         try {
 
-            checkAndLoadConfigs(true);
+            checkAndLoadConfigs();
 
         } catch (Exception e) {
 
             Console.error("Failed to load config files.");
             e.printStackTrace();
+
+        }
+
+    }
+
+    // Bring up the persisted and auto-start lobbies. Called a tick after enable,
+    // not during it: creating a world runs the chunk system, which fires
+    // ChunkLoadEvent into plugins that have not finished their own startup yet.
+    public void startConfiguredLobbies() {
+
+        for (LobbyConfig lobbyConfig : lobbyConfigs.values())
+            startLobbiesForConfig(lobbyConfig);
+
+    }
+
+    private void startLobbiesForConfig(LobbyConfig lobbyConfig) {
+
+        // First, recreate any manually-persisted active lobbies for this config so
+        // they keep the hub template they were created with.
+        int recreatedFromActive = 0;
+        for (Map<String, String> entry : readActiveLobbies()) {
+
+            String cfg = entry.get("configId");
+            if (cfg == null || !cfg.equals(lobbyConfig.getId()))
+                continue;
+
+            String hub = entry.get("hub") != null ? entry.get("hub") : lobbyConfig.getHubTemplate();
+            if (createLobby(lobbyConfig, hub) != null)
+                recreatedFromActive++;
+
+        }
+
+        // autoStartAmount is the minimum lobby count for this config, so the
+        // recreated ones count toward it. The rest use the config hub template.
+        for (int i = recreatedFromActive; i < lobbyConfig.getAutoStartAmount(); i++) {
+
+            if (createLobby(lobbyConfig) == null)
+                break;
 
         }
 
@@ -102,7 +140,7 @@ public class LobbyManager {
 
     }
 
-    public void checkAndLoadConfigs(boolean autoStart) throws Exception {
+    public void checkAndLoadConfigs() throws Exception {
 
         Console.info("Loading lobby configs...");
         lobbyConfigs.clear();
@@ -116,7 +154,7 @@ public class LobbyManager {
         Path path = Path.of(plugin.getDataFolder() + File.separator + "lobbies");
         if (!Files.exists(path)) {
 
-            Console.error("No lobbies file found, creating...");
+            Console.info("No lobbies folder found, creating...");
             new File(path.toUri()).mkdirs();
 
         }
@@ -150,40 +188,6 @@ public class LobbyManager {
 
                 lobbyConfigs.put(lobbyConfig.getId(), lobbyConfig);
 
-                if (autoStart) {
-
-                    // First, attempt to recreate any manually-persisted active lobbies for
-                    // this config (so they keep the hub template they were created with).
-                    int recreatedFromActive = 0;
-                    List<Map<String, String>> active = readActiveLobbies();
-                    for (Map<String, String> entry : active) {
-
-                        try {
-
-                            String cfg = entry.get("configId");
-                            String hub = entry.get("hub");
-                            if (cfg != null && cfg.equals(lobbyConfig.getId())) {
-
-                                if (createLobby(lobbyConfig, hub) != null)
-                                    recreatedFromActive++;
-
-                            }
-
-                        } catch (Exception ignored) {
-
-                        }
-
-                    }
-
-                    // Then auto-start additional lobbies up to autoStartAmount.
-                    for (int i = recreatedFromActive; i < lobbyConfig.getAutoStartAmount(); i++) {
-
-                        createLobby(lobbyConfig);
-
-                    }
-
-                }
-
                 Console.info("Successfully loaded configuration ID " + lobbyConfig.getId());
 
             } catch (IOException e) {
@@ -197,10 +201,8 @@ public class LobbyManager {
 
     }
 
-    /**
-     * Read the active-lobbies persistence file which stores manual lobby creations
-     * so they can be recreated with their hub templates on restart.
-     */
+    // Read the active-lobbies persistence file which stores manual lobby creations
+    // so they can be recreated with their hub templates on restart.
     private List<Map<String, String>> readActiveLobbies() {
 
         Path dir = Path.of(plugin.getDataFolder() + File.separator + "lobbies");
@@ -225,7 +227,7 @@ public class LobbyManager {
 
     public String createLobby(LobbyConfig lobbyConfig) {
 
-        return createLobby(lobbyConfig, "hub");
+        return createLobby(lobbyConfig, lobbyConfig.getHubTemplate());
 
     }
 
@@ -354,102 +356,8 @@ public class LobbyManager {
 
     }
 
-    /**
-     * Increment the autoStartAmount value in the config YAML for the given config
-     * id and update the in-memory LobbyConfig. Returns true on success.
-     */
-    public boolean incrementAutoStartForConfig(String configId, int delta) {
-
-        LobbyConfig cfg = lobbyConfigs.get(configId);
-        if (cfg == null)
-            return false;
-
-        Path dir = Path.of(plugin.getDataFolder() + File.separator + "lobbies");
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        try {
-
-            Path path = dir.resolve(configId + ".yaml");
-
-            // If the obvious filename doesn't exist, search all YAML files for one whose
-            // 'id' field matches the configId.
-            if (!Files.exists(path)) {
-
-                if (Files.exists(dir)) {
-
-                    try (var stream = Files.list(dir)) {
-
-                        Path found = stream.filter(p -> p.toString().toLowerCase().endsWith(".yaml")).filter(p -> {
-
-                            try {
-
-                                @SuppressWarnings("unchecked")
-                                Map<String, Object> m = mapper.readValue(p.toFile(), Map.class);
-                                Object idv = m.get("id");
-                                return idv != null && idv.toString().equals(configId);
-
-                            } catch (Exception ex) {
-
-                                return false;
-
-                            }
-
-                        }).findFirst().orElse(null);
-                        if (found != null)
-                            path = found;
-
-                    }
-
-                }
-
-            }
-
-            if (!Files.exists(path)) {
-
-                Console.error(
-                        "Could not find YAML file for lobby config '" + configId + "' to persist autoStartAmount.");
-                return false;
-
-            }
-
-            @SuppressWarnings("unchecked")
-            Map<String, Object> map = mapper.readValue(path.toFile(), Map.class);
-            int current = cfg.getAutoStartAmount();
-            if (map.containsKey("autoStartAmount")) {
-
-                Object v = map.get("autoStartAmount");
-                if (v instanceof Number)
-                    current = ((Number) v).intValue();
-                else
-                    current = Integer.parseInt(v.toString());
-
-            }
-
-            int updated = current + delta;
-            map.put("autoStartAmount", updated);
-            mapper.writeValue(path.toFile(), map);
-
-            // Update in-memory config
-            LobbyConfig newCfg = new LobbyConfig(cfg.getId(), cfg.getPrefix(), cfg.getMinPlayers(), cfg.getMaxPlayers(),
-                    cfg.getStartTime(), cfg.isAllowOverfill(), cfg.getVotingMaps(), cfg.getEndVotingAt(), updated);
-            lobbyConfigs.put(configId, newCfg);
-
-            Console.info("Persisted autoStartAmount=" + updated + " to " + path.toString());
-            return true;
-
-        } catch (Exception e) {
-
-            Console.error("Failed to persist updated autoStartAmount for config " + configId);
-            e.printStackTrace();
-            return false;
-
-        }
-
-    }
-
-    /**
-     * Persist an active lobby entry so manual creations survive restarts. Multiple
-     * entries may exist for the same configId (each represents one lobby instance).
-     */
+    // Persist an active lobby entry so manual creations survive restarts. Multiple
+    // entries may exist for the same configId (each represents one lobby instance).
     public boolean persistActiveLobby(String configId, String hubTemplate) {
 
         Path dir = Path.of(plugin.getDataFolder() + File.separator + "lobbies");
@@ -469,6 +377,56 @@ public class LobbyManager {
         } catch (Exception e) {
 
             Console.error("Failed to persist active-lobbies.yaml: " + e.getMessage());
+            return false;
+
+        }
+
+    }
+
+    // Drop one persisted active-lobby entry so a deleted lobby stays deleted across
+    // restarts. Returns true when an entry was removed and the file rewritten.
+    public boolean removeActiveLobby(String configId, String hubTemplate) {
+
+        Path dir = Path.of(plugin.getDataFolder() + File.separator + "lobbies");
+        Path active = dir.resolve("active-lobbies.yaml");
+        List<Map<String, String>> list = readActiveLobbies();
+        if (list.isEmpty())
+            return false;
+
+        String hub = hubTemplate != null ? hubTemplate : "hub";
+        int match = -1;
+        for (int i = 0; i < list.size(); i++) {
+
+            Map<String, String> entry = list.get(i);
+            if (!configId.equals(entry.get("configId")))
+                continue;
+
+            String entryHub = entry.get("hub") != null ? entry.get("hub") : "hub";
+            if (entryHub.equals(hub)) {
+
+                match = i;
+                break;
+
+            }
+
+        }
+
+        // Nothing to do for an auto-started lobby: it has no persisted entry, and
+        // removing someone else's would delete a different lobby on the next boot.
+        if (match == -1)
+            return false;
+
+        list.remove(match);
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        try {
+
+            mapper.writeValue(active.toFile(), list);
+            Console.info("Removed active-lobby entry for config " + configId + " hub=" + hub);
+            return true;
+
+        } catch (Exception e) {
+
+            Console.error("Failed to rewrite active-lobbies.yaml: " + e.getMessage());
             return false;
 
         }
@@ -495,7 +453,7 @@ public class LobbyManager {
 
         List<GameLobby> existingLobbies = new ArrayList<>(gameLobbies.values());
 
-        checkAndLoadConfigs(false);
+        checkAndLoadConfigs();
 
         int recreated = 0;
         for (GameLobby gameLobby : existingLobbies) {
@@ -512,7 +470,9 @@ public class LobbyManager {
 
             }
 
-            if (createLobby(refreshedConfig) != null)
+            // Keep the hub template each lobby was created with; the config default
+            // only applies to lobbies auto-started below.
+            if (createLobby(refreshedConfig, gameLobby.getHubTemplate()) != null)
                 recreated++;
 
         }
@@ -631,10 +591,8 @@ public class LobbyManager {
 
     }
 
-    /**
-     * Aggregate snapshot of all lobbies for a config id. Used by join-sign
-     * displays.
-     */
+    // Aggregate snapshot of all lobbies for a config id. Used by join-sign
+    // displays.
     public LobbyAggregate aggregateForConfig(String configId) {
 
         int total = 0;

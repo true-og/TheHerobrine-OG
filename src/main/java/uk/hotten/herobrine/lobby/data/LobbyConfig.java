@@ -31,19 +31,13 @@ public class LobbyConfig {
     @Getter
     private int autoStartAmount;
 
-    public LobbyConfig(String id, String prefix, int minPlayers, int maxPlayers, int startTime, boolean allowOverfill,
-            int votingMaps, int endVotingAt, int autoStartAmount)
-    {
+    @Getter
+    private String hub;
 
-        this.id = id;
-        this.prefix = prefix;
-        this.minPlayers = minPlayers;
-        this.maxPlayers = maxPlayers;
-        this.startTime = startTime;
-        this.allowOverfill = allowOverfill;
-        this.votingMaps = votingMaps;
-        this.endVotingAt = endVotingAt;
-        this.autoStartAmount = autoStartAmount;
+    // Hub template folder auto-started lobbies copy their hub world from.
+    public String getHubTemplate() {
+
+        return hub == null || hub.isBlank() ? "hub" : hub;
 
     }
 

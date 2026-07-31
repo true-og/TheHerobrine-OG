@@ -153,8 +153,11 @@ public class GameLobby {
             LobbyManager.getInstance().removeLobby(lobbyId);
         Console.info("Lobby " + lobbyId + " has shutdown.");
 
-        if (recreate)
-            LobbyManager.getInstance().createLobby(lobbyConfig);
+        // Recreate with this lobby's own hub template, not the config default, or the
+        // lobby dies for good after its first game.
+        if (recreate && LobbyManager.getInstance().createLobby(lobbyConfig, hubTemplate) == null)
+            Console.error("Could not recreate lobby " + lobbyId + " from hub template '" + hubTemplate
+                    + "'; no replacement lobby is running for config " + lobbyConfig.getId() + ".");
 
     }
 

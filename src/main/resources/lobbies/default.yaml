@@ -7,3 +7,4 @@ allowOverfill: false
 votingMaps: 1
 endVotingAt: 10
 autoStartAmount: 1
+hub: "hub" # Folder under the map base copied as the hub world of auto-started lobbies.

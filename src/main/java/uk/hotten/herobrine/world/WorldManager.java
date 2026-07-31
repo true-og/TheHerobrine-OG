@@ -112,7 +112,91 @@ public class WorldManager implements Listener {
 
     }
 
+    // Template folder lookup. Falls back to a case-insensitive match so 'HB1_hub'
+    // still finds 'HB1_Hub' on case-sensitive filesystems, and treats a bare number
+    // as shorthand for the hub of that number: '2' with prefix 'HB' means
+    // 'HB2_Hub'.
+    public static File resolveTemplateDir(File baseDir, String prefix, String templateName) {
+
+        if (templateName == null || templateName.isBlank())
+            return null;
+
+        File exact = new File(baseDir, templateName);
+        if (exact.isDirectory())
+            return exact;
+
+        File match = findTemplateIgnoreCase(baseDir, templateName);
+        if (match != null)
+            return match;
+
+        if (prefix != null && !prefix.isBlank() && templateName.chars().allMatch(Character::isDigit))
+            return findTemplateIgnoreCase(baseDir, prefix + templateName + "_Hub");
+
+        return null;
+
+    }
+
+    private static File findTemplateIgnoreCase(File baseDir, String name) {
+
+        File[] candidates = baseDir.listFiles(File::isDirectory);
+        if (candidates == null)
+            return null;
+
+        for (File candidate : candidates)
+            if (candidate.getName().equalsIgnoreCase(name))
+                return candidate;
+
+        // Second pass ignoring separators as well, so 'HB1-Hub' finds 'HB1_Hub'.
+        String flattened = flattenTemplateName(name);
+        for (File candidate : candidates)
+            if (flattenTemplateName(candidate.getName()).equals(flattened))
+                return candidate;
+
+        return null;
+
+    }
+
+    private static String flattenTemplateName(String name) {
+
+        return name.toLowerCase().replaceAll("[^a-z0-9]", "");
+
+    }
+
+    // Lists the template folders that do exist, for error messages.
+    public static String describeTemplates(File baseDir) {
+
+        File[] candidates = baseDir.listFiles(File::isDirectory);
+        if (candidates == null || candidates.length == 0)
+            return "No template folders found in " + baseDir.getPath() + ".";
+
+        StringBuilder sb = new StringBuilder("Available templates in " + baseDir.getPath() + ": ");
+        for (int i = 0; i < candidates.length; i++) {
+
+            if (i > 0)
+                sb.append(", ");
+            sb.append(candidates[i].getName());
+
+        }
+
+        return sb.append(".").toString();
+
+    }
+
     private File resolveBaseDir() {
+
+        return resolveBaseDir(plugin, fileBase);
+
+    }
+
+    // Same base directory the lobbies copy their templates from, for callers that
+    // have no WorldManager yet (the create-lobby command validating its argument).
+    public static File resolveBaseDir(JavaPlugin plugin) {
+
+        return resolveBaseDir(plugin, plugin.getConfig().getString("mapBase"));
+
+    }
+
+    private static File resolveBaseDir(JavaPlugin plugin, String fileBase) {
 
         if (fileBase == null || fileBase.isBlank()) {
 
@@ -748,12 +832,13 @@ public class WorldManager implements Listener {
         }
 
         File baseDir = resolveBaseDir();
-        File toCopy = new File(baseDir, gameLobby.getHubTemplate());
+        File toCopy = resolveTemplateDir(baseDir, gameLobby.getLobbyConfig().getPrefix(), gameLobby.getHubTemplate());
         File currentDir = new File(plugin.getServer().getWorldContainer(), worldName);
 
-        if (!toCopy.exists() || !toCopy.isDirectory()) {
+        if (toCopy == null) {
 
-            Console.error(gameLobby, "Hub template folder does not exist: " + toCopy.getPath());
+            Console.error(gameLobby, "Hub template folder does not exist: "
+                    + new File(baseDir, gameLobby.getHubTemplate()).getPath() + ". " + describeTemplates(baseDir));
             return;
 
         }
@@ -896,12 +981,10 @@ public class WorldManager implements Listener {
 
     }
 
-    /**
-     * Detaches the named world from any MyWorlds inventory bundle so it has its own
-     * isolated inventory storage. Used on lobby world creation to keep the
-     * main-world inventory separate, and again on deletion to avoid stale entries
-     * accumulating in MyWorlds' inventories.yml.
-     */
+    // Detaches the named world from any MyWorlds inventory bundle so it has its own
+    // isolated inventory storage. Used on lobby world creation to keep the
+    // main-world inventory separate, and again on deletion to avoid stale entries
+    // accumulating in MyWorlds' inventories.yml.
     private void isolateInventory(String worldName) {
 
         try {
@@ -919,11 +1002,9 @@ public class WorldManager implements Listener {
 
     }
 
-    /**
-     * Merges the given worlds into a single MyWorlds inventory bundle so a player
-     * carrying lobby inventory between them (hub -> game) does not get an inventory
-     * swap mid-match. Auto-saves.
-     */
+    // Merges the given worlds into a single MyWorlds inventory bundle so a player
+    // carrying lobby inventory between them (hub -> game) does not get an inventory
+    // swap mid-match. Auto-saves.
     private void shareInventory(String... worldNames) {
 
         try {

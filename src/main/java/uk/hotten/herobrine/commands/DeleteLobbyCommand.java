@@ -28,6 +28,9 @@ public class DeleteLobbyCommand implements CommandExecutor {
         }
 
         Message.send(sender, Message.format("Shutting down " + gl.getLobbyId() + "..."));
+
+        // Drop the persistence entry first, otherwise the lobby returns on restart.
+        LobbyManager.getInstance().removeActiveLobby(gl.getLobbyConfig().getId(), gl.getHubTemplate());
         gl.shutdown(true, false);
         Message.send(sender, Message.format("&aLobby " + gl.getLobbyId() + " has been shutdown."));
 

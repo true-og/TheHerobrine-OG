@@ -85,6 +85,11 @@ public class HerobrinePluginOG extends JavaPlugin {
 
         }
 
+        // Lobby worlds are loaded on the first tick instead of here: world creation
+        // pumps the chunk system, and the resulting ChunkLoadEvent reaches plugins
+        // that are still finishing their own startup.
+        getServer().getScheduler().runTask(this, lobbyManager::startConfiguredLobbies);
+
         getServer().getPluginManager().registerEvents(new PreJoinLocationListener(this), this);
 
         getCommand("hbsetherobrine").setExecutor(new SetHerobrineCommand());
