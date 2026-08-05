@@ -24,7 +24,10 @@ import uk.hotten.herobrine.commands.VoteCommandListener;
 import uk.hotten.herobrine.commands.VoteCompleter;
 import uk.hotten.herobrine.data.RedisManager;
 import uk.hotten.herobrine.data.SqlManager;
+import nl.skbotnl.chatog.api.ChatOGAPI;
+import uk.hotten.herobrine.chat.HerobrineChatFormatter;
 import uk.hotten.herobrine.lobby.LobbyManager;
+import uk.hotten.herobrine.lobby.data.LobbyConfig;
 import uk.hotten.herobrine.lobby.PreJoinLocationListener;
 import uk.hotten.herobrine.sign.JoinSignListener;
 import uk.hotten.herobrine.sign.JoinSignManager;
@@ -88,7 +91,12 @@ public class HerobrinePluginOG extends JavaPlugin {
         // Lobby worlds are loaded on the first tick instead of here: world creation
         // pumps the chunk system, and the resulting ChunkLoadEvent reaches plugins
         // that are still finishing their own startup.
-        getServer().getScheduler().runTask(this, lobbyManager::startConfiguredLobbies);
+        getServer().getScheduler().runTask(this, () -> {
+
+            lobbyManager.startConfiguredLobbies();
+            registerChatFormatter(lobbyManager);
+
+        });
 
         getServer().getPluginManager().registerEvents(new PreJoinLocationListener(this), this);
 
@@ -164,6 +172,34 @@ public class HerobrinePluginOG extends JavaPlugin {
             RedisManager.getInstance().shutdown();
         if (SqlManager.get() != null)
             SqlManager.get().shutdown();
+
+    }
+
+    // Chat-OG scopes lobby chat to the world and mirrors it to Discord; we only
+    // supply the formatting.
+    // The presence check keeps the Chat-OG classes off the classpath when it is not
+    // installed.
+    private void registerChatFormatter(LobbyManager lobbyManager) {
+
+        if (getServer().getPluginManager().getPlugin("Chat-OG") == null) {
+
+            Console.info("Chat-OG is not installed, so lobby chat keeps its default formatting.");
+            return;
+
+        }
+
+        HerobrineChatFormatter formatter = new HerobrineChatFormatter();
+        for (String configId : lobbyManager.getLobbyConfigsIds()) {
+
+            LobbyConfig lobbyConfig = lobbyManager.getLobbyConfig(configId);
+            if (lobbyConfig == null || lobbyConfig.getPrefix() == null)
+                continue;
+
+            if (!ChatOGAPI.setFormatter(lobbyConfig.getPrefix(), formatter))
+                Console.error("Chat-OG was not ready, so no chat formatter was registered for "
+                        + lobbyConfig.getPrefix() + ".");
+
+        }
 
     }
 

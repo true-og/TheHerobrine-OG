@@ -11,6 +11,7 @@ softdepend:
   - My_Worlds
   - IllegalStack-OG
   - KnockbackSync-OG
+  - Chat-OG
 
 commands:
   hbsetherobrine:

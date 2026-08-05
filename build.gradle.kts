@@ -82,6 +82,7 @@ dependencies {
     compileOnly(files("libs/IllegalStack-OG/IllegalStack-OG-2.9.13.jar")) // Import IllegalStack-OG API.
     compileOnly(files("libs/BKCommonLib/BKCommonLib-1.19.4-v2.jar")) // Import BKCommonLib API.
     compileOnly(files("libs/MyWorlds/MyWorlds-1.19.4-v1.jar")) // Import MyWorlds API.
+    compileOnly(files("libs/Chat-OG/Chat-OG.jar")) // Import Chat-OG API for world chat formatting.
     implementation(project(":libs:GxUI-OG")) // Import TrueOG Network GxUI-OG Java API (from source).
     implementation(files("libs/ScoreboardLib/ScoreboardLib-1.1.0-SNAPSHOT.jar")) // Import ScoreboardLib API.
 }

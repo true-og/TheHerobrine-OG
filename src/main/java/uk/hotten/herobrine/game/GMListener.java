@@ -2,7 +2,6 @@ package uk.hotten.herobrine.game;
 
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import io.papermc.paper.event.entity.EntityPushedByEntityAttackEvent;
-import io.papermc.paper.event.player.AsyncChatEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -15,7 +14,6 @@ import me.tigerhix.lib.scoreboard.common.EntryBuilder;
 import me.tigerhix.lib.scoreboard.type.Entry;
 import me.tigerhix.lib.scoreboard.type.ScoreboardHandler;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -50,14 +48,10 @@ import org.bukkit.event.player.PlayerVelocityEvent;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.projectiles.ProjectileSource;
 import uk.hotten.herobrine.HerobrinePluginOG;
-import uk.hotten.herobrine.chat.LocalLobbyChatDelivery;
-import uk.hotten.herobrine.chat.LobbyChatDelivery;
 import uk.hotten.herobrine.compat.IllegalStackCompat;
 import uk.hotten.herobrine.kit.KitGui;
 import uk.hotten.herobrine.lobby.GameLobby;
 import uk.hotten.herobrine.lobby.LobbyManager;
-import uk.hotten.herobrine.stat.GameRank;
-import uk.hotten.herobrine.stat.StatManager;
 import uk.hotten.herobrine.utils.GameState;
 import uk.hotten.herobrine.utils.HerobrineSkin;
 import uk.hotten.herobrine.utils.Message;
@@ -70,22 +64,14 @@ public class GMListener implements Listener {
 
     private GameManager gameManager;
     private GameLobby gameLobby;
-    private LobbyChatDelivery lobbyChatDelivery;
     private ArrayList<Player> kitCooldown = new ArrayList<>();
     private Set<UUID> returningToMainOnLogin = ConcurrentHashMap.newKeySet();
     private Map<UUID, Integer> suppressedHerobrineKnockback = new HashMap<>();
 
     public GMListener(GameManager gm, GameLobby gl) {
 
-        this(gm, gl, new LocalLobbyChatDelivery());
-
-    }
-
-    public GMListener(GameManager gm, GameLobby gl, LobbyChatDelivery lobbyChatDelivery) {
-
         this.gameManager = gm;
         this.gameLobby = gl;
-        this.lobbyChatDelivery = lobbyChatDelivery;
 
     }
 
@@ -1046,51 +1032,8 @@ public class GMListener implements Listener {
 
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onChat(AsyncChatEvent event) {
-
-        if (!event.getPlayer().getWorld().getName().startsWith(gameLobby.getLobbyId()))
-            return;
-
-        // This lobby owns delivery for now; Chat-OG's normal-priority listener
-        // observes cancellation and does not also broadcast globally.
-        event.setCancelled(true);
-
-        StatManager sm = gameLobby.getStatManager();
-        Player player = event.getPlayer();
-        GameRank rank = sm.getGameRank(player.getUniqueId());
-        int points = sm.getPoints().get(player.getUniqueId());
-        String rawMessage = PlainTextComponentSerializer.plainText().serialize(event.message());
-
-        String endMessage = "&9" + PlainTextComponentSerializer.plainText().serialize(player.displayName()) + "&8 » &r"
-                + rawMessage;
-        String formattedMessage = null;
-
-        if (gameManager.getGameState() == GameState.WAITING || gameManager.getGameState() == GameState.STARTING) {
-
-            formattedMessage = "&e" + points + "&8 ▏ " + rank.getDisplay() + " " + endMessage;
-
-        } else if (gameManager.getGameState() == GameState.LIVE || gameManager.getGameState() == GameState.ENDING) {
-
-            if (gameManager.isHerobrine(player)) {
-
-                formattedMessage = "&4THE HEROBRINE &8| &r&l" + rawMessage;
-
-            } else if (gameManager.isSurvivor(player)) {
-
-                formattedMessage = rank.getDisplay() + " " + endMessage;
-
-            } else {
-
-                formattedMessage = "&e" + points + "&8 ▍ &4DEAD &8▏ " + endMessage;
-
-            }
-
-        }
-
-        if (formattedMessage != null)
-            lobbyChatDelivery.send(gameLobby, player, rawMessage, formattedMessage);
-
-    }
+    // Chat is Chat-OG's now: it scopes delivery to the world and mirrors it to the
+    // Herobrine Discord
+    // channel. HerobrineChatFormatter keeps the per game state formatting.
 
 }
