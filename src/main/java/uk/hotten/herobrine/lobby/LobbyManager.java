@@ -231,6 +231,11 @@ public class LobbyManager {
             if (mwPlugin instanceof MyWorlds) {
 
                 myWorlds = (MyWorlds) mwPlugin;
+
+                // Without world inventories, WorldInventory detach/merge is inert and
+                // hub/kit inventory clears would wipe the player's real inventory.
+                myWorlds.setUseWorldInventories(true);
+
                 Console.info("Hooked world plugin: " + mwPlugin.getName());
                 return;
 

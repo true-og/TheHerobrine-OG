@@ -69,11 +69,13 @@ To create one, place a sign with `[Herobrine]` on the first line and a lobby con
 
 ## Commands
 
+`/v` and `/vote` are claimed for map voting before any other plugin sees them, for anyone who is in a lobby or standing in a lobby world, so VotingPlugin cannot take the `/vote` label away from map voting. Everywhere else `/vote` behaves normally.
+
 ### Player Commands
 | Command | Description |
 |---------|-------------|
 | `/vote [map]` or `/v [map]` | Vote for a map during the voting phase |
-| `/hbjoin <lobby>` | Join or spectate a lobby by ID |
+| `/hbjoin <lobby>` | Join or spectate a lobby by ID (`HB1`, or just `1`) |
 | `/hub` | Leave your current lobby and return to the main world |
 
 ### Admin Commands

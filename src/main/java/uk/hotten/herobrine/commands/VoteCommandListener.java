@@ -39,8 +39,9 @@ public class VoteCommandListener implements Listener {
         Player player = event.getPlayer();
         LobbyManager lm = LobbyManager.getInstance();
 
-        // Only claim the command inside a Herobrine lobby world; defer elsewhere.
-        if (lm == null || !lm.isManagedWorld(player.getWorld().getName()))
+        // Only claim the command for a lobby member or inside a Herobrine lobby
+        // world; defer elsewhere so VotingPlugin keeps /vote on the rest of the map.
+        if (lm == null || (lm.getLobby(player) == null && !lm.isManagedWorld(player.getWorld().getName())))
             return;
 
         String[] args = parts.length > 1 ? Arrays.copyOfRange(parts, 1, parts.length) : new String[0];
