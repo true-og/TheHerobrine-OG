@@ -58,12 +58,12 @@ public class HerobrineChatFormatter implements WorldChatFormatter {
         Integer points = statManager.getPoints().get(player.getUniqueId());
         int score = points != null ? points : 0;
 
-        // Use the Utilities-OG MiniPlaceholder that includes LuckPerms prefix/color
-        // info
-        // (registered as <player_display_name>). Fall back to the raw displayName where
-        // needed via UtilitiesOG expansion. Keep the separator used by the original
-        // formatter.
-        String name = "<player_display_name>&8 » &r";
+        // Include the SimpleClans union bracket tag placeholder and the LuckPerms-aware
+        // player display placeholder so both union and colored player name render
+        // in-game
+        // and when relayed to Discord. UtilitiesOG.trueogExpand will expand these
+        // audience-aware MiniPlaceholders for the sender.
+        String name = "<simpleclans_union_bracket_tag> <player_display_name><luckperms_suffix> &8 » &r";
 
         GameState gameState = gameManager.getGameState();
 
@@ -74,7 +74,8 @@ public class HerobrineChatFormatter implements WorldChatFormatter {
             return null;
 
         if (gameManager.isHerobrine(player))
-            return "&4THE HEROBRINE &8| &r&l" + "<player_display_name>";
+            return "&4THE HEROBRINE &8| &r&l"
+                    + "<simpleclans_union_bracket_tag> <player_display_name><luckperms_suffix>";
 
         if (gameManager.isSurvivor(player))
             return rank.getDisplay() + " " + name;
