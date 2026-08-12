@@ -33,7 +33,8 @@ public class MapVotingRunnable extends BukkitRunnable {
 
         time++;
 
-        if (time == 30) {
+        // Send the periodic voting message less frequently (every 120s)
+        if (time >= 120) {
 
             wm.sendVotingMessage(null);
             time = 0;

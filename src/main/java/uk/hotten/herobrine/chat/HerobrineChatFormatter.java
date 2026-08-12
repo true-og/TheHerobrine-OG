@@ -48,7 +48,20 @@ public class HerobrineChatFormatter implements WorldChatFormatter {
         // sender as the audience so both in-game and Discord relays receive the
         // same union/rank/name/suffix content. Chat-OG adds the [HB1 - Lobby]
         // tag for Discord itself, so do not add it here.
-        return Component.join(JoinConfiguration.noSeparators(), UtilitiesOG.trueogExpand(prefix, sender), body);
+        Component prefixComp = UtilitiesOG.trueogExpand(prefix, sender);
+
+        // Only show the caret when the player display name placeholder is present
+        // in the prefix. Build a caret component that explicitly disables bold so
+        // it never becomes bold even if the message body is decorated.
+        if (prefix.contains("<player_display_name>")) {
+
+            Component caretComp = UtilitiesOG.trueogExpand(getCaretColor(sender) + "> &r", sender)
+                    .decoration(TextDecoration.BOLD, false);
+            return Component.join(JoinConfiguration.noSeparators(), prefixComp, caretComp, body);
+
+        }
+
+        return Component.join(JoinConfiguration.noSeparators(), prefixComp, body);
 
     }
 
@@ -59,11 +72,8 @@ public class HerobrineChatFormatter implements WorldChatFormatter {
         int score = points != null ? points : 0;
 
         // Include the SimpleClans union bracket tag placeholder and the LuckPerms-aware
-        // player display placeholder so both union and colored player name render
-        // in-game
-        // and when relayed to Discord. UtilitiesOG.trueogExpand will expand these
-        // audience-aware MiniPlaceholders for the sender.
-        String name = "<simpleclans_union_bracket_tag> <player_display_name><luckperms_suffix> &8 » &r";
+        // player display placeholder so both union and colored player name render.
+        String name = "<simpleclans_union_bracket_tag> <player_display_name><luckperms_suffix> ";
 
         GameState gameState = gameManager.getGameState();
 
@@ -75,12 +85,43 @@ public class HerobrineChatFormatter implements WorldChatFormatter {
 
         if (gameManager.isHerobrine(player))
             return "&4THE HEROBRINE &8| &r&l"
-                    + "<simpleclans_union_bracket_tag> <player_display_name><luckperms_suffix>";
+                    + "<simpleclans_union_bracket_tag><player_display_name><luckperms_suffix>";
 
         if (gameManager.isSurvivor(player))
             return rank.getDisplay() + " " + name;
 
         return "&e" + score + "&8 ▍ &4DEAD &8▏ " + name;
+
+    }
+
+    // TODO: Expose PlayerUtils.getMessageColor in Chat-OG as a supported API.
+    private String getCaretColor(Player player) {
+
+        try {
+
+            // Use Chat-OG's PlayerUtils.getMessageColor when available
+            net.kyori.adventure.text.format.TextColor color = nl.skbotnl.chatog.util.PlayerUtils.INSTANCE
+                    .getMessageColor(player.getUniqueId());
+            if (color != null) {
+
+                if (color.equals(net.kyori.adventure.text.format.NamedTextColor.WHITE)) {
+
+                    return "&f";
+
+                } else if (color.equals(net.kyori.adventure.text.format.NamedTextColor.GRAY)) {
+
+                    return "&7";
+
+                }
+
+            }
+
+        } catch (Throwable ignored) {
+
+            // Chat-OG not present or error — fall back to dark gray
+        }
+
+        return "&8";
 
     }
 
