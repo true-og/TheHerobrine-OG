@@ -50,6 +50,13 @@ public class HerobrineChatFormatter implements WorldChatFormatter {
         // tag for Discord itself, so do not add it here.
         Component prefixComp = UtilitiesOG.trueogExpand(prefix, sender);
 
+        // Add an explicit badge so Herobrine is visible in relays like Discord even
+        // if some expansions are stripped downstream.
+        Component herobrineBadge = null;
+        if (gameManager.isHerobrine(sender)) {
+            herobrineBadge = UtilitiesOG.trueogExpand("&4[HEROBRINE] &r", sender);
+        }
+
         // Only show the caret when the player display name placeholder is present
         // in the prefix. Build a caret component that explicitly disables bold so
         // it never becomes bold even if the message body is decorated.
@@ -57,9 +64,14 @@ public class HerobrineChatFormatter implements WorldChatFormatter {
 
             Component caretComp = UtilitiesOG.trueogExpand(getCaretColor(sender) + "> &r", sender)
                     .decoration(TextDecoration.BOLD, false);
+            if (herobrineBadge != null)
+                return Component.join(JoinConfiguration.noSeparators(), prefixComp, herobrineBadge, caretComp, body);
             return Component.join(JoinConfiguration.noSeparators(), prefixComp, caretComp, body);
 
         }
+
+        if (herobrineBadge != null)
+            return Component.join(JoinConfiguration.noSeparators(), prefixComp, herobrineBadge, body);
 
         return Component.join(JoinConfiguration.noSeparators(), prefixComp, body);
 
@@ -73,7 +85,8 @@ public class HerobrineChatFormatter implements WorldChatFormatter {
 
         // Include the SimpleClans union bracket tag placeholder and the LuckPerms-aware
         // player display placeholder so both union and colored player name render.
-        String name = "<simpleclans_union_bracket_tag> <player_display_name><luckperms_suffix> ";
+        String name = "<simpleclans_union_bracket_tag><player_display_name><luckperms_suffix> ";
+        String nameNoLeading = "<simpleclans_union_bracket_tag><player_display_name><luckperms_suffix>";
 
         GameState gameState = gameManager.getGameState();
 
@@ -84,7 +97,7 @@ public class HerobrineChatFormatter implements WorldChatFormatter {
             return null;
 
         if (gameManager.isHerobrine(player))
-            return "&4THE HEROBRINE &8| &r&l" + nameNoLeading;
+            return "&4THE HEROBRINE &8| &r&l" + name;
 
         if (gameManager.isSurvivor(player))
             return rank.getDisplay() + " " + name;
