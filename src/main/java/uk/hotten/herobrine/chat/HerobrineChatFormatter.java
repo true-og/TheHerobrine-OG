@@ -73,7 +73,8 @@ public class HerobrineChatFormatter implements WorldChatFormatter {
 
         // Include the SimpleClans union bracket tag placeholder and the LuckPerms-aware
         // player display placeholder so both union and colored player name render.
-        String name = "<simpleclans_union_bracket_tag> <player_display_name><luckperms_suffix> ";
+        String name = "<simpleclans_union_bracket_tag> <player_display_name><luckperms_suffix>";
+        String nameNoLeading = "<simpleclans_union_bracket_tag><player_display_name><luckperms_suffix>";
 
         GameState gameState = gameManager.getGameState();
 
@@ -84,8 +85,7 @@ public class HerobrineChatFormatter implements WorldChatFormatter {
             return null;
 
         if (gameManager.isHerobrine(player))
-            return "&4THE HEROBRINE &8| &r&l"
-                    + "<simpleclans_union_bracket_tag><player_display_name><luckperms_suffix>";
+            return "&4THE HEROBRINE &8| &r&l" + nameNoLeading;
 
         if (gameManager.isSurvivor(player))
             return rank.getDisplay() + " " + name;
