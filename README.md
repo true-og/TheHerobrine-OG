@@ -63,9 +63,16 @@ datapoints:
 
 ## Join Signs
 
-Admins can place physical signs in any persistent world (such as the server hub) that players right-click to join a game. The sign automatically shows the lobby name and current status.
+Admins can place physical signs that players right-click to join a game. The sign updates itself with the lobby name, current status, and player counts; right-clicking joins the best joinable lobby for that config.
 
-To create one, place a sign with `[Herobrine]` on the first line and a lobby config ID on the second line. Requires the `theherobrine.signs.create` permission.
+To set one up:
+
+1. Find the lobby config ID: the `id:` field of a file in `plugins/TheHerobrine-OG/lobbies/` (the bundled `lobbies/default.yaml` on a fresh install).
+2. Place a sign in a persistent world such as the server hub. The plugin warns if you place one in a managed lobby world, because those worlds are deleted on shutdown and take the sign with them.
+3. Write `[Herobrine]` on the first line and the lobby config ID on the second line. Requires the `theherobrine.signs.create` permission.
+4. The sign confirms registration and redraws with live data shortly after.
+
+Breaking a registered sign requires `theherobrine.signs.destroy` and unregisters it; everyone else is blocked from breaking it.
 
 ## Commands
 

@@ -54,7 +54,9 @@ public class HerobrineChatFormatter implements WorldChatFormatter {
         // if some expansions are stripped downstream.
         Component herobrineBadge = null;
         if (gameManager.isHerobrine(sender)) {
+
             herobrineBadge = UtilitiesOG.trueogExpand("&4[HEROBRINE] &r", sender);
+
         }
 
         // Only show the caret when the player display name placeholder is present
