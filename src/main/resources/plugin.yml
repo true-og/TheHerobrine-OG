@@ -7,6 +7,7 @@ description: Remake of "The Herobrine!" v2 from HiveMC.
 depend:
   - ProtocolLib
   - MyWorlds
+  - Utilities-OG
 softdepend:
   - My_Worlds
   - IllegalStack-OG

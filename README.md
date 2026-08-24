@@ -74,6 +74,17 @@ To set one up:
 
 Breaking a registered sign requires `theherobrine.signs.destroy` and unregisters it; everyone else is blocked from breaking it.
 
+## Placeholders
+
+Registered through Utilities-OG as MiniPlaceholders, resolved for the viewing
+player, and updated the moment the underlying value changes.
+
+| Placeholder | Value |
+|-------------|-------|
+| `<hb_score>` | Total points, including points earned in the current round |
+| `<hb_rank>` | Colored rank name for that score (`Spirit` through `Divine`); `Death Bringer` for the top player once they also reach `Divine` (300,000) |
+| `<hb_class>` | `&4THE HEROBRINE` while the player is the Herobrine of a live round, otherwise empty |
+
 ## Commands
 
 `/v` and `/vote` are claimed for map voting before any other plugin sees them, for anyone who is in a lobby or standing in a lobby world, so VotingPlugin cannot take the `/vote` label away from map voting. Everywhere else `/vote` behaves normally.

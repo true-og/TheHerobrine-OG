@@ -2,6 +2,24 @@
 
 All notable changes to TheHerobrine-OG are documented here.
 
+## 1.6.0 - 2026-08-24
+
+### Changes
+
+- Register per-player MiniPlaceholders through Utilities-OG: `<hb_score>` (total
+  points), `<hb_rank>` (the Hive rank for that score, Death Bringer included for
+  the top player) and `<hb_class>` (the `&4THE HEROBRINE` chat prefix while the
+  player is the Herobrine of a live round, empty otherwise).
+- Keep those values current the moment they change: lobby stat checks, in-round
+  point awards and the end-of-round database push all write through a plugin-wide
+  score cache, which is seeded from the database on login and reads the top
+  player again after every push.
+- Declare `Utilities-OG` as a hard dependency; the plugin already needed it at
+  runtime for message formatting.
+- Gate Death Bringer on the top player also holding Divine (300,000 points)
+  instead of the `showDeathBringerAt` config value, which is removed. The top
+  player keeps climbing the regular ladder until then.
+
 ## 1.5.9 - 2026-07-31
 
 ### Changes

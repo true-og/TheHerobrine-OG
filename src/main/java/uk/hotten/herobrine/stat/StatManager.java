@@ -48,7 +48,6 @@ public class StatManager {
     HashMap<UUID, GameRank> gameRanks;
 
     private String highestPlayerUUID;
-    private int showDeathBringerAt;
 
     public StatManager(JavaPlugin plugin, GameLobby gameLobby) {
 
@@ -79,7 +78,6 @@ public class StatManager {
         deaths = new HashMap<>();
         gameRanks = new HashMap<>();
 
-        showDeathBringerAt = plugin.getConfig().getInt("showDeathBringerAt");
         highestPlayerUUID = getHighestPlayer();
         if (highestPlayerUUID == null)
             Console.error(gameLobby, "Failed to get UUID of highest player.");
@@ -130,6 +128,8 @@ public class StatManager {
                 }
 
                 setStat(uuid, tracker.getInternalName(), curr, stat);
+                if (tracker == pointsTracker)
+                    HerobrineScores.set(uuid, curr + stat);
 
             }
 
@@ -137,6 +137,7 @@ public class StatManager {
 
         }
 
+        HerobrineScores.refreshTopPlayer();
         Console.info(gameLobby, "Stats pushed!");
 
     }
@@ -293,8 +294,9 @@ public class StatManager {
         captures.put(uuid, getCurrentStat(uuid, "captures"));
         kills.put(uuid, getCurrentStat(uuid, "kills"));
         deaths.put(uuid, getCurrentStat(uuid, "deaths"));
+        HerobrineScores.set(uuid, points.get(uuid));
 
-        if (uuid.toString().equals(highestPlayerUUID) && points.get(uuid) >= showDeathBringerAt)
+        if (uuid.toString().equals(highestPlayerUUID) && points.get(uuid) >= GameRank.topPlayerGate())
             gameRanks.put(uuid, GameRank.DEATHBRINGER);
         else
             gameRanks.put(uuid, GameRank.findRank(points.get(uuid)));

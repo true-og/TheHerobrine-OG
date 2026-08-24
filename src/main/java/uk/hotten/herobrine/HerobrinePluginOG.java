@@ -32,6 +32,8 @@ import uk.hotten.herobrine.lobby.PreJoinLocationListener;
 import uk.hotten.herobrine.sign.JoinSignListener;
 import uk.hotten.herobrine.sign.JoinSignManager;
 import uk.hotten.herobrine.sign.JoinSignUpdater;
+import uk.hotten.herobrine.stat.HerobrinePlaceholders;
+import uk.hotten.herobrine.stat.HerobrineScores;
 import uk.hotten.herobrine.utils.Console;
 import uk.hotten.herobrine.utils.Message;
 import uk.hotten.herobrine.world.VoidChunkGenerator;
@@ -97,6 +99,11 @@ public class HerobrinePluginOG extends JavaPlugin {
             registerChatFormatter(lobbyManager);
 
         });
+
+        // Placeholders need SQL for the seed read, and a lobby list to resolve
+        // hb_class.
+        HerobrineScores.init(this);
+        HerobrinePlaceholders.register(this);
 
         getServer().getPluginManager().registerEvents(new PreJoinLocationListener(this), this);
 

@@ -31,6 +31,22 @@ public enum GameRank {
 
     }
 
+    // Death Bringer needs the top score and the highest regular rank, so #1 still
+    // climbs the ladder.
+    public static int topPlayerGate() {
+
+        int gate = 0;
+        for (GameRank rank : GameRank.values()) {
+
+            if (rank != DEATHBRINGER)
+                gate = Math.max(gate, rank.getLowBound());
+
+        }
+
+        return gate;
+
+    }
+
     public static GameRank findRank(int points) {
 
         for (GameRank rank : GameRank.values()) {
