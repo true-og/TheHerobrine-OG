@@ -22,7 +22,7 @@ Every lobby player gets a sidebar: their points, captures, kills and deaths whil
 1. Install the required plugins and configure your database connections in `config.yml`. The bundled file ships `^{NAME}` placeholders that TrueOG's deployment fills in; on a manual install replace them with real values or the plugin disables itself at startup.
 2. Drop map world folders into your `maps/` directory (or whatever path is set as `mapBase` in `config.yml`).
 3. Each map needs a `mapdata.yaml` file — use `/hbsetspawn` to place all required points and the wizard will generate it for you.
-4. Create a `maps/hub` world folder to serve as each lobby's waiting area.
+4. Create a `maps/HB1_Hub` world folder to serve as each lobby's waiting area (the `hub:` field in `lobbies/default.yaml` names this folder). `maps/` is resolved against the server root, next to `world/` and `plugins/`, not inside the plugin folder.
 5. Create a lobby config file at `maps/<config-id>.yaml` listing which maps belong to it.
 6. Run `/hbcreatelobby <config-id>` to bring a lobby online.
 
