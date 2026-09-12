@@ -2,6 +2,17 @@
 
 All notable changes to TheHerobrine-OG are documented here.
 
+## 1.6.2 - 2026-09-12
+
+### Changes
+
+- Claim `/hub`, `/lobby` and `/spawn` inside lobby worlds before any other plugin
+  sees them, the way `/vote` already is. Splegg-OG and BuildBattle-OG register
+  `/hub` as well, and Bukkit hands the bare label to whichever plugin loads
+  first, so a Herobrine player's `/hub` could run another minigame's command;
+  Spawn-OG's `/spawn` teleported them out through its own warmup. `/lobby` is
+  now an alias of `/hub` everywhere.
+
 ## 1.6.1 - 2026-09-12
 
 ### Changes

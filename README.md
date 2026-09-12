@@ -2,7 +2,7 @@
 
 Remake of HiveMC's "The Herobrine!" v2 for Purpur `1.19.4`, using `MyWorlds` for world management.
 
-Current version: `1.6.1` ([changelog](CHANGELOG.md)).
+Current version: `1.6.2` ([changelog](CHANGELOG.md)).
 
 ## Requirements
 - Purpur `1.19.4`
@@ -95,12 +95,14 @@ player, and updated the moment the underlying value changes.
 
 `/v` and `/vote` are claimed for map voting before any other plugin sees them, for anyone who is in a lobby or standing in a lobby world, so VotingPlugin cannot take the `/vote` label away from map voting. Everywhere else `/vote` behaves normally. Neither label is declared in plugin.yml, so the plugin never competes for them.
 
+`/hub`, `/lobby` and `/spawn` are claimed the same way inside lobby worlds. Splegg-OG and BuildBattle-OG register `/hub` too, and Bukkit gives the bare label to whichever plugin loads first, so without the claim a Herobrine player's `/hub` could run another minigame's command; Spawn-OG's `/spawn` would teleport them out through its own warmup. Outside lobby worlds `/hub` and `/lobby` still return the player to their pre-join spot or main spawn.
+
 ### Player Commands
 | Command | Description |
 |---------|-------------|
 | `/vote [map]` or `/v [map]` | Vote for a map during the voting phase |
 | `/hbjoin <lobby>` | Join or spectate a lobby by ID (`HB1`, or just `1`) |
-| `/hub` | Leave your current lobby and return to the main world |
+| `/hub`, `/lobby`, `/spawn` | Leave your current lobby and return to where you came from, or to the main world |
 
 ### Admin Commands
 | Command | Permission | Description |

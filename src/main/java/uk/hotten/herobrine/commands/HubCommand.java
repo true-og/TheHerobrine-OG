@@ -13,6 +13,10 @@ import com.bergerkiller.bukkit.mw.MyWorlds;
 import uk.hotten.herobrine.lobby.LobbyManager;
 import uk.hotten.herobrine.utils.Message;
 
+// /hub and /lobby. Sends the player back where they came from, or to main
+// spawn; leaving the lobby world is what removes them from the lobby.
+// HubCommandListener routes /hub, /lobby and /spawn here for anyone inside a
+// Herobrine lobby, whichever plugin owns the bare label.
 public class HubCommand implements CommandExecutor {
 
     @Override
@@ -25,21 +29,30 @@ public class HubCommand implements CommandExecutor {
 
         }
 
+        handle(player);
+        return true;
+
+    }
+
+    public static void handle(Player player) {
+
         LobbyManager lm = LobbyManager.getInstance();
         if (lm != null && lm.hasPreJoinLocation(player.getUniqueId())) {
 
             if (!lm.returnPlayer(player, null)) {
 
                 Message.send(player, Message.format("&cUnable to return you to your previous location."));
-                return true;
+                return;
 
             }
 
             Message.send(player, Message.format("&aReturned to your previous location."));
-            return true;
+            return;
 
         }
 
+        // MyWorlds' main world spawn is what Spawn-OG's /setspawn writes, so this
+        // lands on the server spawn.
         World mainWorld = MyWorlds.getMainWorld();
         if (mainWorld == null)
             mainWorld = Bukkit.getWorld("world");
@@ -49,7 +62,7 @@ public class HubCommand implements CommandExecutor {
         if (mainWorld == null) {
 
             Message.send(player, Message.format("&cNo main world is available."));
-            return true;
+            return;
 
         }
 
@@ -57,12 +70,11 @@ public class HubCommand implements CommandExecutor {
         if (!player.teleport(destination)) {
 
             Message.send(player, Message.format("&cUnable to return you to the hub."));
-            return true;
+            return;
 
         }
 
         Message.send(player, Message.format("&aReturned to the hub."));
-        return true;
 
     }
 

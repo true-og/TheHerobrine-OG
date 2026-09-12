@@ -11,6 +11,7 @@ import uk.hotten.herobrine.commands.DropShardCommand;
 import uk.hotten.herobrine.commands.ForceStartCommand;
 import uk.hotten.herobrine.commands.HbWizardCommand;
 import uk.hotten.herobrine.commands.HubCommand;
+import uk.hotten.herobrine.commands.HubCommandListener;
 import uk.hotten.herobrine.commands.JoinLobbyCommand;
 import uk.hotten.herobrine.commands.JoinLobbyCompleter;
 import uk.hotten.herobrine.commands.PauseTimerCommand;
@@ -116,6 +117,10 @@ public class HerobrinePluginOG extends JavaPlugin {
         getCommand("hbjoin").setExecutor(new JoinLobbyCommand());
         getCommand("hbjoin").setTabCompleter(new JoinLobbyCompleter());
         getCommand("hub").setExecutor(new HubCommand());
+        // /hub, /lobby and /spawn are claimed inside lobby worlds the same way as
+        // /vote, so another minigame's /hub or Spawn-OG's /spawn never handles a
+        // Herobrine player.
+        getServer().getPluginManager().registerEvents(new HubCommandListener(), this);
         getCommand("hbcreatelobby").setExecutor(new CreateLobbyCommand());
         getCommand("hbcreatelobby").setTabCompleter(new CreateLobbyCompleter());
         getCommand("hbdeletelobby").setExecutor(new DeleteLobbyCommand());

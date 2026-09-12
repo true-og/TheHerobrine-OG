@@ -43,9 +43,12 @@ commands:
     description: Join a lobby.
     usage: /<command> <lobby>
 
+  # Inside lobby worlds HubCommandListener claims /hub, /lobby and /spawn before any other
+  # plugin sees them; this registration only matters outside them.
   hub:
     description: Leave The Herobrine lobby or game and return to the main world.
     usage: /<command>
+    aliases: [lobby]
 
   hbcreatelobby:
     description: Create a lobby.
