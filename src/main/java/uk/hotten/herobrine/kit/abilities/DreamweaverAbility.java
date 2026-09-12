@@ -44,7 +44,7 @@ public class DreamweaverAbility extends KitAbility {
     @EventHandler
     public void use(PlayerInteractEvent event) {
 
-        if (!event.getPlayer().getWorld().getName().startsWith(gm.getGameLobby().getLobbyId()))
+        if (!gm.getGameLobby().ownsWorld(event.getPlayer().getWorld()))
             return;
 
         if (gm.getGameState() != GameState.LIVE)

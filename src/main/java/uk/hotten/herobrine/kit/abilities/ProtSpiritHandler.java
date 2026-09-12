@@ -6,8 +6,10 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import uk.hotten.herobrine.game.GameManager;
+import uk.hotten.herobrine.utils.GameState;
 import uk.hotten.herobrine.utils.PlayerUtil;
 
+// Ticks every half second on the main thread; health changes must not happen off it.
 public class ProtSpiritHandler extends BukkitRunnable {
 
     private Player player;
@@ -25,7 +27,7 @@ public class ProtSpiritHandler extends BukkitRunnable {
     @Override
     public void run() {
 
-        if (!gm.getSurvivors().contains(player)) {
+        if (!gm.isSurvivor(player) || !player.isOnline() || gm.getGameState() != GameState.LIVE) {
 
             cancel();
             return;

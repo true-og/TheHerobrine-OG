@@ -6,8 +6,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import uk.hotten.herobrine.game.GameManager;
+import uk.hotten.herobrine.utils.GameState;
 import uk.hotten.herobrine.utils.PlayerUtil;
 
+// Ticks once a second on the main thread; health changes must not happen off it.
 public class WisdomHandler extends BukkitRunnable {
 
     private Location location;
@@ -26,7 +28,7 @@ public class WisdomHandler extends BukkitRunnable {
     @Override
     public void run() {
 
-        if (time > 10) {
+        if (time > 10 || gm.getGameState() != GameState.LIVE) {
 
             cancel();
             wah.cancel();
@@ -36,7 +38,7 @@ public class WisdomHandler extends BukkitRunnable {
 
         for (Player p : gm.getSurvivors()) {
 
-            if (PlayerUtil.getDistance(p, location) <= 3) {
+            if (p.getWorld().equals(location.getWorld()) && PlayerUtil.getDistance(p, location) <= 3) {
 
                 PlayerUtil.increaseHealth(p, 2);
                 PlayerUtil.playSound(p, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);

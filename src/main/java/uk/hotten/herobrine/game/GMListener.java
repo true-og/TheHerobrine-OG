@@ -4,15 +4,10 @@ import com.bergerkiller.bukkit.mw.MyWorlds;
 import io.papermc.paper.event.entity.EntityPushedByEntityAttackEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import me.tigerhix.lib.scoreboard.ScoreboardLib;
-import me.tigerhix.lib.scoreboard.common.EntryBuilder;
-import me.tigerhix.lib.scoreboard.type.Entry;
-import me.tigerhix.lib.scoreboard.type.ScoreboardHandler;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -77,7 +72,7 @@ public class GMListener implements Listener {
 
     private boolean isLobbyWorld(String worldName) {
 
-        return worldName != null && worldName.startsWith(gameLobby.getLobbyId());
+        return gameLobby.ownsWorld(worldName);
 
     }
 
@@ -119,7 +114,7 @@ public class GMListener implements Listener {
 
             if (!scored.getUniqueId().equals(player.getUniqueId()))
                 continue;
-            gameManager.getScoreboards().get(scored).deactivate();
+            gameManager.getScoreboards().get(scored).close();
             gameManager.getScoreboards().remove(scored);
 
         }
@@ -134,37 +129,12 @@ public class GMListener implements Listener {
                 continue;
             if (scored == player)
                 return;
-            gameManager.getScoreboards().get(scored).deactivate();
+            gameManager.getScoreboards().get(scored).close();
             gameManager.getScoreboards().remove(scored);
 
         }
 
-        gameManager.getScoreboards().put(player,
-                ScoreboardLib.createScoreboard(player).setHandler(new ScoreboardHandler()
-                {
-
-                    @Override
-                    public String getTitle(Player player) {
-
-                        return "&e&lYour Stats";
-
-                    }
-
-                    @Override
-                    public List<Entry> getEntries(Player player) {
-
-                        return new EntryBuilder()
-                                .next("&bPoints: &r" + gameLobby.getStatManager().getPoints().get(player.getUniqueId()))
-                                .next("&bCaptures: &r"
-                                        + gameLobby.getStatManager().getCaptures().get(player.getUniqueId()))
-                                .next("&bKills: &r" + gameLobby.getStatManager().getKills().get(player.getUniqueId()))
-                                .next("&bDeaths: &r" + gameLobby.getStatManager().getDeaths().get(player.getUniqueId()))
-                                .build();
-
-                    }
-
-                }).setUpdateInterval(20));
-        gameManager.getScoreboards().get(player).activate();
+        gameManager.getScoreboards().put(player, new LobbyBoard(gameManager, player));
 
     }
 
@@ -290,7 +260,7 @@ public class GMListener implements Listener {
         gameLobby.getWorldManager().getPlayerVotes().put(player, 0);
         gameLobby.getWorldManager().sendVotingMessage(player);
         gameManager.hubInventory(player);
-        gameManager.setKit(player, gameManager.getSavedKit(player), true);
+        gameManager.applySavedKit(player);
         player.setHealth(20);
         player.setFoodLevel(20);
         player.setGameMode(GameMode.SURVIVAL);
@@ -429,7 +399,7 @@ public class GMListener implements Listener {
     @EventHandler
     public void onPickup(EntityPickupItemEvent event) {
 
-        if (!event.getEntity().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+        if (!gameLobby.ownsWorld(event.getEntity().getWorld()))
             return;
 
         if (!(event.getEntity() instanceof Player)) {
@@ -486,7 +456,7 @@ public class GMListener implements Listener {
     @EventHandler
     public void onDrop(PlayerDropItemEvent event) {
 
-        if (!event.getPlayer().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+        if (!gameLobby.ownsWorld(event.getPlayer().getWorld()))
             return;
 
         event.setCancelled(true);
@@ -496,14 +466,14 @@ public class GMListener implements Listener {
     @EventHandler
     public void onInteract(PlayerInteractEvent event) {
 
-        if (!event.getPlayer().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+        if (!gameLobby.ownsWorld(event.getPlayer().getWorld()))
             return;
 
         Player player = event.getPlayer();
 
         if (gameManager.getGameState() == GameState.LIVE) {
 
-            if ((event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_AIR)
+            if ((event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK)
                     && gameManager.isSpectator(player))
             {
 
@@ -574,7 +544,7 @@ public class GMListener implements Listener {
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
 
-        if (!event.getPlayer().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+        if (!gameLobby.ownsWorld(event.getPlayer().getWorld()))
             return;
 
         if (gameManager.isShardCarrier(event.getPlayer())) {
@@ -595,7 +565,7 @@ public class GMListener implements Listener {
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
 
-        if (!event.getPlayer().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+        if (!gameLobby.ownsWorld(event.getPlayer().getWorld()))
             return;
 
         if (event.getPlayer().getGameMode() != GameMode.CREATIVE)
@@ -606,7 +576,7 @@ public class GMListener implements Listener {
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
 
-        if (!event.getPlayer().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+        if (!gameLobby.ownsWorld(event.getPlayer().getWorld()))
             return;
 
         if (event.getBlock().getType() == Material.OAK_FENCE
@@ -626,7 +596,7 @@ public class GMListener implements Listener {
     @EventHandler
     public void onHunger(FoodLevelChangeEvent event) {
 
-        if (!event.getEntity().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+        if (!gameLobby.ownsWorld(event.getEntity().getWorld()))
             return;
 
         event.setFoodLevel(20);
@@ -637,7 +607,7 @@ public class GMListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onCombatAuthorization(EntityDamageByEntityEvent event) {
 
-        if (!event.getEntity().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+        if (!gameLobby.ownsWorld(event.getEntity().getWorld()))
             return;
 
         if (gameManager.getGameState() != GameState.LIVE) {
@@ -710,7 +680,7 @@ public class GMListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onCombatDamage(EntityDamageByEntityEvent event) {
 
-        if (!event.getEntity().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+        if (!gameLobby.ownsWorld(event.getEntity().getWorld()))
             return;
 
         if (event.getEntity() instanceof Player && event.getDamager() instanceof Arrow) {
@@ -751,7 +721,7 @@ public class GMListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onAcceptedCombatDamage(EntityDamageByEntityEvent event) {
 
-        if (!event.getEntity().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+        if (!gameLobby.ownsWorld(event.getEntity().getWorld()))
             return;
 
         if (!(event.getEntity() instanceof Player) || event.getFinalDamage() <= 0)
@@ -772,7 +742,7 @@ public class GMListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onHerobrineKnockback(EntityPushedByEntityAttackEvent event) {
 
-        if (!event.getEntity().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+        if (!gameLobby.ownsWorld(event.getEntity().getWorld()))
             return;
 
         if (!(event.getEntity() instanceof Player))
@@ -828,7 +798,7 @@ public class GMListener implements Listener {
     @EventHandler(priority = EventPriority.LOW)
     public void onDamage(EntityDamageEvent event) {
 
-        if (!event.getEntity().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+        if (!gameLobby.ownsWorld(event.getEntity().getWorld()))
             return;
 
         if (!(event.getEntity() instanceof Player))
@@ -888,7 +858,7 @@ public class GMListener implements Listener {
     @EventHandler(priority = EventPriority.LOW)
     public void onDeath(PlayerDeathEvent event) {
 
-        if (!event.getEntity().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+        if (!gameLobby.ownsWorld(event.getEntity().getWorld()))
             return;
 
         Player player = event.getEntity();
@@ -983,7 +953,7 @@ public class GMListener implements Listener {
     @EventHandler
     public void onPotion(PotionSplashEvent event) {
 
-        if (!event.getEntity().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+        if (!gameLobby.ownsWorld(event.getEntity().getWorld()))
             return;
 
         for (LivingEntity e : event.getAffectedEntities()) {
@@ -1021,7 +991,7 @@ public class GMListener implements Listener {
     @EventHandler
     public void onProjectile(ProjectileLaunchEvent event) {
 
-        if (!event.getEntity().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+        if (!gameLobby.ownsWorld(event.getEntity().getWorld()))
             return;
 
         if (!(event.getEntity() instanceof Arrow))

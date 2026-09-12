@@ -37,7 +37,7 @@ public class HarmingTotemAbility extends KitAbility {
     @EventHandler(priority = EventPriority.LOWEST)
     public void use(BlockPlaceEvent event) {
 
-        if (!event.getPlayer().getWorld().getName().startsWith(gm.getGameLobby().getLobbyId()))
+        if (!gm.getGameLobby().ownsWorld(event.getPlayer().getWorld()))
             return;
 
         if (gm.getGameState() != GameState.LIVE)
@@ -53,7 +53,7 @@ public class HarmingTotemAbility extends KitAbility {
             if (isOnCooldown(player))
                 return;
 
-            new HarmingTotemHandler(event.getBlock(), player, gm).runTaskTimerAsynchronously(gm.getPlugin(), 0, 20);
+            new HarmingTotemHandler(event.getBlock(), player, gm).runTaskTimer(gm.getPlugin(), 0, 20);
             startCooldown(player);
 
         }

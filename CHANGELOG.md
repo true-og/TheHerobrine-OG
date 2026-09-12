@@ -2,6 +2,38 @@
 
 All notable changes to TheHerobrine-OG are documented here.
 
+## 1.6.1 - 2026-09-12
+
+### Changes
+
+- Render the lobby sidebar through Scoreboard-OG's sidebar API when Scoreboard-OG
+  `1.2.0` or newer is installed. The network board returns by itself when the
+  player leaves, and `/togglescoreboard` is honoured. Older Scoreboard-OG builds or
+  no Scoreboard-OG at all fall back to the bundled ScoreboardLib board.
+- Bundle the MariaDB driver the plugin actually loads and relocate every shaded
+  dependency. The jar used to ship MySQL Connector/J while asking for
+  `org.mariadb.jdbc.Driver`, so it only started on servers where another plugin
+  happened to expose that class.
+- Move every database and Redis round trip off the main thread: stat reads on
+  join, the end-of-round push, kit lookups and kit saves. Chat and scoreboards
+  show zeroes for the instant before a read lands.
+- Run every game timer on the main thread. The countdown, narration, capture
+  sequence, intro titles and the healing, wisdom, protective spirit, harming totem,
+  bat bomb and blinding abilities were asynchronous and touched entities and
+  player lists off-thread.
+- Apply game state changes immediately instead of a tick later, and refuse a
+  second `start()` or `end()` for the same round. Two players entering the hub in
+  one tick could start two countdowns.
+- Own only this lobby's worlds: `HB1` no longer claims `HB10-hub`.
+- Remove `vote` from plugin.yml. The preprocess listener still claims `/vote` and
+  `/v` inside lobby worlds, and VotingPlugin keeps both labels everywhere else.
+- Fix the Wizard kit permission node to `theherobrine.kit.classic.wizard`, as
+  documented. Servers that granted the old `wizzard` spelling need to re-grant it.
+- Declare `theherobrine.overfill` in plugin.yml, stop holding arena and hub spawn
+  chunks in memory, cap the spawn-search chunk loads at 27 per map, open the
+  spectator menu on left-clicking a block too, and stop a string ending in `&`
+  from throwing in the colour parser.
+
 ## 1.6.0 - 2026-08-24
 
 ### Changes

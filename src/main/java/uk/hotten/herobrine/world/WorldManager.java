@@ -25,6 +25,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.EntitiesLoadEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldInventory;
@@ -87,6 +88,7 @@ public class WorldManager implements Listener {
     public ArrayList<Location> shardSpawns;
 
     private ArrayList<Chunk> noUnload;
+    private BukkitTask votingTask;
 
     public WorldManager(JavaPlugin plugin, GameLobby gameLobby) {
 
@@ -419,8 +421,28 @@ public class WorldManager implements Listener {
 
         votingRunning = true;
         if (startRunnable)
-            new MapVotingRunnable(gameLobby).runTaskTimer(plugin, 0, 20);
+            startVotingReminder();
         Console.info(gameLobby, "Picked voting maps!");
+
+    }
+
+    // One reminder task per lobby: a countdown that falls back to waiting used to
+    // start a second one next to the first.
+    public void startVotingReminder() {
+
+        stopVotingReminder();
+        votingTask = new MapVotingRunnable(gameLobby).runTaskTimer(plugin, 0, 20);
+
+    }
+
+    public void stopVotingReminder() {
+
+        if (votingTask != null) {
+
+            votingTask.cancel();
+            votingTask = null;
+
+        }
 
     }
 
@@ -548,9 +570,11 @@ public class WorldManager implements Listener {
 
         int minHeight = world.getMinHeight();
 
-        // Sample a sparse 4x4 grid of chunks per region, centre-out, looking for
-        // any chunk whose top column is non-air. Limits cost per loadMap.
-        int[] sampleOffsets = { 16, 8, 24, 4, 20, 12, 28, 0 };
+        // A 3x3 chunk grid in the three regions nearest the centre, looking for a
+        // non-air top column. Each sample is a sync chunk load, so 27 at most.
+        int[] sampleOffsets = { 16, 8, 24 };
+        if (regions.size() > 3)
+            regions = regions.subList(0, 3);
         for (int[] r : regions) {
 
             int regionBaseChunkX = r[0] * 32;
@@ -658,6 +682,9 @@ public class WorldManager implements Listener {
         // generator=minecraft:flat in level.dat, which surprises admins teleporting
         // outside the captured area with a sea of grass+bedrock.
         wc.setChunkGeneratorName(plugin.getName() + ":void");
+        // Spawn chunks are loaded on demand; holding them costs a full spawn-radius
+        // load on the main thread every round.
+        wc.keepSpawnInMemory = false;
         World world;
         try {
 
@@ -883,6 +910,9 @@ public class WorldManager implements Listener {
 
         WorldConfig wc = WorldConfig.get(worldName);
         wc.setChunkGeneratorName(plugin.getName() + ":void");
+        // Spawn chunks are loaded on demand; holding them costs a full spawn-radius
+        // load on the main thread every rebuild.
+        wc.keepSpawnInMemory = false;
         World world;
         try {
 
@@ -1100,7 +1130,7 @@ public class WorldManager implements Listener {
             if (gameLobby.getGameManager().getGameState() == GameState.WAITING) {
 
                 votingRunning = true;
-                new MapVotingRunnable(gameLobby).runTaskTimer(plugin, 0, 20);
+                startVotingReminder();
 
             }
 

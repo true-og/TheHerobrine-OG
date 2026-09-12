@@ -40,7 +40,7 @@ public class ProtSpiritAbility extends KitAbility {
     @EventHandler
     public void use(PlayerInteractEvent event) {
 
-        if (!event.getPlayer().getWorld().getName().startsWith(gm.getGameLobby().getLobbyId()))
+        if (!gm.getGameLobby().ownsWorld(event.getPlayer().getWorld()))
             return;
 
         if (gm.getGameState() != GameState.LIVE)
@@ -61,7 +61,7 @@ public class ProtSpiritAbility extends KitAbility {
                     return;
 
                 PlayerUtil.removeAmountOfItem(player, player.getInventory().getItemInMainHand(), 1);
-                new ProtSpiritHandler(player, gm).runTaskTimerAsynchronously(gm.getPlugin(), 0, 10);
+                new ProtSpiritHandler(player, gm).runTaskTimer(gm.getPlugin(), 0, 10);
                 startCooldown(player);
 
             }

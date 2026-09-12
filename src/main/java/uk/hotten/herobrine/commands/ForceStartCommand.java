@@ -5,7 +5,6 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import uk.hotten.herobrine.game.GameManager;
-import uk.hotten.herobrine.game.runnables.StartingRunnable;
 import uk.hotten.herobrine.lobby.GameLobby;
 import uk.hotten.herobrine.lobby.LobbyManager;
 import uk.hotten.herobrine.utils.GameState;
@@ -70,8 +69,7 @@ public class ForceStartCommand implements CommandExecutor {
         Message.send(sender, Message
                 .format("&aThe game will start in " + startTime + " seconds unless the player count goes below 2."));
         gm.startTimer = startTime + 1;
-        gm.setGameState(GameState.STARTING);
-        new StartingRunnable(gm, wm, true).runTaskTimerAsynchronously(gm.getPlugin(), 0, 20);
+        gm.beginStarting(true);
         return true;
 
     }

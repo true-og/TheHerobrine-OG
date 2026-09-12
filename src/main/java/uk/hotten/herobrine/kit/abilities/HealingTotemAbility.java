@@ -37,7 +37,7 @@ public class HealingTotemAbility extends KitAbility {
     @EventHandler(priority = EventPriority.LOWEST)
     public void use(BlockPlaceEvent event) {
 
-        if (!event.getPlayer().getWorld().getName().startsWith(gm.getGameLobby().getLobbyId()))
+        if (!gm.getGameLobby().ownsWorld(event.getPlayer().getWorld()))
             return;
 
         if (gm.getGameState() != GameState.LIVE)
@@ -53,7 +53,7 @@ public class HealingTotemAbility extends KitAbility {
             if (isOnCooldown(player))
                 return;
 
-            new HealingTotemHandler(event.getBlock(), gm).runTaskTimerAsynchronously(gm.getPlugin(), 0, 20);
+            new HealingTotemHandler(event.getBlock(), gm).runTaskTimer(gm.getPlugin(), 0, 20);
             startCooldown(player);
 
         }

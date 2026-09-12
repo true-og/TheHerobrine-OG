@@ -1,6 +1,6 @@
 package uk.hotten.herobrine.game.runnables;
 
-import java.util.concurrent.TimeUnit;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -10,6 +10,7 @@ import uk.hotten.herobrine.utils.Message;
 import uk.hotten.herobrine.utils.PlayerUtil;
 import uk.hotten.herobrine.world.WorldManager;
 
+// Runs on the main thread; the delayed second half is scheduled rather than slept.
 public class CaptureSequence extends BukkitRunnable {
 
     private Player player;
@@ -39,29 +40,16 @@ public class CaptureSequence extends BukkitRunnable {
         PlayerUtil.playSoundAt(l, Sound.ENTITY_WITHER_DEATH, 0.5f, 1f);
         PlayerUtil.broadcastSound(gm.getGameLobby(), Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1f, 0f);
 
-        try {
+        Bukkit.getScheduler().runTaskLater(gm.getPlugin(), () -> {
 
-            TimeUnit.SECONDS.sleep(4);
+            if (l == null || l.getWorld() == null)
+                return;
 
-        } catch (Exception e) {
+            PlayerUtil.playSoundAt(l, Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+            l.getWorld().strikeLightningEffect(l);
 
-            e.printStackTrace();
+        }, 80L);
 
-        }
-
-        PlayerUtil.playSoundAt(l, Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
-        new BukkitRunnable() {
-
-            @Override
-            public void run() {
-
-                l.getWorld().strikeLightningEffect(l);
-
-            }
-
-        }.runTask(gm.getPlugin());
-
-        // todo particles
     }
 
 }

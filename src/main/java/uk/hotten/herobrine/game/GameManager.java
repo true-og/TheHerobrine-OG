@@ -6,13 +6,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
-import me.tigerhix.lib.scoreboard.common.EntryBuilder;
-import me.tigerhix.lib.scoreboard.type.Entry;
-import me.tigerhix.lib.scoreboard.type.Scoreboard;
-import me.tigerhix.lib.scoreboard.type.ScoreboardHandler;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.trueog.gxui.GUIItem;
 import org.bukkit.Bukkit;
@@ -150,6 +145,7 @@ public class GameManager {
     public boolean stFull = false;
     public boolean timerPaused = false;
     private BukkitTask waitingRunnable;
+    private BukkitTask startingTask;
     private NarrationRunnable narrationRunnable;
     private BukkitTask pvpProtectionTask;
 
@@ -170,15 +166,13 @@ public class GameManager {
     private StatTracker[] statTrackers;
 
     @Getter
-    private HashMap<Player, Scoreboard> scoreboards;
+    private HashMap<Player, LobbyBoard> scoreboards;
 
     @Getter
     private HashMap<Player, String> teamPrefixes = new HashMap<>();
 
     @Getter
     private HashMap<Player, NamedTextColor> teamColours = new HashMap<>();
-
-    private ScoreboardHandler gameScoreboardHandler;
 
     // Stable per-player id for nametag team names. Entity IDs change on respawn /
     // world
@@ -232,51 +226,23 @@ public class GameManager {
         playerKits = new HashMap<>();
 
         scoreboards = new HashMap<>();
-        gameScoreboardHandler = new ScoreboardHandler() {
-
-            @Override
-            public String getTitle(Player player) {
-
-                return "&cThe&lHerobrine!";
-
-            }
-
-            @Override
-            public List<Entry> getEntries(Player player) {
-
-                return new EntryBuilder().blank().next("&a✦ Shard Count").next(shardCount + "/3").blank()
-                        .next("&a❂ Survivors").next("" + survivors.size()).blank().next("&8--------------")
-                        .next("&b" + networkWeb).build();
-
-            }
-
-        };
-
         startWaiting();
         Console.info(gameLobby, "Game Manager is ready!");
 
     }
 
+    // Applied immediately: every caller runs on the main thread, and a deferred
+    // write let two joins in one tick start two countdowns.
     public void setGameState(GameState newState) {
 
-        new BukkitRunnable() {
+        GameState old = gameState;
+        if (old == null)
+            old = GameState.UNKNOWN;
 
-            @Override
-            public void run() {
-
-                GameState old = gameState;
-                if (old == null)
-                    old = GameState.UNKNOWN;
-
-                gameState = newState;
-                Console.debug(gameLobby,
-                        "Game state updated to " + newState.toString() + "(from " + old.toString() + ")!");
-                plugin.getServer().getPluginManager()
-                        .callEvent(new GameStateUpdateEvent(old, newState, gameLobby.getLobbyId()));
-
-            }
-
-        }.runTask(plugin);
+        gameState = newState;
+        Console.debug(gameLobby, "Game state updated to " + newState.toString() + "(from " + old.toString() + ")!");
+        plugin.getServer().getPluginManager()
+                .callEvent(new GameStateUpdateEvent(old, newState, gameLobby.getLobbyId()));
 
     }
 
@@ -292,26 +258,16 @@ public class GameManager {
 
     public void setShardState(ShardState newState) {
 
-        new BukkitRunnable() {
+        ShardState old = shardState;
+        if (old == null)
+            old = ShardState.UNKNOWN;
 
-            @Override
-            public void run() {
-
-                ShardState old = shardState;
-                if (old == null)
-                    old = ShardState.UNKNOWN;
-
-                shardState = newState;
-                Console.debug(gameLobby,
-                        "Shard state updated to " + newState.toString() + "(from " + old.toString() + ")!");
-                plugin.getServer().getPluginManager()
-                        .callEvent(new ShardStateUpdateEvent(old, newState, gameLobby.getLobbyId()));
-                if (gameState == GameState.LIVE)
-                    narrationRunnable.timer = 0;
-
-            }
-
-        }.runTask(plugin);
+        shardState = newState;
+        Console.debug(gameLobby, "Shard state updated to " + newState.toString() + "(from " + old.toString() + ")!");
+        plugin.getServer().getPluginManager()
+                .callEvent(new ShardStateUpdateEvent(old, newState, gameLobby.getLobbyId()));
+        if (gameState == GameState.LIVE && narrationRunnable != null)
+            narrationRunnable.timer = 0;
 
     }
 
@@ -324,6 +280,7 @@ public class GameManager {
     public void startWaiting(boolean cleanGameWorld) {
 
         cancelPvpProtection();
+        cancelStarting();
         setGameState(GameState.WAITING);
         deadSurvivors.clear();
         if (waitingRunnable != null)
@@ -334,7 +291,51 @@ public class GameManager {
             Bukkit.getServer().getScheduler().runTask(plugin, () -> gameLobby.getWorldManager().clean(false));
         startTimer = getGameLobby().getLobbyConfig().getStartTime();
 
-        waitingRunnable = new WaitingRunnable(this).runTaskTimerAsynchronously(plugin, 0, 10);
+        waitingRunnable = new WaitingRunnable(this).runTaskTimer(plugin, 0, 10);
+
+    }
+
+    // One countdown at a time: a second call replaces the running one instead of
+    // racing it to start().
+    public void beginStarting(boolean ignorePlayerCount) {
+
+        cancelStarting();
+        setGameState(GameState.STARTING);
+        startingTask = new StartingRunnable(this, gameLobby.getWorldManager(), ignorePlayerCount).runTaskTimer(plugin,
+                0, 20);
+
+    }
+
+    private void cancelStarting() {
+
+        if (startingTask != null) {
+
+            startingTask.cancel();
+            startingTask = null;
+
+        }
+
+    }
+
+    // Called by the lobby teardown so no timer outlives its lobby.
+    public void cancelTasks() {
+
+        cancelPvpProtection();
+        cancelStarting();
+        if (waitingRunnable != null)
+            waitingRunnable.cancel();
+
+        // A runnable that was never scheduled throws on cancel; nothing to stop then.
+        try {
+
+            if (narrationRunnable != null)
+                narrationRunnable.cancel();
+            if (shardHandler != null)
+                shardHandler.cancel();
+
+        } catch (IllegalStateException ignored) {
+
+        }
 
     }
 
@@ -454,8 +455,7 @@ public class GameManager {
 
             if (getGameState() != GameState.STARTING) {
 
-                setGameState(GameState.STARTING);
-                new StartingRunnable(this, gameLobby.getWorldManager()).runTaskTimerAsynchronously(getPlugin(), 0, 20);
+                beginStarting(false);
 
             } else {
 
@@ -482,6 +482,15 @@ public class GameManager {
 
     public void start() {
 
+        // A second countdown reaching zero must not start the round twice.
+        if (gameState == GameState.LIVE || gameState == GameState.ENDING || gameState == GameState.DEAD) {
+
+            Console.error(gameLobby, "Ignoring start(): the round is already " + gameState + ".");
+            return;
+
+        }
+
+        cancelStarting();
         Console.info(gameLobby, "=== GAME START BEGIN === survivors=" + survivors.size() + " spectators="
                 + spectators.size() + " lobbyPlayers=" + gameLobby.getPlayers().size());
 
@@ -544,7 +553,7 @@ public class GameManager {
             setGameState(GameState.LIVE);
             startPvpProtection();
             narrationRunnable = new NarrationRunnable(this);
-            narrationRunnable.runTaskTimerAsynchronously(plugin, 0, 10); // has to run before the shardstate updates
+            narrationRunnable.runTaskTimer(plugin, 0, 10); // has to run before the shardstate updates
             setShardState(ShardState.WAITING);
             gameLobby.getStatManager().startTracking();
             if (passUser != null) {
@@ -569,12 +578,12 @@ public class GameManager {
             setupSurvivors();
             Console.info(gameLobby, "Applying spectator state to " + spectators.size() + " spectator(s)...");
             new ArrayList<>(spectators).forEach(this::makeSpectator);
-            new HerobrineSetup(herobrine).runTaskAsynchronously(plugin);
+            new HerobrineSetup(herobrine, plugin).runTask(plugin);
             setTags(herobrine, "&c&lHEROBRINE ", NamedTextColor.RED, ScoreboardUpdateAction.UPDATE);
             for (Player p : survivors) {
 
                 setTags(p, null, NamedTextColor.DARK_GREEN, ScoreboardUpdateAction.UPDATE);
-                new SurvivorSetup(p).runTaskAsynchronously(plugin);
+                new SurvivorSetup(p, plugin).runTask(plugin);
 
             }
 
@@ -585,7 +594,9 @@ public class GameManager {
 
             for (Player p : gameLobby.getPlayers()) {
 
-                scoreboards.get(p).setHandler(gameScoreboardHandler);
+                LobbyBoard board = scoreboards.get(p);
+                if (board != null)
+                    board.showGame();
                 p.setHealth(20);
                 p.setFoodLevel(20);
                 if (isSpectator(p) || isDeadSurvivor(p))
@@ -837,11 +848,19 @@ public class GameManager {
         setTags(player, null, NamedTextColor.GRAY, ScoreboardUpdateAction.UPDATE);
         updateTags(ScoreboardUpdateAction.UPDATE);
         if (scoreboards.containsKey(player))
-            scoreboards.get(player).setHandler(gameScoreboardHandler);
+            scoreboards.get(player).showGame();
 
     }
 
     public void end(WinType type) {
+
+        // A death and a quit in the same tick must not end the round twice.
+        if (gameState != GameState.LIVE) {
+
+            Console.error(gameLobby, "Ignoring end(): the round is " + gameState + ", not LIVE.");
+            return;
+
+        }
 
         cancelPvpProtection();
         setGameState(GameState.ENDING);
@@ -858,32 +877,30 @@ public class GameManager {
                 gameLobby.getStatManager().getPointsTracker().increment(p.getUniqueId(), 10);
 
             herobrine.getWorld().strikeLightningEffect(herobrine.getLocation().add(0, 0.5, 0));
-            Bukkit.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            final Location loc = herobrine.getLocation();
+            new BukkitRunnable() {
 
-                Location loc = herobrine.getLocation();
-                for (int i = 0; i < 50; i++) {
+                private int fired = 0;
 
-                    try {
+                @Override
+                public void run() {
 
-                        Bukkit.getServer().getScheduler()
-                                .runTask(plugin,
-                                        () -> PlayerUtil
-                                                .spawnFirework(
-                                                        loc.clone()
-                                                                .add(new Vector(Math.random() - 0.5, 0,
-                                                                        Math.random() - 0.5).multiply(20)),
-                                                        Color.LIME));
-                        TimeUnit.MILLISECONDS.sleep(100);
+                    if (fired++ >= 50 || loc.getWorld() == null
+                            || !loc.getWorld().equals(worldManager.getGameWorld()))
+                    {
 
-                    } catch (Exception e) {
-
-                        e.printStackTrace();
+                        cancel();
+                        return;
 
                     }
 
+                    PlayerUtil.spawnFirework(
+                            loc.clone().add(new Vector(Math.random() - 0.5, 0, Math.random() - 0.5).multiply(20)),
+                            Color.LIME);
+
                 }
 
-            });
+            }.runTaskTimer(plugin, 0, 2);
 
         } else {
 
@@ -995,9 +1012,7 @@ public class GameManager {
 
             end(WinType.HEROBRINE);
 
-        } else if (!getHerobrine().isOnline()
-                || !getHerobrine().getWorld().getName().startsWith(gameLobby.getLobbyId()))
-        {
+        } else if (!getHerobrine().isOnline() || !gameLobby.ownsWorld(getHerobrine().getWorld())) {
 
             end(WinType.SURVIVORS);
 
@@ -1020,7 +1035,7 @@ public class GameManager {
         } else
             setShardState(ShardState.WAITING);
 
-        new CaptureSequence(player, this, gameLobby.getWorldManager()).runTaskAsynchronously(plugin);
+        new CaptureSequence(player, this, gameLobby.getWorldManager()).runTask(plugin);
         updateHerobrine();
         Bukkit.getServer().getPluginManager().callEvent(new ShardCaptureEvent(player, gameLobby.getLobbyId()));
 
@@ -1146,24 +1161,63 @@ public class GameManager {
 
     }
 
+    // Redis round trips stay off the main thread.
     public void saveKit(Player player, Kit kit) {
 
-        redis.setKey("hb:kit:" + player.getUniqueId().toString(), kit.getInternalName());
+        final String key = "hb:kit:" + player.getUniqueId().toString();
+        final String value = kit.getInternalName();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+
+            try {
+
+                redis.setKey(key, value);
+
+            } catch (Exception e) {
+
+                Console.error(gameLobby, "Failed to save kit for " + player.getName() + ": " + e.getMessage());
+
+            }
+
+        });
 
     }
 
-    public Kit getSavedKit(Player player) {
+    // The default kit applies at once; the saved choice replaces it when the read
+    // lands, as long as the round has not started.
+    public void applySavedKit(Player player) {
 
-        String key = "hb:kit:" + player.getUniqueId().toString();
-        if (!redis.exists(key))
-            return defaultKit;
+        playerKits.putIfAbsent(player, defaultKit);
+        final String key = "hb:kit:" + player.getUniqueId().toString();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
 
-        String result = redis.getKey(key);
-        for (Kit k : kits)
-            if (k.getInternalName().equals(result))
-                return k;
+            Kit saved = defaultKit;
+            try {
 
-        return defaultKit;
+                String result = redis.exists(key) ? redis.getKey(key) : null;
+                for (Kit k : kits)
+                    if (k.getInternalName().equals(result))
+                        saved = k;
+
+            } catch (Exception e) {
+
+                Console.error(gameLobby, "Failed to load kit for " + player.getName() + ": " + e.getMessage());
+
+            }
+
+            final Kit resolved = saved;
+            Bukkit.getScheduler().runTask(plugin, () -> {
+
+                if (!player.isOnline() || !gameLobby.getPlayers().contains(player))
+                    return;
+                if (gameState == GameState.LIVE || gameState == GameState.ENDING)
+                    return;
+
+                playerKits.put(player, resolved);
+                Message.send(player, Message.format("&eSet your class to " + resolved.getDisplayName()));
+
+            });
+
+        });
 
     }
 
@@ -1204,9 +1258,9 @@ public class GameManager {
         if (color == null)
             color = NamedTextColor.WHITE;
 
-        for (Scoreboard s : getScoreboards().values()) {
+        for (LobbyBoard s : getScoreboards().values()) {
 
-            org.bukkit.scoreboard.Scoreboard sc = s.getHolder().getScoreboard();
+            org.bukkit.scoreboard.Scoreboard sc = s.getTeamBoard();
 
             String teamName = "APL" + tagTeamIds.computeIfAbsent(player.getUniqueId(), uuid -> tagTeamCounter++);
             if (sc.getTeam(teamName) == null) {

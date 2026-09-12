@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import uk.hotten.herobrine.data.SqlManager;
 import uk.hotten.herobrine.game.GameManager;
@@ -17,9 +18,9 @@ import uk.hotten.herobrine.stat.trackers.KillsTracker;
 import uk.hotten.herobrine.stat.trackers.PointsTracker;
 import uk.hotten.herobrine.utils.Console;
 
+// Every database round trip runs off the main thread on one connection per
+// operation. Callers see defaults until a read lands, then the real values.
 public class StatManager {
-
-    private boolean nullBool;
 
     @Getter
     private JavaPlugin plugin;
@@ -33,21 +34,21 @@ public class StatManager {
     private StatTracker pointsTracker;
 
     @Getter
-    private HashMap<UUID, Integer> points;
+    private Map<UUID, Integer> points;
 
     @Getter
-    private HashMap<UUID, Integer> captures;
+    private Map<UUID, Integer> captures;
 
     @Getter
-    private HashMap<UUID, Integer> kills;
+    private Map<UUID, Integer> kills;
 
     @Getter
-    private HashMap<UUID, Integer> deaths;
+    private Map<UUID, Integer> deaths;
 
     @Getter
-    HashMap<UUID, GameRank> gameRanks;
+    Map<UUID, GameRank> gameRanks;
 
-    private String highestPlayerUUID;
+    private volatile String highestPlayerUUID;
 
     public StatManager(JavaPlugin plugin, GameLobby gameLobby) {
 
@@ -72,17 +73,21 @@ public class StatManager {
 
         }
 
-        points = new HashMap<>();
-        captures = new HashMap<>();
-        kills = new HashMap<>();
-        deaths = new HashMap<>();
-        gameRanks = new HashMap<>();
+        points = new java.util.concurrent.ConcurrentHashMap<>();
+        captures = new java.util.concurrent.ConcurrentHashMap<>();
+        kills = new java.util.concurrent.ConcurrentHashMap<>();
+        deaths = new java.util.concurrent.ConcurrentHashMap<>();
+        gameRanks = new java.util.concurrent.ConcurrentHashMap<>();
 
-        highestPlayerUUID = getHighestPlayer();
-        if (highestPlayerUUID == null)
-            Console.error(gameLobby, "Failed to get UUID of highest player.");
-        else
-            Console.debug(gameLobby, "UUID of highest player is " + highestPlayerUUID);
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+
+            highestPlayerUUID = queryHighestPlayer();
+            if (highestPlayerUUID == null)
+                Console.error(gameLobby, "Failed to get UUID of highest player.");
+            else
+                Console.debug(gameLobby, "UUID of highest player is " + highestPlayerUUID);
+
+        });
 
         Console.info(gameLobby, "Stat Manager is ready!");
 
@@ -108,64 +113,71 @@ public class StatManager {
 
     }
 
+    // Snapshots the round's counters on the main thread, then writes them out on
+    // one connection off it.
     public void push() {
 
         Console.info(gameLobby, "Pushing stats...");
 
+        final Map<StatTracker, Map<UUID, Integer>> snapshot = new HashMap<>();
         for (StatTracker tracker : gm.getStatTrackers()) {
 
-            for (Map.Entry<UUID, Integer> entry : tracker.stat.entrySet()) {
-
-                UUID uuid = entry.getKey();
-                int stat = entry.getValue();
-
-                int curr = getCurrentStat(uuid, tracker);
-                if (curr == -1) {
-
-                    Console.error(gameLobby, "Error pushing stat, previous was -1 for " + uuid + "!");
-                    continue;
-
-                }
-
-                setStat(uuid, tracker.getInternalName(), curr, stat);
-                if (tracker == pointsTracker)
-                    HerobrineScores.set(uuid, curr + stat);
-
-            }
-
+            snapshot.put(tracker, new HashMap<>(tracker.stat));
             tracker.reset();
 
         }
 
-        HerobrineScores.refreshTopPlayer();
-        Console.info(gameLobby, "Stats pushed!");
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+
+            try (Connection connection = SqlManager.get().createConnection()) {
+
+                for (Map.Entry<StatTracker, Map<UUID, Integer>> trackerEntry : snapshot.entrySet()) {
+
+                    StatTracker tracker = trackerEntry.getKey();
+                    for (Map.Entry<UUID, Integer> entry : trackerEntry.getValue().entrySet()) {
+
+                        UUID uuid = entry.getKey();
+                        int stat = entry.getValue();
+
+                        int curr = getCurrentStat(connection, uuid, tracker.getInternalName());
+                        if (curr == -1) {
+
+                            Console.error(gameLobby, "Error pushing stat, previous was -1 for " + uuid + "!");
+                            continue;
+
+                        }
+
+                        setStat(connection, uuid, tracker.getInternalName(), curr + stat);
+                        if (tracker == pointsTracker)
+                            HerobrineScores.set(uuid, curr + stat);
+
+                    }
+
+                }
+
+            } catch (Exception e) {
+
+                Console.error(gameLobby, "Failed to push stats: " + e.getMessage());
+                e.printStackTrace();
+
+            }
+
+            HerobrineScores.refreshTopPlayer();
+            Console.info(gameLobby, "Stats pushed!");
+
+        });
 
     }
 
-    private String getHighestPlayer() {
+    private String queryHighestPlayer() {
 
-        try {
-
-            Connection connection = SqlManager.get().createConnection();
+        try (Connection connection = SqlManager.get().createConnection()) {
 
             PreparedStatement statement = connection
                     .prepareStatement("SELECT UUID FROM hb_stat ORDER BY points DESC LIMIT 1;");
             ResultSet rs = statement.executeQuery();
 
-            String result;
-            if (rs.next()) {
-
-                result = rs.getString("uuid");
-
-            } else {
-
-                result = null;
-
-            }
-
-            connection.close();
-
-            return result;
+            return rs.next() ? rs.getString("uuid") : null;
 
         } catch (Exception e) {
 
@@ -176,136 +188,84 @@ public class StatManager {
 
     }
 
-    private void setStat(UUID uuid, String name, int prev, int amount) {
+    private void setStat(Connection connection, UUID uuid, String name, int value) throws Exception {
 
-        try {
-
-            Connection connection = SqlManager.get().createConnection();
-
-            PreparedStatement statement = connection
-                    .prepareStatement("UPDATE hb_stat SET " + name + "=? WHERE `uuid`=?");
-            int next = prev + amount;
-
-            statement.setInt(1, next);
-            statement.setString(2, uuid.toString());
-
-            statement.executeUpdate();
-
-            connection.close();
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-
-        }
+        PreparedStatement statement = connection.prepareStatement("UPDATE hb_stat SET " + name + "=? WHERE `uuid`=?");
+        statement.setInt(1, value);
+        statement.setString(2, uuid.toString());
+        statement.executeUpdate();
 
     }
 
-    private int getCurrentStat(UUID uuid, StatTracker stat) {
+    private int getCurrentStat(Connection connection, UUID uuid, String stat) throws Exception {
 
-        return getCurrentStat(uuid, stat.getInternalName());
+        PreparedStatement statement = connection.prepareStatement("SELECT " + stat + " FROM hb_stat WHERE uuid=?");
+        statement.setString(1, uuid.toString());
+        ResultSet rs = statement.executeQuery();
+
+        return rs.next() ? rs.getInt(stat) : -1;
 
     }
 
-    private int getCurrentStat(UUID uuid, String stat) {
+    private boolean exists(Connection connection, UUID uuid) throws Exception {
 
-        try {
+        PreparedStatement statement = connection.prepareStatement("SELECT 1 FROM hb_stat WHERE uuid=?");
+        statement.setString(1, uuid.toString());
+        return statement.executeQuery().next();
 
-            Connection connection = SqlManager.get().createConnection();
+    }
 
-            PreparedStatement statement = connection.prepareStatement("SELECT " + stat + " FROM hb_stat WHERE uuid=?");
-            statement.setString(1, uuid.toString());
-            ResultSet rs = statement.executeQuery();
+    private void create(Connection connection, UUID uuid) throws Exception {
 
-            int result;
-            if (rs.next()) {
+        PreparedStatement statement = connection.prepareStatement("INSERT INTO hb_stat (uuid) VALUE (?)");
+        statement.setString(1, uuid.toString());
+        statement.executeUpdate();
 
-                result = rs.getInt(stat);
+    }
 
-            } else {
+    // Seeds zeroes so chat and scoreboards render at once, then loads the real
+    // totals off the main thread.
+    public void check(UUID uuid) {
 
-                result = -1;
+        points.putIfAbsent(uuid, 0);
+        captures.putIfAbsent(uuid, 0);
+        kills.putIfAbsent(uuid, 0);
+        deaths.putIfAbsent(uuid, 0);
+        gameRanks.putIfAbsent(uuid, GameRank.findRank(HerobrineScores.get(uuid)));
+
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+
+            try (Connection connection = SqlManager.get().createConnection()) {
+
+                if (!exists(connection, uuid))
+                    create(connection, uuid);
+
+                int loadedPoints = Math.max(0, getCurrentStat(connection, uuid, "points"));
+                points.put(uuid, loadedPoints);
+                captures.put(uuid, Math.max(0, getCurrentStat(connection, uuid, "captures")));
+                kills.put(uuid, Math.max(0, getCurrentStat(connection, uuid, "kills")));
+                deaths.put(uuid, Math.max(0, getCurrentStat(connection, uuid, "deaths")));
+                HerobrineScores.set(uuid, loadedPoints);
+
+                if (uuid.toString().equals(highestPlayerUUID) && loadedPoints >= GameRank.topPlayerGate())
+                    gameRanks.put(uuid, GameRank.DEATHBRINGER);
+                else
+                    gameRanks.put(uuid, GameRank.findRank(loadedPoints));
+
+            } catch (Exception e) {
+
+                Console.error(gameLobby, "Failed to load stats for " + uuid + ": " + e.getMessage());
+                e.printStackTrace();
 
             }
 
-            connection.close();
-
-            return result;
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-            return -1;
-
-        }
-
-    }
-
-    private boolean exists(UUID uuid) {
-
-        try {
-
-            Connection connection = SqlManager.get().createConnection();
-
-            PreparedStatement statement = connection.prepareStatement("SELECT * FROM hb_stat WHERE uuid=?");
-            statement.setString(1, uuid.toString());
-            ResultSet rs = statement.executeQuery();
-
-            boolean result = rs.next();
-            connection.close();
-
-            return result;
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-            return nullBool;
-
-        }
-
-    }
-
-    private void create(UUID uuid) {
-
-        try {
-
-            Connection connection = SqlManager.get().createConnection();
-
-            PreparedStatement statement = connection.prepareStatement("INSERT INTO hb_stat (uuid) VALUE (?)");
-            statement.setString(1, uuid.toString());
-            statement.executeUpdate();
-
-            connection.close();
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-
-        }
-
-    }
-
-    public void check(UUID uuid) {
-
-        if (!exists(uuid))
-            create(uuid);
-
-        points.put(uuid, getCurrentStat(uuid, pointsTracker));
-        captures.put(uuid, getCurrentStat(uuid, "captures"));
-        kills.put(uuid, getCurrentStat(uuid, "kills"));
-        deaths.put(uuid, getCurrentStat(uuid, "deaths"));
-        HerobrineScores.set(uuid, points.get(uuid));
-
-        if (uuid.toString().equals(highestPlayerUUID) && points.get(uuid) >= GameRank.topPlayerGate())
-            gameRanks.put(uuid, GameRank.DEATHBRINGER);
-        else
-            gameRanks.put(uuid, GameRank.findRank(points.get(uuid)));
+        });
 
     }
 
     public GameRank getGameRank(UUID uuid) {
 
-        return gameRanks.get(uuid);
+        return gameRanks.getOrDefault(uuid, GameRank.SPIRIT);
 
     }
 

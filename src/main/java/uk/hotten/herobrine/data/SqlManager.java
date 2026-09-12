@@ -30,7 +30,7 @@ public class SqlManager {
         password = plugin.getConfig().getString("sqlPassword");
         port = plugin.getConfig().getInt("sqlPort");
 
-        ready = checkStatTable();
+        ready = registerDriver() && checkStatTable();
         if (ready)
             Console.info("SQL Manager is ready!");
 
@@ -42,15 +42,30 @@ public class SqlManager {
 
     }
 
-    public Connection createConnection() throws SQLException, ClassNotFoundException {
+    // The bundled driver is relocated, so it is referenced by class, not by name.
+    // Registering it makes DriverManager resolve jdbc:mariadb through this copy.
+    private boolean registerDriver() {
 
-        synchronized (this) {
+        try {
 
-            Class.forName("org.mariadb.jdbc.Driver");
-            return DriverManager.getConnection(
-                    "jdbc:mariadb://" + host + ":" + port + "/" + "theherobrine?userSSL=false", username, password);
+            DriverManager.registerDriver(new org.mariadb.jdbc.Driver());
+            return true;
+
+        } catch (SQLException error) {
+
+            Console.error("Failed to register the MariaDB driver.");
+            error.printStackTrace();
+            return false;
 
         }
+
+    }
+
+    // A fresh connection per call. Callers batch their work on one connection and
+    // run it off the main thread.
+    public Connection createConnection() throws SQLException {
+
+        return DriverManager.getConnection("jdbc:mariadb://" + host + ":" + port + "/theherobrine", username, password);
 
     }
 

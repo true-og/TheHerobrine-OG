@@ -24,7 +24,7 @@ public class KillsTracker extends StatTracker {
     @EventHandler(priority = EventPriority.LOWEST)
     public void death(PlayerDeathEvent event) {
 
-        if (!event.getEntity().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+        if (!gameLobby.ownsWorld(event.getEntity().getWorld()))
             return;
 
         Player player = event.getEntity();

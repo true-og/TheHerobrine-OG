@@ -1,7 +1,5 @@
 package uk.hotten.herobrine.kit.abilities;
 
-import java.util.concurrent.TimeUnit;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -10,6 +8,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import uk.hotten.herobrine.game.GameManager;
 import uk.hotten.herobrine.utils.PlayerUtil;
 
+// Scheduled two seconds after the throw, on the main thread.
 public class BlindingHandler extends BukkitRunnable {
 
     private Item nugget;
@@ -25,32 +24,21 @@ public class BlindingHandler extends BukkitRunnable {
     @Override
     public void run() {
 
-        try {
+        if (!nugget.isValid())
+            return;
 
-            TimeUnit.SECONDS.sleep(2);
+        Location loc = nugget.getLocation();
+        nugget.remove();
+        loc.getWorld().createExplosion(loc, 0f, false, false);
+        for (Player p : gm.getSurvivors()) {
 
-        } catch (Exception e) {
+            if (PlayerUtil.getDistance(p, loc) <= 6) {
 
-            e.printStackTrace();
-
-        }
-
-        Bukkit.getServer().getScheduler().runTask(gm.getPlugin(), () -> {
-
-            Location loc = nugget.getLocation();
-            nugget.remove();
-            loc.getWorld().createExplosion(loc, 0f, false, false);
-            for (Player p : gm.getSurvivors()) {
-
-                if (PlayerUtil.getDistance(p, loc) <= 6) {
-
-                    PlayerUtil.addEffect(p, PotionEffectType.BLINDNESS, 100, 1, false, false);
-
-                }
+                PlayerUtil.addEffect(p, PotionEffectType.BLINDNESS, 100, 1, false, false);
 
             }
 
-        });
+        }
 
     }
 

@@ -26,7 +26,7 @@ public class DeathTracker extends StatTracker {
     @EventHandler(priority = EventPriority.LOWEST)
     public void death(PlayerDeathEvent event) {
 
-        if (!event.getEntity().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+        if (!gameLobby.ownsWorld(event.getEntity().getWorld()))
             return;
 
         Player player = event.getEntity();
@@ -43,7 +43,7 @@ public class DeathTracker extends StatTracker {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onQuit(PlayerQuitEvent event) {
 
-        if (!event.getPlayer().getWorld().getName().startsWith(gameLobby.getLobbyId()))
+        if (!gameLobby.ownsWorld(event.getPlayer().getWorld()))
             return;
 
         Player player = event.getPlayer();
@@ -66,7 +66,7 @@ public class DeathTracker extends StatTracker {
         if (gm.getGameState() != GameState.LIVE)
             return;
 
-        boolean leftLobby = !player.getWorld().getName().startsWith(gameLobby.getLobbyId());
+        boolean leftLobby = !gameLobby.ownsWorld(player.getWorld());
         boolean leftGameWorld = gameLobby.getWorldManager().getGameWorld() != null
                 && event.getFrom().equals(gameLobby.getWorldManager().getGameWorld());
         if (!leftLobby && !leftGameWorld)

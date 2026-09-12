@@ -26,7 +26,7 @@ kotlin { jvmToolchain(17) }
 /* ----------------------------- Metadata ------------------------------ */
 group = "uk.hotten.herobrine"
 
-version = "1.6.0"
+version = "1.6.1"
 
 val apiVersion = "1.19" // Minecraft server target version.
 
@@ -68,13 +68,14 @@ repositories {
 
 /* ---------------------- Java project deps ---------------------------- */
 dependencies {
-    api("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.16.1")
-    api("com.fasterxml.jackson.core:jackson-databind:2.16.1")
-    api("commons-io:commons-io:2.11.0")
-    api("org.apache.commons:commons-pool2:2.11.1")
-    api("com.mysql:mysql-connector-j:8.2.0")
-    api("redis.clients:jedis:3.4.1")
-    api("xyz.xenondevs:particle:1.8.3")
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.16.1")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.16.1")
+    implementation("commons-io:commons-io:2.11.0")
+    implementation("org.apache.commons:commons-pool2:2.11.1")
+    // SqlManager speaks jdbc:mariadb, so the MariaDB driver is the one that has to ship.
+    implementation("org.mariadb.jdbc:mariadb-java-client:3.3.3")
+    implementation("redis.clients:jedis:3.4.1")
+    implementation("xyz.xenondevs:particle:1.8.3")
     compileOnlyApi(project(":libs:Utilities-OG")) // Import TrueOG Network Utilities-OG Java API (from source).
     compileOnly("org.purpurmc.purpur:purpur-api:1.19.4-R0.1-SNAPSHOT") // Declare Purpur API version to be packaged.
     compileOnly("io.github.miniplaceholders:miniplaceholders-api:2.2.3") // Import MiniPlaceholders API.
@@ -83,6 +84,7 @@ dependencies {
     compileOnly(files("libs/BKCommonLib/BKCommonLib-1.19.4-v2.jar")) // Import BKCommonLib API.
     compileOnly(files("libs/MyWorlds/MyWorlds-1.19.4-v1.jar")) // Import MyWorlds API.
     compileOnly(files("libs/Chat-OG/Chat-OG.jar")) // Import Chat-OG API for world chat formatting.
+    compileOnly(files("libs/Scoreboard-OG/Scoreboard-OG.jar")) // Import Scoreboard-OG sidebar API.
     implementation(project(":libs:GxUI-OG")) // Import TrueOG Network GxUI-OG Java API (from source).
     implementation(files("libs/ScoreboardLib/ScoreboardLib-1.1.0-SNAPSHOT.jar")) // Import ScoreboardLib API.
 }
@@ -121,8 +123,17 @@ tasks.shadowJar {
         into("META-INF/licenses/libs")
         includeEmptyDirs = false
     }
+    // Every shaded dependency is relocated so Bukkit's cross-plugin class lookup can never hand
+    // this copy of jackson, jedis or the JDBC driver to another plugin, or the reverse.
+    isEnableRelocation = true
+    relocationPrefix = "${project.group}.shadow"
+    // The driver registers itself through META-INF/services, which relocation has to rewrite too.
+    mergeServiceFiles()
     archiveClassifier.set("") // Use empty string instead of null.
-    minimize()
+    minimize {
+        // The driver loads its authentication and TLS plugins reflectively, so keep it whole.
+        exclude(dependency("org.mariadb.jdbc:mariadb-java-client:.*"))
+    }
 }
 
 tasks.jar { archiveClassifier.set("part") } // Applies to root jarfile only.

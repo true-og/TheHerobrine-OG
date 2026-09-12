@@ -19,9 +19,8 @@ import uk.hotten.herobrine.commands.SetHerobrineCommand;
 import uk.hotten.herobrine.commands.SetSpawnCommand;
 import uk.hotten.herobrine.commands.SetSpawnCompleter;
 import uk.hotten.herobrine.commands.SpectateCommand;
-import uk.hotten.herobrine.commands.VoteCommand;
 import uk.hotten.herobrine.commands.VoteCommandListener;
-import uk.hotten.herobrine.commands.VoteCompleter;
+import uk.hotten.herobrine.compat.ScoreboardOGBridge;
 import uk.hotten.herobrine.data.RedisManager;
 import uk.hotten.herobrine.data.SqlManager;
 import nl.skbotnl.chatog.api.ChatOGAPI;
@@ -111,8 +110,8 @@ public class HerobrinePluginOG extends JavaPlugin {
         getCommand("hbforcestart").setExecutor(new ForceStartCommand());
         getCommand("hbdropshard").setExecutor(new DropShardCommand());
         getCommand("hbpausetimer").setExecutor(new PauseTimerCommand());
-        getCommand("vote").setExecutor(new VoteCommand());
-        getCommand("vote").setTabCompleter(new VoteCompleter());
+        // /vote and /v are claimed inside lobby worlds only, so VotingPlugin keeps the
+        // labels everywhere else; nothing is registered in plugin.yml for them.
         getServer().getPluginManager().registerEvents(new VoteCommandListener(), this);
         getCommand("hbjoin").setExecutor(new JoinLobbyCommand());
         getCommand("hbjoin").setTabCompleter(new JoinLobbyCompleter());
@@ -175,6 +174,8 @@ public class HerobrinePluginOG extends JavaPlugin {
             JoinSignManager.getInstance().save();
         if (LobbyManager.getInstance() != null)
             LobbyManager.getInstance().shutdown();
+        // Every board is closed by the lobby teardown; this catches anything it missed.
+        ScoreboardOGBridge.releaseAll();
         if (RedisManager.getInstance() != null)
             RedisManager.getInstance().shutdown();
         if (SqlManager.get() != null)

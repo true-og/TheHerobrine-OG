@@ -1,7 +1,6 @@
 package uk.hotten.herobrine.kit.abilities;
 
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -10,6 +9,8 @@ import org.bukkit.entity.Item;
 import org.bukkit.scheduler.BukkitRunnable;
 import uk.hotten.herobrine.game.GameManager;
 
+// Scheduled a second after the throw, on the main thread: the coal becomes a
+// swarm of bats, and two seconds later the bats explode.
 public class BatBombHandler extends BukkitRunnable {
 
     private Item coal;
@@ -27,46 +28,30 @@ public class BatBombHandler extends BukkitRunnable {
     @Override
     public void run() {
 
-        try {
-
-            TimeUnit.SECONDS.sleep(1);
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-
-        }
+        if (!coal.isValid())
+            return;
 
         Location loc = coal.getLocation();
-        Bukkit.getServer().getScheduler().runTask(gm.getPlugin(), () -> coal.remove());
+        coal.remove();
         for (int i = 0; i < 15; i++) {
 
-            Bukkit.getServer().getScheduler().runTask(gm.getPlugin(),
-                    () -> bats.add(loc.getWorld().spawnEntity(loc, EntityType.BAT)));
+            bats.add(loc.getWorld().spawnEntity(loc, EntityType.BAT));
 
         }
 
-        try {
-
-            TimeUnit.SECONDS.sleep(2);
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-
-        }
-
-        Bukkit.getServer().getScheduler().runTask(gm.getPlugin(), () -> {
+        Bukkit.getScheduler().runTaskLater(gm.getPlugin(), () -> {
 
             for (Entity bat : bats) {
 
+                if (!bat.isValid())
+                    continue;
                 Location batLoc = bat.getLocation();
                 bat.remove();
                 batLoc.getWorld().createExplosion(batLoc, 3f, false, false);
 
             }
 
-        });
+        }, 40L);
 
     }
 

@@ -1,6 +1,5 @@
 package uk.hotten.herobrine.kit.abilities;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -8,8 +7,10 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import uk.hotten.herobrine.game.GameManager;
+import uk.hotten.herobrine.utils.GameState;
 import uk.hotten.herobrine.utils.PlayerUtil;
 
+// Ticks once a second on the main thread.
 public class HarmingTotemHandler extends BukkitRunnable {
 
     private Block block;
@@ -30,9 +31,9 @@ public class HarmingTotemHandler extends BukkitRunnable {
     @Override
     public void run() {
 
-        if (time > 30) {
+        if (time > 30 || gm.getGameState() != GameState.LIVE || herobrine == null) {
 
-            Bukkit.getServer().getScheduler().runTask(gm.getPlugin(), () -> block.setType(Material.AIR));
+            block.setType(Material.AIR);
             cancel();
             return;
 
@@ -45,14 +46,12 @@ public class HarmingTotemHandler extends BukkitRunnable {
 
         }
 
-        if (PlayerUtil.getDistance(herobrine, block.getLocation()) <= 6) {
+        if (herobrine.isOnline() && herobrine.getWorld().equals(block.getWorld())
+                && PlayerUtil.getDistance(herobrine, block.getLocation()) <= 6)
+        {
 
-            Bukkit.getServer().getScheduler().runTask(gm.getPlugin(), () -> {
-
-                PlayerUtil.decreaseHealth(herobrine, 2, placer);
-                PlayerUtil.animateHbHit(gm.getGameLobby(), herobrine.getLocation());
-
-            });
+            PlayerUtil.decreaseHealth(herobrine, 2, placer);
+            PlayerUtil.animateHbHit(gm.getGameLobby(), herobrine.getLocation());
 
         }
 

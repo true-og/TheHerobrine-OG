@@ -2,7 +2,7 @@
 
 Remake of HiveMC's "The Herobrine!" v2 for Purpur `1.19.4`, using `MyWorlds` for world management.
 
-Current version: `1.5.8` ([changelog](CHANGELOG.md)).
+Current version: `1.6.1` ([changelog](CHANGELOG.md)).
 
 ## Requirements
 - Purpur `1.19.4`
@@ -11,9 +11,15 @@ Current version: `1.5.8` ([changelog](CHANGELOG.md)).
 - Redis/KeyDB (stores kit selections)
 - MariaDB/MySQL (stores player statistics)
 
+Optional, integrated when present: `Chat-OG`, `Scoreboard-OG` `1.2.0` or newer, `IllegalStack-OG`.
+
+## Scoreboards
+
+Every lobby player gets a sidebar: their points, captures, kills and deaths while waiting, then the shard count and survivor count during the round. With `Scoreboard-OG` `1.2.0` or newer installed, the sidebar is drawn through Scoreboard-OG's sidebar API, so the network board comes back on its own the moment the player leaves the lobby and the player's `/togglescoreboard` preference is respected. Without it (or with an older Scoreboard-OG), the bundled ScoreboardLib board is used as before and the main scoreboard is restored on leave. Nametag colours are carried by a per-player Bukkit scoreboard either way.
+
 ## Quick Setup
 
-1. Install the required plugins and configure your database connections in `config.yml`.
+1. Install the required plugins and configure your database connections in `config.yml`. The bundled file ships `^{NAME}` placeholders that TrueOG's deployment fills in; on a manual install replace them with real values or the plugin disables itself at startup.
 2. Drop map world folders into your `maps/` directory (or whatever path is set as `mapBase` in `config.yml`).
 3. Each map needs a `mapdata.yaml` file — use `/hbsetspawn` to place all required points and the wizard will generate it for you.
 4. Create a `maps/hub` world folder to serve as each lobby's waiting area.
@@ -87,7 +93,7 @@ player, and updated the moment the underlying value changes.
 
 ## Commands
 
-`/v` and `/vote` are claimed for map voting before any other plugin sees them, for anyone who is in a lobby or standing in a lobby world, so VotingPlugin cannot take the `/vote` label away from map voting. Everywhere else `/vote` behaves normally.
+`/v` and `/vote` are claimed for map voting before any other plugin sees them, for anyone who is in a lobby or standing in a lobby world, so VotingPlugin cannot take the `/vote` label away from map voting. Everywhere else `/vote` behaves normally. Neither label is declared in plugin.yml, so the plugin never competes for them.
 
 ### Player Commands
 | Command | Description |

@@ -56,7 +56,7 @@ public enum GameRank {
 
         }
 
-        return DEFENDER;
+        return SPIRIT;
 
     }
 

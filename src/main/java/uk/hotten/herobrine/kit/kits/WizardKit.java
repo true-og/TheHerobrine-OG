@@ -19,7 +19,7 @@ public class WizardKit extends Kit {
 
     public WizardKit(GameManager gm, boolean requirePermission) {
 
-        super(gm, "wizard", "&5Wizard", "theherobrine.kit.classic.wizzard", requirePermission,
+        super(gm, "wizard", "&5Wizard", "theherobrine.kit.classic.wizard", requirePermission,
                 Message.createArray("&8- &aBlade of Heroism &8&o(weapon)", "", "&8- &aElixir: Speed &8&o(x1)",
                         "&8- &aElixir: Strength &8&o(x1)", "", "&8- &aDreamweaver Bandage &8&o(x2)",
                         "   &7&oBandage yourself to full health"),

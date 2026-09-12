@@ -13,6 +13,7 @@ softdepend:
   - IllegalStack-OG
   - KnockbackSync-OG
   - Chat-OG
+  - Scoreboard-OG
 
 commands:
   hbsetherobrine:
@@ -35,10 +36,8 @@ commands:
     permission: theherobrine.command.pausetimer
     usage: /<command>
 
-  vote:
-    description: Vote for a map.
-    usage: /<command> <map number>
-    # /v is handled by VoteCommandListener inside lobby worlds; left to other plugins elsewhere.
+  # /vote and /v are not declared here on purpose: VoteCommandListener claims them inside lobby
+  # worlds only, so VotingPlugin keeps the labels everywhere else.
 
   hbjoin:
     description: Join a lobby.
@@ -79,6 +78,9 @@ commands:
     usage: /<command>
 
 permissions:
+  theherobrine.overfill:
+    description: Join a lobby that is already full.
+    default: op
   theherobrine.command.wizard:
     description: Use the /hbwizard map setup walkthrough.
     default: op

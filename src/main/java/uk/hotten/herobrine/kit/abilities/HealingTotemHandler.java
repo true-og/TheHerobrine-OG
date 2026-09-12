@@ -1,6 +1,5 @@
 package uk.hotten.herobrine.kit.abilities;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
@@ -8,8 +7,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import uk.hotten.herobrine.game.GameManager;
+import uk.hotten.herobrine.utils.GameState;
 import uk.hotten.herobrine.utils.PlayerUtil;
 
+// Ticks once a second on the main thread; health changes must not happen off it.
 public class HealingTotemHandler extends BukkitRunnable {
 
     private Block block;
@@ -28,9 +29,9 @@ public class HealingTotemHandler extends BukkitRunnable {
     @Override
     public void run() {
 
-        if (time > 30) {
+        if (time > 30 || gm.getGameState() != GameState.LIVE) {
 
-            Bukkit.getServer().getScheduler().runTask(gm.getPlugin(), () -> block.setType(Material.AIR));
+            block.setType(Material.AIR);
             wah.cancel();
             cancel();
             return;
@@ -41,7 +42,7 @@ public class HealingTotemHandler extends BukkitRunnable {
 
         for (Player p : gm.getSurvivors()) {
 
-            if (PlayerUtil.getDistance(p, block.getLocation()) <= 6) {
+            if (p.getWorld().equals(block.getWorld()) && PlayerUtil.getDistance(p, block.getLocation()) <= 6) {
 
                 PlayerUtil.increaseHealth(p, 2);
                 PlayerUtil.playSound(p, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);

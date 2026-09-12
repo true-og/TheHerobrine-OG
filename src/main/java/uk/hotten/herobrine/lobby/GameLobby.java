@@ -7,8 +7,9 @@ import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketEvent;
 import java.util.ArrayList;
 import lombok.Getter;
-import me.tigerhix.lib.scoreboard.type.Scoreboard;
+import uk.hotten.herobrine.game.LobbyBoard;
 import org.bukkit.Sound;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -16,7 +17,6 @@ import uk.hotten.herobrine.HerobrinePluginOG;
 import uk.hotten.herobrine.compat.IllegalStackCompat;
 import uk.hotten.herobrine.data.RedisManager;
 import uk.hotten.herobrine.game.GameManager;
-import uk.hotten.herobrine.game.runnables.MapVotingRunnable;
 import uk.hotten.herobrine.lobby.data.LobbyConfig;
 import uk.hotten.herobrine.stat.StatManager;
 import uk.hotten.herobrine.utils.Console;
@@ -57,6 +57,20 @@ public class GameLobby {
         this.lobbyConfig = lobbyConfig;
         this.lobbyId = lobbyId;
         this.hubTemplate = hubTemplate != null ? hubTemplate : "hub";
+
+    }
+
+    // True for this lobby's hub or arena world only. The dash matters: HB1 must not
+    // claim HB10-hub.
+    public boolean ownsWorld(String worldName) {
+
+        return worldName != null && (worldName.equals(lobbyId) || worldName.startsWith(lobbyId + "-"));
+
+    }
+
+    public boolean ownsWorld(World world) {
+
+        return world != null && ownsWorld(world.getName());
 
     }
 
@@ -103,7 +117,7 @@ public class GameLobby {
         protocolManager.addPacketListener(enderEyeSfxFix);
 
         // Start it here so game manager isn't null.
-        new MapVotingRunnable(this).runTaskTimerAsynchronously(plugin, 0, 20);
+        worldManager.startVotingReminder();
 
         Console.info("Lobby " + lobbyId + " is ready.");
         return true;
@@ -131,8 +145,9 @@ public class GameLobby {
 
             HandlerList.unregisterAll(gameManager.getGmListener());
             gameManager.setGameStateSilently(GameState.DEAD);
+            gameManager.cancelTasks();
             gameManager.updateTags(GameManager.ScoreboardUpdateAction.BEGONETHOT);
-            gameManager.getScoreboards().values().forEach(Scoreboard::deactivate);
+            gameManager.getScoreboards().values().forEach(LobbyBoard::close);
             gameManager.getScoreboards().clear();
             gameManager.voidKits();
 
@@ -141,6 +156,7 @@ public class GameLobby {
         if (worldManager != null) {
 
             HandlerList.unregisterAll(worldManager);
+            worldManager.stopVotingReminder();
             worldManager.clean();
             worldManager.cleanHub();
 

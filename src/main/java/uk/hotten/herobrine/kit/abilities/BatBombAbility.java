@@ -46,7 +46,7 @@ public class BatBombAbility extends KitAbility {
     @EventHandler
     public void use(PlayerInteractEvent event) {
 
-        if (!event.getPlayer().getWorld().getName().startsWith(gm.getGameLobby().getLobbyId()))
+        if (!gm.getGameLobby().ownsWorld(event.getPlayer().getWorld()))
             return;
 
         if (gm.getGameState() != GameState.LIVE)
@@ -67,7 +67,7 @@ public class BatBombAbility extends KitAbility {
 
                 Item coal = player.getWorld().dropItem(l, new ItemStack(Material.COAL));
                 coal.setVelocity(l.getDirection().normalize().multiply(2f));
-                new BatBombHandler(coal, gm).runTaskAsynchronously(gm.getPlugin());
+                new BatBombHandler(coal, gm).runTaskLater(gm.getPlugin(), 20L);
                 PlayerUtil.removeAmountOfItem(player, player.getInventory().getItemInMainHand(), 1);
                 startCooldown(player);
 

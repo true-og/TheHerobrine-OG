@@ -40,7 +40,7 @@ public class WisdomAbility extends KitAbility {
     @EventHandler
     public void use(PlayerInteractEvent event) {
 
-        if (!event.getPlayer().getWorld().getName().startsWith(gm.getGameLobby().getLobbyId()))
+        if (!gm.getGameLobby().ownsWorld(event.getPlayer().getWorld()))
             return;
 
         if (gm.getGameState() != GameState.LIVE)
@@ -59,7 +59,7 @@ public class WisdomAbility extends KitAbility {
                     return;
 
                 PlayerUtil.removeAmountOfItem(player, player.getInventory().getItemInMainHand(), 1);
-                new WisdomHandler(player.getLocation(), gm).runTaskTimerAsynchronously(gm.getPlugin(), 0, 20);
+                new WisdomHandler(player.getLocation(), gm).runTaskTimer(gm.getPlugin(), 0, 20);
                 startCooldown(player);
 
             }
