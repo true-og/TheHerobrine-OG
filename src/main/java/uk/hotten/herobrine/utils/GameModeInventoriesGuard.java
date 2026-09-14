@@ -23,11 +23,17 @@ import org.bukkit.plugin.Plugin;
 //
 // Negating gamemodeinventories.use through a permission attachment for as long
 // as the player is inside minigame territory, and for one tick after leaving it,
-// keeps GMI out of every flip on both ends. Same approach as BuildBattle-OG's
-// BuilderCreativeManager.
+// keeps GMI out of every flip on both ends. gamemodeinventories.death is negated
+// alongside it: a staff death inside the minigame would otherwise file the kit
+// under their survival row and re-apply it on a respawn that lands outside.
+// gamemodeinventories.spectator is granted so GMI's restrict_spectator cannot
+// cancel the spectator mode a minigame puts eliminated players in.
+// Same class in Splegg-OG, TheHerobrine-OG and BuildBattle-OG.
 public final class GameModeInventoriesGuard {
 
     private static final String GMI_USE_PERMISSION = "gamemodeinventories.use";
+    private static final String GMI_DEATH_PERMISSION = "gamemodeinventories.death";
+    private static final String GMI_SPECTATOR_PERMISSION = "gamemodeinventories.spectator";
 
     private final Plugin plugin;
     private final Predicate<Player> insideTerritory;
@@ -51,6 +57,8 @@ public final class GameModeInventoriesGuard {
 
             final PermissionAttachment attachment = player.addAttachment(plugin);
             attachment.setPermission(GMI_USE_PERMISSION, false);
+            attachment.setPermission(GMI_DEATH_PERMISSION, false);
+            attachment.setPermission(GMI_SPECTATOR_PERMISSION, true);
             attachments.put(player.getUniqueId(), attachment);
 
         } catch (IllegalArgumentException | IllegalStateException ex) {
