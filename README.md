@@ -2,7 +2,7 @@
 
 Remake of HiveMC's "The Herobrine!" v2 for Purpur `1.19.4`, using `MyWorlds` for world management.
 
-Current version: `1.6.2` ([changelog](CHANGELOG.md)).
+Current version: `1.6.3` ([changelog](CHANGELOG.md)).
 
 ## Requirements
 - Purpur `1.19.4`
@@ -15,7 +15,7 @@ Optional, integrated when present: `Chat-OG`, `Scoreboard-OG` `1.2.0` or newer, 
 
 ## Scoreboards
 
-Every lobby player gets a sidebar: their points, captures, kills and deaths while waiting, then the shard count and survivor count during the round. With `Scoreboard-OG` `1.2.0` or newer installed, the sidebar is drawn through Scoreboard-OG's sidebar API, so the network board comes back on its own the moment the player leaves the lobby and the player's `/togglescoreboard` preference is respected. Without it (or with an older Scoreboard-OG), the bundled ScoreboardLib board is used as before and the main scoreboard is restored on leave. Nametag colours are carried by a per-player Bukkit scoreboard either way.
+Every lobby player gets a sidebar in the Scoreboard-OG network board's look (`♥ TheHerobrine-OG ♥` title, blank-separated blocks, `networkWeb` footer): the lobby player count, the countdown, and their points, shard captures, kills and deaths while waiting, then their role, the map, shards captured, the shard's status and the survivors alive during the round. Every line stays within 16 legacy characters so 1.8 clients see it whole. With `Scoreboard-OG` `1.2.0` or newer installed, the sidebar is drawn through Scoreboard-OG's sidebar API, so the network board comes back on its own the moment the player leaves the lobby and the player's `/togglescoreboard` preference is respected. Without it (or with an older Scoreboard-OG), the bundled ScoreboardLib board is used as before and the main scoreboard is restored on leave. Nametag colours are carried by a per-player Bukkit scoreboard either way.
 
 ## Quick Setup
 

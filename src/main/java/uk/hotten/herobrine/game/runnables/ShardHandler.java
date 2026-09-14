@@ -36,8 +36,12 @@ public class ShardHandler extends BukkitRunnable {
     private static final NamespacedKey CLEANUP_PROTECT_KEY = Objects
             .requireNonNull(NamespacedKey.fromString("nodespawn-og:protect"));
 
+    // Seconds until the next shard spawns while the state is WAITING.
+    @Getter
     private int timer = 30;
-    private int despawnTimer = 300; // 5 minutes
+    // Seconds a spawned shard survives on the ground before it is destroyed.
+    @Getter
+    private int despawnTimer = 300;
     private Random random = new Random();
     private Item shard;
 

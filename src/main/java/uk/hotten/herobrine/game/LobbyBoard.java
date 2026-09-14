@@ -15,11 +15,14 @@ import me.tigerhix.lib.scoreboard.type.Scoreboard;
 import me.tigerhix.lib.scoreboard.type.ScoreboardHandler;
 import net.kyori.adventure.text.Component;
 import uk.hotten.herobrine.compat.ScoreboardOGBridge;
+import uk.hotten.herobrine.game.runnables.ShardHandler;
 import uk.hotten.herobrine.stat.StatManager;
 import uk.hotten.herobrine.utils.GameState;
 import uk.hotten.herobrine.utils.Message;
+import uk.hotten.herobrine.utils.ShardState;
+import uk.hotten.herobrine.world.data.MapData;
 
-// One player's lobby sidebar plus the Bukkit board that carries nametag teams.
+// One player's sidebar plus the Bukkit board that carries nametag teams.
 // Scoreboard-OG renders the sidebar when present; else ScoreboardLib draws it.
 public class LobbyBoard {
 
@@ -45,7 +48,7 @@ public class LobbyBoard {
 
         }
 
-        this.fallback = ScoreboardLib.createScoreboard(player).setHandler(statsHandler()).setUpdateInterval(20);
+        this.fallback = ScoreboardLib.createScoreboard(player).setHandler(handler()).setUpdateInterval(20);
         this.fallback.activate();
         this.teamBoard = fallback.getHolder().getScoreboard();
 
@@ -57,12 +60,10 @@ public class LobbyBoard {
 
     }
 
-    // Switches from the lobby stats card to the live round card.
+    // Switches from the lobby card to the live round card.
     public void showGame() {
 
         gameMode = true;
-        if (fallback != null)
-            fallback.setHandler(gameHandler());
 
     }
 
@@ -91,44 +92,133 @@ public class LobbyBoard {
 
     private Component title(Player viewer) {
 
-        return Message.legacySerializerAnyCase(inRound() ? "&cThe&lHerobrine!" : "&e&lYour Stats");
+        return Message.legacySerializerAnyCase(TrueOGBoard.TITLE);
 
     }
 
     private List<Component> lines(Player viewer) {
 
         List<Component> out = new ArrayList<>();
-        for (String line : inRound() ? gameLines() : statsLines(viewer.getUniqueId()))
+        for (String line : rawLines(viewer))
             out.add(Message.legacySerializerAnyCase(line));
         return out;
 
     }
 
-    private List<String> statsLines(UUID uuid) {
+    // Top to bottom in the network board's layout: a blank, labelled blocks split
+    // by blanks, then the site footer.
+    private List<String> rawLines(Player viewer) {
 
+        List<String> lines = new ArrayList<>();
+        lines.add("");
+        if (inRound())
+            addGameLines(lines, viewer);
+        else
+            addLobbyLines(lines, viewer.getUniqueId());
+        lines.add("");
+        lines.add(footer());
+        return lines;
+
+    }
+
+    // Queue card: who is here, when the round starts, and the viewer's record.
+    private void addLobbyLines(List<String> lines, UUID uuid) {
+
+        lines.add("&6Players:");
+        lines.add("&f" + gm.getGameLobby().getPlayers().size() + "&7/&f" + gm.getMaxPlayers());
+        lines.add("");
+        lines.add("&6Starting in:");
+        if (gm.getGameState() == GameState.STARTING) {
+
+            lines.add("&f" + TrueOGBoard.clock(gm.startTimer));
+
+        } else {
+
+            int needed = Math.max(0, gm.getRequiredToStart() - gm.getSurvivors().size());
+            lines.add(needed == 0 ? "&aReady" : "&7Need " + needed + " more");
+
+        }
+
+        lines.add("");
         StatManager stats = gm.getGameLobby().getStatManager();
-        return List.of("&bPoints: &r" + stats.getPoints().getOrDefault(uuid, 0),
-                "&bCaptures: &r" + stats.getCaptures().getOrDefault(uuid, 0),
-                "&bKills: &r" + stats.getKills().getOrDefault(uuid, 0),
-                "&bDeaths: &r" + stats.getDeaths().getOrDefault(uuid, 0));
+        lines.add("&bPoints: &f" + TrueOGBoard.compact(stats.getPoints().getOrDefault(uuid, 0)));
+        lines.add("&bShards: &f" + TrueOGBoard.compact(stats.getCaptures().getOrDefault(uuid, 0)));
+        lines.add("&2Kills: &f" + TrueOGBoard.compact(stats.getKills().getOrDefault(uuid, 0)));
+        lines.add("&4Deaths: &f" + TrueOGBoard.compact(stats.getDeaths().getOrDefault(uuid, 0)));
 
     }
 
-    private List<String> gameLines() {
+    // Round card: the viewer's role, the map, the shard hunt and who is left.
+    private void addGameLines(List<String> lines, Player viewer) {
 
-        return List.of("", "&a✦ Shard Count", gm.getShardCount() + "/3", "", "&a❂ Survivors",
-                String.valueOf(gm.getSurvivors().size()), "", "&8--------------", "&b" + gm.getNetworkWeb());
+        lines.add("&6Role:");
+        lines.add(role(viewer));
+        lines.add("");
+        lines.add("&eMap:");
+        MapData map = gm.getGameLobby().getWorldManager().getGameMapData();
+        lines.add("&f" + TrueOGBoard.fit(map == null ? "???" : map.getName(), TrueOGBoard.VALUE_WIDTH));
+        lines.add("");
+        lines.add("&aShards: &f" + gm.getShardCount() + "/3");
+        lines.add("&bShard:");
+        lines.add(shardStatus());
+        lines.add("");
+        lines.add("&2Alive: &f" + gm.getSurvivors().size());
 
     }
 
-    private ScoreboardHandler statsHandler() {
+    private String role(Player viewer) {
+
+        if (gm.isHerobrine(viewer))
+            return "&cHerobrine";
+        if (gm.isSurvivor(viewer) && !gm.isDeadSurvivor(viewer) && !gm.isSpectator(viewer))
+            return "&2Survivor";
+        return "&7Spectator";
+
+    }
+
+    private String shardStatus() {
+
+        if (gm.getGameState() == GameState.ENDING)
+            return "&7Game over";
+
+        ShardHandler handler = gm.getShardHandler();
+        ShardState state = gm.getShardState();
+        if (state == null)
+            return "&7None";
+
+        switch (state) {
+
+            case WAITING:
+                return handler == null ? "&7Waiting" : "&7Next in " + handler.getTimer() + "s";
+            case SPAWNED:
+                return handler == null ? "&eSpawned" : "&eSpawned " + TrueOGBoard.clock(handler.getDespawnTimer());
+            case CARRYING:
+                Player carrier = gm.getShardCarrier();
+                return "&a" + TrueOGBoard.fit(carrier == null ? "Carried" : carrier.getName(), TrueOGBoard.VALUE_WIDTH);
+            case INACTIVE:
+                return gm.getShardCount() >= 3 ? "&aAll captured" : "&7None";
+            default:
+                return "&7None";
+
+        }
+
+    }
+
+    private String footer() {
+
+        String web = gm.getNetworkWeb();
+        return web == null || web.isEmpty() ? TrueOGBoard.FOOTER : "&e" + TrueOGBoard.fit(web, TrueOGBoard.VALUE_WIDTH);
+
+    }
+
+    private ScoreboardHandler handler() {
 
         return new ScoreboardHandler() {
 
             @Override
             public String getTitle(Player viewer) {
 
-                return "&e&lYour Stats";
+                return TrueOGBoard.TITLE;
 
             }
 
@@ -136,32 +226,7 @@ public class LobbyBoard {
             public List<Entry> getEntries(Player viewer) {
 
                 EntryBuilder builder = new EntryBuilder();
-                for (String line : statsLines(viewer.getUniqueId()))
-                    builder.next(line);
-                return builder.build();
-
-            }
-
-        };
-
-    }
-
-    private ScoreboardHandler gameHandler() {
-
-        return new ScoreboardHandler() {
-
-            @Override
-            public String getTitle(Player viewer) {
-
-                return "&cThe&lHerobrine!";
-
-            }
-
-            @Override
-            public List<Entry> getEntries(Player viewer) {
-
-                EntryBuilder builder = new EntryBuilder();
-                for (String line : gameLines()) {
+                for (String line : rawLines(viewer)) {
 
                     if (line.isEmpty())
                         builder.blank();

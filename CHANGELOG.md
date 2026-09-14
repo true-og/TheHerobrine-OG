@@ -2,6 +2,19 @@
 
 All notable changes to TheHerobrine-OG are documented here.
 
+## 1.6.3 - 2026-09-14
+
+### Changes
+
+- The lobby sidebar now follows the Scoreboard-OG network board's look: a
+  `♥ TheHerobrine-OG ♥` title, one blank line between labelled blocks and the
+  configured `networkWeb` footer. The queue card shows the lobby player count,
+  the countdown or the players still needed, and the viewer's points, shard
+  captures, kills and deaths; the round card shows the viewer's role, the map,
+  shards captured out of three, the shard's status (seconds to the next spawn,
+  time left on the ground, or its carrier) and the survivors alive. Every line
+  stays within 16 legacy characters so 1.8 clients on ViaBackwards see it uncut.
+
 ## 1.6.2 - 2026-09-12
 
 ### Changes
