@@ -27,6 +27,7 @@ import lombok.Getter;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
+import uk.hotten.herobrine.HerobrinePluginOG;
 import uk.hotten.herobrine.game.GameManager;
 import uk.hotten.herobrine.lobby.data.LobbyConfig;
 import uk.hotten.herobrine.utils.Console;
@@ -641,6 +642,10 @@ public class LobbyManager {
             return JoinResult.NO_HUB;
 
         savePreJoinLocation(player.getUniqueId(), player.getLocation());
+        // GameModeInventories must already be suspended when the hub teleport
+        // fires, before MyWorlds and hubInventory() change the gamemode.
+        if (HerobrinePluginOG.getGmiGuard() != null)
+            HerobrinePluginOG.getGmiGuard().suspend(player);
         player.teleport(hubWorld.getSpawnLocation());
         return JoinResult.OK;
 

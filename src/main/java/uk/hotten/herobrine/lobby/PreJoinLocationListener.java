@@ -7,11 +7,15 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerLoginEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import uk.hotten.herobrine.HerobrinePluginOG;
 import uk.hotten.herobrine.utils.Console;
+import uk.hotten.herobrine.utils.GameModeInventoriesGuard;
 
 // Plugin-scoped safety net for pre-join locations. A lobby unregisters its own
 // listeners before it deletes its worlds, so anything that has to outlive the
@@ -46,17 +50,94 @@ public class PreJoinLocationListener implements Listener {
         boolean fromManaged = lm.isManagedWorld(from.getWorld().getName());
         boolean toManaged = lm.isManagedWorld(to.getWorld().getName());
 
+        GameModeInventoriesGuard guard = HerobrinePluginOG.getGmiGuard();
+
         if (toManaged && !fromManaged) {
 
             lm.savePreJoinLocation(event.getPlayer().getUniqueId(), from);
+            // Before the world change: MyWorlds' gamemode restore on entry and every
+            // spectator/survival flip the lobby makes must run without
+            // GameModeInventories.
+            if (guard != null)
+                guard.suspend(event.getPlayer());
             return;
 
         }
 
         // Left a lobby world for a real one by any route, so the recorded spot has
         // served its purpose. Dropping it stops a stale spot yanking them later.
-        if (fromManaged && !toManaged)
+        if (fromManaged && !toManaged) {
+
             lm.removePreJoinLocation(event.getPlayer().getUniqueId());
+            // Stays attached through this teleport's world change (MyWorlds restores
+            // the real inventory and then the saved survival gamemode there).
+            if (guard != null) {
+
+                guard.suspend(event.getPlayer());
+                guard.releaseAfterLeaving(event.getPlayer());
+
+            }
+
+        }
+
+    }
+
+    // A respawn is a world change without a teleport event, so the suspension
+    // is handled here for both directions.
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onRespawnMonitor(PlayerRespawnEvent event) {
+
+        LobbyManager lm = LobbyManager.getInstance();
+        GameModeInventoriesGuard guard = HerobrinePluginOG.getGmiGuard();
+        if (lm == null || guard == null)
+            return;
+
+        Player player = event.getPlayer();
+        Location respawn = event.getRespawnLocation();
+        if (respawn == null || respawn.getWorld() == null)
+            return;
+
+        boolean fromManaged = player.getWorld() != null && lm.isManagedWorld(player.getWorld().getName());
+        boolean toManaged = lm.isManagedWorld(respawn.getWorld().getName());
+
+        if (toManaged) {
+
+            guard.suspend(player);
+            return;
+
+        }
+
+        if (fromManaged) {
+
+            guard.suspend(player);
+            guard.releaseAfterLeaving(player);
+
+        }
+
+    }
+
+    // A login inside a lobby world: MyWorlds forces the world's gamemode at join,
+    // and the return teleport follows a tick later.
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onLogin(PlayerLoginEvent event) {
+
+        LobbyManager lm = LobbyManager.getInstance();
+        GameModeInventoriesGuard guard = HerobrinePluginOG.getGmiGuard();
+        if (lm == null || guard == null || event.getResult() != PlayerLoginEvent.Result.ALLOWED)
+            return;
+
+        Player player = event.getPlayer();
+        if (player.getWorld() != null && lm.isManagedWorld(player.getWorld().getName()))
+            guard.suspend(player);
+
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onQuit(PlayerQuitEvent event) {
+
+        GameModeInventoriesGuard guard = HerobrinePluginOG.getGmiGuard();
+        if (guard != null)
+            guard.release(event.getPlayer());
 
     }
 

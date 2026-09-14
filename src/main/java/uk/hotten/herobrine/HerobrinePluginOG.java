@@ -35,18 +35,26 @@ import uk.hotten.herobrine.sign.JoinSignUpdater;
 import uk.hotten.herobrine.stat.HerobrinePlaceholders;
 import uk.hotten.herobrine.stat.HerobrineScores;
 import uk.hotten.herobrine.utils.Console;
+import uk.hotten.herobrine.utils.GameModeInventoriesGuard;
 import uk.hotten.herobrine.utils.Message;
 import uk.hotten.herobrine.world.VoidChunkGenerator;
 
 public class HerobrinePluginOG extends JavaPlugin {
 
     private static boolean hasIllegalStack = false;
+    private static GameModeInventoriesGuard gmiGuard;
 
     private JoinSignUpdater joinSignUpdater;
 
     public static boolean hasIllegalStack() {
 
         return hasIllegalStack;
+
+    }
+
+    public static GameModeInventoriesGuard getGmiGuard() {
+
+        return gmiGuard;
 
     }
 
@@ -93,10 +101,19 @@ public class HerobrinePluginOG extends JavaPlugin {
         // Lobby worlds are loaded on the first tick instead of here: world creation
         // pumps the chunk system, and the resulting ChunkLoadEvent reaches plugins
         // that are still finishing their own startup.
+        // Built before any listener so every route into a lobby world can use it.
+        gmiGuard = new GameModeInventoriesGuard(this,
+                player -> player.getWorld() != null && lobbyManager.isManagedWorld(player.getWorld().getName()));
+
         getServer().getScheduler().runTask(this, () -> {
 
             lobbyManager.startConfiguredLobbies();
             registerChatFormatter(lobbyManager);
+            // /reload leaves players standing in lobby worlds with no suspension.
+            gmiGuard.sweepOnlinePlayers();
+            if (getServer().getPluginManager().getPlugin("GameModeInventories-OG") != null)
+                Console.info(
+                        "GameModeInventories-OG detected: its inventory swap is suspended for players inside lobby worlds.");
 
         });
 
@@ -179,6 +196,10 @@ public class HerobrinePluginOG extends JavaPlugin {
             JoinSignManager.getInstance().save();
         if (LobbyManager.getInstance() != null)
             LobbyManager.getInstance().shutdown();
+        // After the teardown moved everyone home, so their MyWorlds gamemode restore
+        // already ran under the suspension.
+        if (gmiGuard != null)
+            gmiGuard.releaseAll();
         // Every board is closed by the lobby teardown; this catches anything it missed.
         ScoreboardOGBridge.releaseAll();
         if (RedisManager.getInstance() != null)
