@@ -81,6 +81,8 @@ dependencies {
     // SqlManager speaks jdbc:mariadb, so the MariaDB driver is the one that has to ship.
     implementation("org.mariadb.jdbc:mariadb-java-client:3.3.3")
     implementation("redis.clients:jedis:3.4.1")
+    implementation("org.slf4j:slf4j-api:2.0.17") // Bundle a relocated SLF4J API for shaded dependencies.
+    implementation("org.slf4j:slf4j-nop:2.0.17") // Provide a relocated no-op SLF4J backend to avoid provider warnings.
     implementation("xyz.xenondevs:particle:1.8.3")
     compileOnlyApi(project(":libs:Utilities-OG")) // Import TrueOG Network Utilities-OG Java API (from source).
     compileOnly("org.purpurmc.purpur:purpur-api:1.19.4-R0.1-SNAPSHOT") // Declare Purpur API version to be packaged.
@@ -145,6 +147,8 @@ tasks.shadowJar {
     minimize {
         // The driver loads its authentication and TLS plugins reflectively, so keep it whole.
         exclude(dependency("org.mariadb.jdbc:mariadb-java-client:.*"))
+        // SLF4J discovers providers through META-INF/services, so Shadow's static minimizer cannot see this usage.
+        exclude(dependency("org.slf4j:slf4j-nop:.*"))
     }
 }
 
