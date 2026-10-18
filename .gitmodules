@@ -7,9 +7,6 @@
 [submodule "libs/MyWorlds"]
 	path = libs/MyWorlds
 	url = https://github.com/true-og/MyWorlds
-[submodule "libs/Chat-OG"]
-	path = libs/Chat-OG
-	url = https://github.com/true-og/Chat-OG
 [submodule "libs/Scoreboard-OG"]
 	path = libs/Scoreboard-OG
 	url = https://github.com/true-og/Scoreboard-OG
@@ -19,9 +16,6 @@
 [submodule "libs/ProtocolLib"]
 	path = libs/ProtocolLib
 	url = https://github.com/true-og/ProtocolLib
-[submodule "libs/Vanish-OG"]
-	path = libs/Vanish-OG
-	url = https://github.com/true-og/Vanish-OG
 [submodule "libs/IllegalStack-OG"]
 	path = libs/IllegalStack-OG
 	url = https://github.com/true-og/IllegalStack-OG

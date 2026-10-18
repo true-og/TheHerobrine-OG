@@ -85,16 +85,20 @@ dependencies {
     compileOnlyApi(project(":libs:Utilities-OG")) // Import TrueOG Network Utilities-OG Java API (from source).
     compileOnly("org.purpurmc.purpur:purpur-api:1.19.4-R0.1-SNAPSHOT") // Declare Purpur API version to be packaged.
     compileOnly("io.github.miniplaceholders:miniplaceholders-api:2.2.3") // Import MiniPlaceholders API.
-    compileOnly(project(path = ":libs:ProtocolLib", configuration = "shadow")) // Import TrueOG Network ProtocolLib fork (from source, its shaded jar).
+    compileOnly(
+        project(path = ":libs:ProtocolLib", configuration = "shadow")
+    ) // Import TrueOG Network ProtocolLib fork (from source, its shaded jar).
     compileOnly(project(":libs:IllegalStack-OG")) // Import TrueOG Network IllegalStack-OG Java API (from source).
     compileOnly("com.bergerkiller.bukkit:BKCommonLib:1.19.4-v2") // Import BKCommonLib API from its Maven repository.
     compileOnly(project(":libs:MyWorlds")) // Import MyWorlds API (git submodule, built from source).
-    compileOnly(project(":libs:Chat-OG")) {
-        attributes { attribute(kotlinAttribute, true) }
-    } // Import TrueOG Network Chat-OG Kotlin API (from source).
+    compileOnly(
+        files("libs/Chat-OG/Chat-OG.jar")
+    ) // Import Chat-OG API for world chat formatting (vendored jar until the API lands in true-og/Chat-OG).
     compileOnly(project(":libs:Scoreboard-OG")) // Import TrueOG Network Scoreboard-OG Java API (from source).
     implementation(project(":libs:GxUI-OG")) // Import TrueOG Network GxUI-OG Java API (from source).
-    implementation(project(path = ":libs:ScoreboardLib", configuration = "shadow")) // Import TrueOG Network ScoreboardLib fork (from source, its shaded jar).
+    implementation(
+        project(path = ":libs:ScoreboardLib", configuration = "shadow")
+    ) // Import TrueOG Network ScoreboardLib fork (from source, its shaded jar).
 }
 
 /* ---------------------- Utility functions ---------------------------- */
