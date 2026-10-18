@@ -12,6 +12,11 @@ plugins {
     id("io.freefair.lombok") version "8.13.1" // Import automatic lombok support.
 }
 
+// Kotlin libraries consumed from source select their Kotlin variant through this attribute, like Template-OG.
+extra["kotlinAttribute"] = Attribute.of("kotlin-tag", Boolean::class.javaObjectType)
+
+val kotlinAttribute: Attribute<Boolean> by rootProject.extra
+
 /* --------------------------- JDK / Kotlin ---------------------------- */
 java {
     sourceCompatibility = JavaVersion.VERSION_17 // Compile with JDK 17 compatibility.
@@ -48,6 +53,7 @@ tasks.named<ProcessResources>("processResources") {
 /* ---------------------------- Repos ---------------------------------- */
 repositories {
     mavenCentral() // Import the Maven Central Maven Repository.
+    maven("https://ci.mg-dev.eu/plugin/repository/everything/") // BKCommonLib.
     gradlePluginPortal() // Import the Gradle Plugin Portal Maven Repository.
     maven { url = uri("https://repo.purpurmc.org/snapshots") } // Import the PurpurMC Maven Repository.
     maven { url = uri("file://${System.getProperty("user.home")}/.m2/repository") }
@@ -79,14 +85,16 @@ dependencies {
     compileOnlyApi(project(":libs:Utilities-OG")) // Import TrueOG Network Utilities-OG Java API (from source).
     compileOnly("org.purpurmc.purpur:purpur-api:1.19.4-R0.1-SNAPSHOT") // Declare Purpur API version to be packaged.
     compileOnly("io.github.miniplaceholders:miniplaceholders-api:2.2.3") // Import MiniPlaceholders API.
-    compileOnly(files("libs/ProtocolLib/ProtocolLib-5.0.0-dev.jar")) // Import Legacy ProtocolLib API.
-    compileOnly(files("libs/IllegalStack-OG/IllegalStack-OG-2.9.13.jar")) // Import IllegalStack-OG API.
-    compileOnly(files("libs/BKCommonLib/BKCommonLib-1.19.4-v2.jar")) // Import BKCommonLib API.
+    compileOnly(project(path = ":libs:ProtocolLib", configuration = "shadow")) // Import TrueOG Network ProtocolLib fork (from source, its shaded jar).
+    compileOnly(project(":libs:IllegalStack-OG")) // Import TrueOG Network IllegalStack-OG Java API (from source).
+    compileOnly("com.bergerkiller.bukkit:BKCommonLib:1.19.4-v2") // Import BKCommonLib API from its Maven repository.
     compileOnly(project(":libs:MyWorlds")) // Import MyWorlds API (git submodule, built from source).
-    compileOnly(files("libs/Chat-OG/Chat-OG.jar")) // Import Chat-OG API for world chat formatting.
-    compileOnly(files("libs/Scoreboard-OG/Scoreboard-OG.jar")) // Import Scoreboard-OG sidebar API.
+    compileOnly(project(":libs:Chat-OG")) {
+        attributes { attribute(kotlinAttribute, true) }
+    } // Import TrueOG Network Chat-OG Kotlin API (from source).
+    compileOnly(project(":libs:Scoreboard-OG")) // Import TrueOG Network Scoreboard-OG Java API (from source).
     implementation(project(":libs:GxUI-OG")) // Import TrueOG Network GxUI-OG Java API (from source).
-    implementation(files("libs/ScoreboardLib/ScoreboardLib-1.1.0-SNAPSHOT.jar")) // Import ScoreboardLib API.
+    implementation(project(path = ":libs:ScoreboardLib", configuration = "shadow")) // Import TrueOG Network ScoreboardLib fork (from source, its shaded jar).
 }
 
 /* ---------------------- Utility functions ---------------------------- */
