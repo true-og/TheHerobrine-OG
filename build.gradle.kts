@@ -95,7 +95,7 @@ dependencies {
     compileOnly(project(":libs:MyWorlds")) // Import MyWorlds API (git submodule, built from source).
     compileOnly(
         files("libs/Chat-OG/Chat-OG.jar")
-    ) // Import Chat-OG API for world chat formatting (vendored jar until the API lands in true-og/Chat-OG).
+    ) // Import Chat-OG API for world chat formatting (vendored jar until the API lands in trueog/Chat-OG).
     compileOnly(project(":libs:Scoreboard-OG")) // Import TrueOG Network Scoreboard-OG Java API (from source).
     implementation(project(":libs:GxUI-OG")) // Import TrueOG Network GxUI-OG Java API (from source).
     implementation(
