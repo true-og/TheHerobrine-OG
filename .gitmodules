@@ -1,21 +1,21 @@
 [submodule "libs/Utilities-OG"]
 	path = libs/Utilities-OG
-	url = https://github.com/true-og/Utilities-OG
+	url = https://git.trueog.net/trueog/Utilities-OG
 [submodule "libs/GxUI-OG"]
 	path = libs/GxUI-OG
-	url = https://github.com/true-og/GxUI-OG
+	url = https://git.trueog.net/trueog/GxUI-OG
 [submodule "libs/MyWorlds"]
 	path = libs/MyWorlds
-	url = https://github.com/true-og/MyWorlds
+	url = https://git.trueog.net/trueog/MyWorlds
 [submodule "libs/Scoreboard-OG"]
 	path = libs/Scoreboard-OG
-	url = https://github.com/true-og/Scoreboard-OG
+	url = https://git.trueog.net/trueog/Scoreboard-OG
 [submodule "libs/ScoreboardLib"]
 	path = libs/ScoreboardLib
-	url = https://github.com/true-og/ScoreboardLib
+	url = https://git.trueog.net/trueog/ScoreboardLib
 [submodule "libs/ProtocolLib"]
 	path = libs/ProtocolLib
-	url = https://github.com/true-og/ProtocolLib
+	url = https://git.trueog.net/trueog/ProtocolLib
 [submodule "libs/IllegalStack-OG"]
 	path = libs/IllegalStack-OG
-	url = https://github.com/true-og/IllegalStack-OG
+	url = https://git.trueog.net/trueog/IllegalStack-OG
